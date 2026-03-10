@@ -1,34 +1,37 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./neko/assets/css/neko.css";
+import Script from "next/script";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Raya Serahill - Portfolio",
-  description: "Portfolio website of Raya Serahill, a software developer and designer, ffxiv player.",
+    title: "Raya Serahill",
+    description: "Portfolio website of Raya Serahill, a software developer and designer, ffxiv player.",
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className={"scroll-smooth"}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    return (
+        <html lang="en" className={"scroll-smooth"}>
+        <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
         {children}
-      </body>
-    </html>
-  );
+        <Script src="/js/cute.js" strategy="afterInteractive" />
+        </body>
+        </html>
+    );
 }

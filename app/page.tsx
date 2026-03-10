@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import "./neko/assets/css/neko.css";
 
 const socialLinks = [
     {

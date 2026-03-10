@@ -28,6 +28,7 @@ h1 {
   color: #ff9fc6;
   text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
   font-size: 15px;
+  margin-top: 70px;
 }
 .raya-container .right {
   text-align: right;
@@ -63,7 +64,7 @@ section img {
   filter: drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px white) drop-shadow(1px 1px 0px rgba(0, 0, 0, 0.3019607843));
 }
 section.social {
-  border: dashed #ff9fc6 1px;
+  border: dashed #ff9fc6 2px;
   border-radius: 30px;
   margin: 40px 45px 0;
 }
@@ -215,13 +216,57 @@ section.social .socials-container .discord-container .discord-icon {
   text-align: center;
 }
 .footer div {
-  border-top: #ff9fc6 1px dashed;
+  border-top: #ff9fc6 2px dashed;
   padding-top: 15px;
 }
 
 .social-hover-popup.visible {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.status-container {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  top: 20px;
+  padding-left: 45px;
+}
+.status-container.online .status-ball {
+  background-color: #4CAF50;
+}
+.status-container.dnd .status-ball {
+  background-color: #f44336;
+}
+.status-container.offline .status-ball {
+  background-color: grey;
+}
+.status-container.idle .status-ball {
+  background-color: #ff9800;
+}
+.status-container div {
+  border: 2px dashed #ff9fc6;
+  border-radius: 20px;
+  padding: 2px 14px;
+  background: #ffffff;
+}
+.status-container div .status-ball {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: grey;
+  margin-right: 8px;
+  display: inline-block;
+  padding: 0;
+  border: none;
+}
+.status-container div h3 {
+  display: inline-block;
+  font-family: font, serif;
+  color: #ff9fc6;
+  text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+  font-size: 14px;
+  font-weight: normal;
 }
 
 /*# sourceMappingURL=neko.css.map */

@@ -30,6 +30,7 @@ h1 {
   color: #ff9fc6;
   text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
   font-size: 15px;
+  margin-top: 70px;
 
   .right {
     text-align: right;
@@ -75,7 +76,7 @@ section {
   }
 
   &.social {
-    border: dashed #ff9fc6 1px;
+    border: dashed #ff9fc6 2px;
     border-radius: 30px;
     margin: 40px 45px 0;
 
@@ -237,7 +238,7 @@ section {
   text-align: center;
 
   div {
-    border-top: #ff9fc6 1px dashed;
+    border-top: #ff9fc6 2px dashed;
     padding-top: 15px;
   }
 }
@@ -245,4 +246,63 @@ section {
 .social-hover-popup.visible {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.status-container {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  top: 20px;
+  padding-left: 45px;
+
+  &.online {
+    .status-ball {
+      background-color: #4CAF50;
+    }
+  }
+
+  &.dnd {
+    .status-ball {
+      background-color: #f44336;
+    }
+  }
+
+  &.offline {
+    .status-ball {
+      background-color: grey;
+    }
+  }
+
+  &.idle {
+    .status-ball {
+      background-color: #ff9800;
+    }
+  }
+
+  div {
+    border: 2px dashed #ff9fc6;
+    border-radius: 20px;
+    padding: 2px 14px;
+    background: #ffffff;
+
+    .status-ball {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: grey;
+      margin-right: 8px;
+      display: inline-block;
+      padding: 0;
+      border: none;
+    }
+
+    h3 {
+      display: inline-block;
+      font-family: font, serif;
+      color: #ff9fc6;
+      text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+      font-size: 14px;
+      font-weight: normal;
+    }
+  }
 }

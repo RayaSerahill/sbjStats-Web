@@ -75,9 +75,32 @@ export default function NekoPage() {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
+    const [discordStatus, setDiscordStatus] = useState<string | null>(null);
+    async function getStatus(): Promise<string | null> {
+        try {
+            const res = await fetch("https://api.lanyard.rest/v1/users/140137510952108033");
+            const json = await res.json();
+            let status = json?.data?.discord_status ?? null;
+            if (status === "dnd") return "offline";
+            return status;
+        } catch {
+            return null;
+        }
+    }
+
+    useEffect(() => {
+        getStatus().then(setDiscordStatus);
+    }, []);
+
     return (
         <>
             <div className="max-w-2xl mx-auto px-4 raya-container">
+
+                <div className={`status-container ${discordStatus}`}>
+                    <div>
+                        <div className={"status-ball"}></div><h3>I'm currently  {discordStatus ? `${discordStatus}` : ''}</h3>
+                    </div>
+                </div>
                 <section className={'dual-container'}>
                     <img srcSet={'/img/sitting.png'} alt={'Raya Serahill'} className={'raya-pic'} />
                     <div className={'pinkie right'}>
@@ -88,6 +111,7 @@ export default function NekoPage() {
                         <br /><br />
                         I am a website developer by profession, and everything else I do is just hobbies for fun, I do try to keep myself busy with things I enjoy :3
                     </div>
+
                 </section>
 
                 <section className={'social'}>

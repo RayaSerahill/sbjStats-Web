@@ -150,6 +150,7 @@ export default function NekoPage() {
                         <ul className={'project-list'}>
                             <li><a href={'https://serahill.net/stats/raya'} datatype={'test'}><span className={'animated-dotted-border'}>BlackJack Stats</span></a> - A little page for me and a friend to display stats about our shared hobby of blackjack hosting</li>
                             <li><a href={'https://github.com/RayaSerahill/BetterDiscordRichpresence'}><span className={'animated-dotted-border'}>Better discord rich presence</span></a> - A FFXIV plugin to show your in game status on your discord activity :3</li>
+                            <li><a href={'https://github.com/RayaSerahill/sbjstats'}><span className={'animated-dotted-border'}>Stats uploader</span></a> - Another FFXIV plugin, this one uploads blackjack stats from the game live to my website ^^</li>
                             <li><a href={'https://www.xivmodarchive.com/user/299088'}><span className={'animated-dotted-border'}>XIV Mod Archive</span></a> - Some visual mods I have released publicly for FFXIV. Not all are public releases</li>
                             <li><a href={'#'}><span className={'animated-dotted-border'}>Scripts</span></a> - A collection of small scripts and stuff for various purposes. Couple gems among the trash may exist</li>
                         </ul>

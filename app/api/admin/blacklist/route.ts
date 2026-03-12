@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import type { ObjectId } from "mongodb";
-import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/lib/auth";
+import { requireAdminRequest } from "@/lib/auth";
 import { ensureGameCollections, getDb } from "@/lib/db";
 
 type BlacklistDoc = {
@@ -11,22 +10,9 @@ type BlacklistDoc = {
   createdBy: string;
 };
 
-async function requireAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) return { ok: false as const, res: NextResponse.json({ error: "Not authenticated" }, { status: 401 }) };
-
-  try {
-    const auth = await verifyAuthToken(token);
-    return { ok: true as const, auth };
-  } catch {
-    return { ok: false as const, res: NextResponse.json({ error: "Invalid token" }, { status: 401 }) };
-  }
-}
-
-export async function GET() {
+export async function GET(req: Request) {
   await ensureGameCollections();
-  const gate = await requireAdmin();
+  const gate = await requireAdminRequest(req);
   if (!gate.ok) return gate.res;
 
   const db = await getDb();
@@ -51,7 +37,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   await ensureGameCollections();
-  const gate = await requireAdmin();
+  const gate = await requireAdminRequest(req);
   if (!gate.ok) return gate.res;
 
   let body: { playerTag?: string };

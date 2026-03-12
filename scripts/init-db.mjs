@@ -19,6 +19,8 @@ const run = async () => {
   const users = db.collection("users");
   await users.createIndex({ email: 1 }, { unique: true });
   await users.createIndex({ createdAt: 1 });
+  await users.createIndex({ apiKeyHash: 1 }, { unique: true, sparse: true });
+  await users.createIndex({ apiKeyCreatedAt: -1 }, { sparse: true });
 
   const players = db.collection("players");
   await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -44,22 +46,22 @@ const run = async () => {
 
   const statsPlayer = db.collection("stats_player");
   await statsPlayer.createIndex(
-      { uploaderId: 1, playerId: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { uploaderId: { $exists: true }, playerId: { $exists: true } },
-      }
+    { uploaderId: 1, playerId: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { uploaderId: { $exists: true }, playerId: { $exists: true } },
+    }
   );
   await statsPlayer.createIndex({ uploaderId: 1, updatedAt: -1 });
   await statsPlayer.createIndex({ uploaderId: 1, games: -1 });
 
   const statsHost = db.collection("stats_host");
   await statsHost.createIndex(
-      { uploaderId: 1, hostId: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { uploaderId: { $exists: true }, hostId: { $exists: true } },
-      }
+    { uploaderId: 1, hostId: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { uploaderId: { $exists: true }, hostId: { $exists: true } },
+    }
   );
   await statsHost.createIndex({ uploaderId: 1, updatedAt: -1 });
   await statsHost.createIndex({ uploaderId: 1, gamesHosted: -1 });
@@ -67,22 +69,22 @@ const run = async () => {
 
   const statsCombo = db.collection("stats_combo");
   await statsCombo.createIndex(
-      { uploaderId: 1, comboKey: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { uploaderId: { $exists: true }, comboKey: { $exists: true } },
-      }
+    { uploaderId: 1, comboKey: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { uploaderId: { $exists: true }, comboKey: { $exists: true } },
+    }
   );
   await statsCombo.createIndex({ uploaderId: 1, updatedAt: -1 });
   await statsCombo.createIndex({ uploaderId: 1, seen: -1 });
 
   const books = db.collection("books");
   await books.createIndex(
-      { uploaderId: 1, key: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { uploaderId: { $exists: true }, key: { $exists: true } },
-      }
+    { uploaderId: 1, key: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { uploaderId: { $exists: true }, key: { $exists: true } },
+    }
   );
   await books.createIndex({ uploaderId: 1, createdAt: -1 });
   await books.createIndex({ uploaderId: 1, updatedAt: -1 });
@@ -94,16 +96,14 @@ const run = async () => {
   await books.createIndex({ uploaderId: 1, author: 1 });
   await books.createIndex({ uploaderId: 1, additionalTags: 1 }, { sparse: true });
 
-  console.log(
-      `OK: indexes ready in db "${dbName}" (users, games, players, aliases, blacklist, stats_*, books)`
-  );
+  console.log(`OK: indexes ready in db "${dbName}" (users, games, players, aliases, blacklist, stats_*, books)`);
 };
 
 run()
-    .catch((e) => {
-      console.error(e);
-      process.exitCode = 1;
-    })
-    .finally(async () => {
-      await client.close();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await client.close();
+  });

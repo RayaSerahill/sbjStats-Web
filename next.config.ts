@@ -11,7 +11,18 @@ const nextConfig: NextConfig = {
     },
     compiler: {
         removeConsole: false
-    }
+    },
+    async headers() {
+        return [
+            {
+                source: '/scripts/:path*',
+                headers: [
+                    { key: 'Content-Type', value: 'text/plain; charset=utf-8' },
+                    { key: 'Content-Disposition', value: 'inline' },
+                ],
+            },
+        ];
+    },
 };
 
 export default nextConfig;

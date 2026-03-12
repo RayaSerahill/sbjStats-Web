@@ -432,8 +432,18 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
     updateOne: {
       filter: { uploaderId: opts.uploaderId, hostId },
       update: {
-        $setOnInsert: { uploaderId: opts.uploaderId, hostId, ownedBy: opts.uploaderId, createdAt: a.createdAt },
-        $set: { ownedBy: opts.uploaderId, playerTag: a.playerTag, name: a.name, world: a.world, updatedAt: a.updatedAt },
+        $setOnInsert: {
+          uploaderId: opts.uploaderId,
+          hostId,
+          ownedBy: opts.uploaderId,
+          createdAt: a.createdAt,
+        },
+        $set: {
+          playerTag: a.playerTag,
+          name: a.name,
+          world: a.world,
+          updatedAt: a.updatedAt,
+        },
         $inc: {
           gamesHosted: a.gamesHosted,
           playerWins: a.playerWins,

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/lib/auth";
+import { requireAdminRequest } from "@/lib/auth";
 import { ensureGameCollections, getDb } from "@/lib/db";
 import { ingestRound } from "@/lib/gameIngest";
 import { ingestReportCsv } from "@/lib/reportCsvIngest";
@@ -8,23 +7,12 @@ import { ingestReportCsv } from "@/lib/reportCsvIngest";
 export async function POST(req: Request) {
   await ensureGameCollections();
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
-  let auth;
-  try {
-    auth = await verifyAuthToken(token);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const gate = await requireAdminRequest(req);
+  if (!gate.ok) return gate.res;
 
   const contentType = req.headers.get("content-type") ?? "";
   const db = await getDb();
 
-  // CSV upload (multipart/form-data)
   if (contentType.includes("multipart/form-data")) {
     const form = await req.formData();
     const file = form.get("file");
@@ -32,12 +20,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
     }
     const csvText = await (file as File).text();
-    const result = await ingestReportCsv({ db, uploaderId: auth.id, csvText });
+    const result = await ingestReportCsv({ db, uploaderId: gate.auth.id, csvText });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
     return NextResponse.json({ ok: true, inserted: result.inserted, skipped: result.skipped, invalid: result.invalid });
   }
 
-  // Single round import (JSON)
   let body: { payload?: string; createdAt?: string; sourceDateTime?: string };
   try {
     body = await req.json();
@@ -54,7 +41,7 @@ export async function POST(req: Request) {
   }
 
   const sourceDateTime = (body.sourceDateTime ?? (createdAt ? createdAt.toISOString() : undefined))?.toString();
-  const result = await ingestRound({ db, uploaderId: auth.id, payload, createdAt, sourceDateTime });
+  const result = await ingestRound({ db, uploaderId: gate.auth.id, payload, createdAt, sourceDateTime });
 
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
   if (result.skipped) return NextResponse.json({ ok: true, skipped: true });

@@ -7,6 +7,9 @@ export type UserDoc = {
   passwordHash: string;
   name?: string;
   role: "admin";
+  apiKeyHash?: string;
+  apiKeyPrefix?: string;
+  apiKeyCreatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -28,6 +31,8 @@ export async function ensureAuthCollections() {
       const users = db.collection<UserDoc>("users");
       await users.createIndex({ email: 1 }, { unique: true });
       await users.createIndex({ createdAt: 1 });
+      await users.createIndex({ apiKeyHash: 1 }, { unique: true, sparse: true });
+      await users.createIndex({ apiKeyCreatedAt: -1 }, { sparse: true });
     })();
   }
 

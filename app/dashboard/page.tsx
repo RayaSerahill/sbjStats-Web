@@ -13,6 +13,7 @@ import { StatsStyleEditor } from "./components/StatsStyleEditor";
 import { Account } from "./components/Account";
 import { Games } from "./components/Games";
 import { Users } from "./components/Users";
+import { Home } from "./components/Home";
 
 export default async function AdminPage() {
   await ensureAuthCollections();
@@ -45,6 +46,7 @@ export default async function AdminPage() {
           </div>
 
           <AdminSectionsClient
+              home={<Home />}
               gameImport={<GameImport />}
               account={<Account />}
               games={<Games />}

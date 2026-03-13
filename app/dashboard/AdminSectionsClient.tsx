@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 
-type AdminSection = "import" | "account" | "games" | "aliases" | "hidden-players" | "api-keys" | "stats-style" | "users" | null;
+type AdminSection = "home" | "import" | "account" | "games" | "aliases" | "hidden-players" | "api-keys" | "stats-style" | "users" | null;
 
 export function AdminSectionsClient({
+                                      home,
                                       gameImport,
                                       account,
                                       games,
@@ -15,6 +16,7 @@ export function AdminSectionsClient({
                                       users,
                                       canManageUsers,
                                     }: {
+  home: React.ReactNode;
   gameImport: React.ReactNode;
   account: React.ReactNode;
   games: React.ReactNode;
@@ -25,10 +27,11 @@ export function AdminSectionsClient({
   users?: React.ReactNode;
   canManageUsers: boolean;
 }) {
-  const [activeSection, setActiveSection] = useState<AdminSection>("import");
+  const [activeSection, setActiveSection] = useState<AdminSection>("home");
 
   const items = useMemo(
       () => [
+        { id: "home" as const, label: "Home" },
         { id: "account" as const, label: "Account" },
         { id: "import" as const, label: "Game Import" },
         { id: "games" as const, label: "Games" },
@@ -76,6 +79,10 @@ export function AdminSectionsClient({
         </aside>
         <div className="lg:relative">
           <main className="min-w-0">
+            <section id="home" className={["mt-6 scroll-mt-28", activeSection === "home" ? "" : "lg:hidden"].join(" ")}>
+              {home}
+            </section>
+
             <section id="import" className={["mt-6 scroll-mt-28", activeSection === "import" ? "" : "lg:hidden"].join(" ")}>
               {gameImport}
             </section>

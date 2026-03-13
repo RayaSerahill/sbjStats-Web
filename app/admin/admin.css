@@ -28,4 +28,8 @@ body {
   background: rgba(255, 159, 198, 0.5);
 }
 
+.account-container form {
+  margin: 10px 0;
+}
+
 /*# sourceMappingURL=admin.css.map */

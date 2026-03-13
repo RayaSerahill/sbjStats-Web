@@ -6,6 +6,7 @@ import {
   signAuthToken,
 } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
+import { getAvailableUsername, usernameFromEmail } from "@/lib/account";
 
 const canRegister = async () => {
   if (process.env.ALLOW_ADMIN_REGISTER === "true") return true;
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
   const users = db.collection<UserDoc>("users");
 
   const passwordHash = await hashPassword(password);
+  const username = await getAvailableUsername(db, usernameFromEmail(email));
   const now = new Date();
 
   try {
@@ -61,6 +63,7 @@ export async function POST(req: Request) {
       email,
       passwordHash,
       name: name || undefined,
+      username,
       role: "admin",
       createdAt: now,
       updatedAt: now,
@@ -69,7 +72,7 @@ export async function POST(req: Request) {
     const id = insert.insertedId.toHexString();
     const token = await signAuthToken({ id, email, role: "admin" });
 
-    const res = NextResponse.json({ user: { id, email, role: "admin" } });
+    const res = NextResponse.json({ user: { id, email, username, role: "admin" } });
     res.cookies.set(AUTH_COOKIE_NAME, token, authCookieOptions());
     return res;
   } catch (err: any) {

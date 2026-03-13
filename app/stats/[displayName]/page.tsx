@@ -79,6 +79,7 @@ export type LoadStatsResult =
     | {
   ok: true;
   displayName: string;
+  username: string;
   uploaderId: string;
   newestHostTag: string;
   roundsHosted: number;
@@ -92,6 +93,7 @@ export type LoadStatsResult =
   topActive: LoadStatsPlayerRow[];
   totalPlayers: number;
 };
+
 
 async function loadStats(displayName: string): Promise<LoadStatsResult> {
   await ensureAuthCollections();
@@ -114,6 +116,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   const dnNorm = norm(dn);
 
   let user =
+    (await users.findOne({ username: dnNorm })) ??
     (await users.findOne(
       { name: dn },
       { collation: { locale: "en", strength: 2 } }
@@ -150,10 +153,11 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
 
   if (!user?._id) {
     const fallback = await users
-      .find({}, { projection: { _id: 1, name: 1, email: 1 } })
+      .find({}, { projection: { _id: 1, name: 1, email: 1, username: 1 } })
       .limit(2000)
       .toArray();
     user =
+      (fallback as any[]).find((u) => norm(u?.username) === dnNorm) ??
       (fallback as any[]).find((u) => norm(u?.name) === dnNorm) ??
       (fallback as any[]).find((u) => norm(u?.email) === dnNorm) ??
       (fallback as any[]).find((u) => norm(emailLocalPart(u?.email)) === dnNorm) ??
@@ -368,7 +372,8 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
 
   return {
     ok: true as const,
-    displayName: user.name ?? displayName,
+    displayName: user.name ?? user.username ?? displayName,
+    username: user.username ?? "",
     uploaderId,
     newestHostTag,
     roundsHosted,
@@ -382,6 +387,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
     topActive,
     totalPlayers: mergedPlayers.length,
   };
+
 }
 
 export async function generateMetadata({
@@ -395,7 +401,7 @@ export async function generateMetadata({
   if (!result.ok) return { title: "Stats" };
 
   const data = result;
-  const title = data.newestHostTag ? `${data.newestHostTag} | Stats` : `${data.displayName} | Stats`;
+  const title = `${data.displayName} | Stats`;
   return { title };
 }
 
@@ -437,11 +443,8 @@ export default async function DealerStatsPage({
   const pageBackgroundStyle = getBackgroundStyleCss(style.background);
   const containerBackgroundStyle = getBackgroundStyleCss(style.containerBackground);
   const elementBackgroundStyle = getBackgroundStyleCss(style.elementBackground);
-  let title = data.newestHostTag || data.displayName;
-
-  if (title === "Lini White@Alpha") {
-    title = "Lini Espi @ Alpha";
-  }
+  const title = data.displayName;
+  console.log(data);
 
   return (
     <div className="min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.fontColor, fontFamily }}>
@@ -449,13 +452,17 @@ export default async function DealerStatsPage({
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold" style={{ color: style.fontColor }}>{title}</h1>
           <p className="text-sm" style={{ color: style.fontColor }}>
-            Stats for uploader <span className="font-medium" style={{ color: style.fontColor }}>{data.displayName}</span>
+            Stats for uploader{" "}
+            <span className="font-medium" style={{ color: style.fontColor }}>
+              {data.username || data.displayName}
+            </span>
             {data.totalPlayers ? (
-              <>
-                {" "}• {fmtInt(data.totalPlayers)} players
-              </>
+                <>
+                  {" "}• {fmtInt(data.totalPlayers)} players
+                </>
             ) : null}
           </p>
+
         </div>
 
         {data.roundsHosted === 0 ? (

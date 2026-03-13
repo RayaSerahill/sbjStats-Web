@@ -12,6 +12,7 @@ import { AdminSectionsClient } from "./AdminSectionsClient";
 import { StatsStyleEditor } from "./components/StatsStyleEditor";
 import { Account } from "./components/Account";
 import { Games } from "./components/Games";
+import { Users } from "./components/Users";
 
 export default async function AdminPage() {
   await ensureAuthCollections();
@@ -26,6 +27,7 @@ export default async function AdminPage() {
   const db = await getDb();
   const users = db.collection<UserDoc>("users");
   const user = await users.findOne({ _id: new ObjectId(auth.id) });
+  const canManageUsers = user?.role === "owner" || user?.role === "admin";
 
   return (
       <>
@@ -50,6 +52,8 @@ export default async function AdminPage() {
               hiddenPlayers={<HiddenPlayers />}
               apiKeys={<ApiKeys />}
               statsStyle={<StatsStyleEditor />}
+              users={canManageUsers ? <Users /> : null}
+              canManageUsers={canManageUsers}
           />
         </div>
       </>

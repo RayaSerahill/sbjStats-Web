@@ -191,7 +191,7 @@ export async function PATCH(req: Request) {
   });
 
   if (gate.method === "cookie") {
-    const token = await signAuthToken({ id: userId.toHexString(), email: updatedEmail, role: "admin" });
+    const token = await signAuthToken({ id: userId.toHexString(), email: updatedEmail, role: typeof user.role === "string" ? user.role : "user" });
     res.cookies.set(AUTH_COOKIE_NAME, token, authCookieOptions());
   }
 

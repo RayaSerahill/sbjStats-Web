@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-type AdminSection = "import" | "account" | "games" | "aliases" | "hidden-players" | "api-keys" | "stats-style" | null;
+type AdminSection = "import" | "account" | "games" | "aliases" | "hidden-players" | "api-keys" | "stats-style" | "users" | null;
 
 export function AdminSectionsClient({
                                       gameImport,
@@ -12,6 +12,8 @@ export function AdminSectionsClient({
                                       hiddenPlayers,
                                       apiKeys,
                                       statsStyle,
+                                      users,
+                                      canManageUsers,
                                     }: {
   gameImport: React.ReactNode;
   account: React.ReactNode;
@@ -20,6 +22,8 @@ export function AdminSectionsClient({
   hiddenPlayers: React.ReactNode;
   apiKeys: React.ReactNode;
   statsStyle: React.ReactNode;
+  users?: React.ReactNode;
+  canManageUsers: boolean;
 }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("import");
 
@@ -32,8 +36,9 @@ export function AdminSectionsClient({
         { id: "hidden-players" as const, label: "Hidden Players" },
         { id: "stats-style" as const, label: "Stats Style" },
         { id: "api-keys" as const, label: "API Keys" },
+        ...(canManageUsers ? [{ id: "users" as const, label: "Users" }] : []),
       ],
-      []
+      [canManageUsers]
   );
 
   const showSection = (id: AdminSection) => {
@@ -101,6 +106,12 @@ export function AdminSectionsClient({
             <section id="stats-style" className={["mt-6 scroll-mt-28", activeSection === "stats-style" ? "" : "lg:hidden"].join(" ")}>
               {statsStyle}
             </section>
+
+            {canManageUsers ? (
+              <section id="users" className={["mt-6 scroll-mt-28", activeSection === "users" ? "" : "lg:hidden"].join(" ")}>
+                {users}
+              </section>
+            ) : null}
           </main>
         </div>
       </>

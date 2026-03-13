@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ensureAuthCollections, getDb, type UserDoc } from "@/lib/db";
+import { ensureAuthCollections, getDb, type UserDoc, type UserRole } from "@/lib/db";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
@@ -54,6 +54,9 @@ export async function POST(req: Request) {
   const db = await getDb();
   const users = db.collection<UserDoc>("users");
 
+  const existingCount = await users.countDocuments({}, { limit: 2 });
+  const role: UserRole = existingCount === 0 ? "owner" : process.env.ALLOW_ADMIN_REGISTER === "true" ? "admin" : "user";
+
   const passwordHash = await hashPassword(password);
   const username = await getAvailableUsername(db, usernameFromEmail(email));
   const now = new Date();
@@ -64,16 +67,16 @@ export async function POST(req: Request) {
       passwordHash,
       name: name || undefined,
       username,
-      role: "admin",
+      role,
       deleted: false,
       createdAt: now,
       updatedAt: now,
     });
 
     const id = insert.insertedId.toHexString();
-    const token = await signAuthToken({ id, email, role: "admin" });
+    const token = await signAuthToken({ id, email, role });
 
-    const res = NextResponse.json({ user: { id, email, username, role: "admin" } });
+    const res = NextResponse.json({ user: { id, email, username, role } });
     res.cookies.set(AUTH_COOKIE_NAME, token, authCookieOptions());
     return res;
   } catch (err: any) {

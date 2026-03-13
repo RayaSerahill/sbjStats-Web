@@ -18,7 +18,7 @@ export async function GET() {
     const users = db.collection<UserDoc>("users");
     const user = await users.findOne({ _id: new ObjectId(payload.id), deleted: { $ne: true } });
     if (!user) return NextResponse.json({ user: null }, { status: 200 });
-    return NextResponse.json({ user: { id: payload.id, email: user.email, username: user.username ?? null, name: user.name ?? null, role: "admin" } });
+    return NextResponse.json({ user: { id: payload.id, email: user.email, username: user.username ?? null, name: user.name ?? null, role: user.role ?? payload.role } });
   } catch {
     return NextResponse.json({ user: null }, { status: 200 });
   }

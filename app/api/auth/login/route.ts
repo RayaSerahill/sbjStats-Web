@@ -42,9 +42,10 @@ export async function POST(req: Request) {
   }
 
   const id = user._id instanceof ObjectId ? user._id.toHexString() : String(user._id);
-  const token = await signAuthToken({ id, email: user.email, role: "admin" });
+  const role = user.role ?? "user";
+  const token = await signAuthToken({ id, email: user.email, role });
 
-  const res = NextResponse.json({ user: { id, email: user.email, role: "admin" } });
+  const res = NextResponse.json({ user: { id, email: user.email, role } });
   res.cookies.set(AUTH_COOKIE_NAME, token, authCookieOptions());
   return res;
 }

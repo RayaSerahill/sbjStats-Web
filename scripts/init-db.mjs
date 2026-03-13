@@ -19,6 +19,7 @@ const run = async () => {
   const users = db.collection("users");
   await users.createIndex({ email: 1 }, { unique: true });
   await users.createIndex({ username: 1 }, { unique: true, sparse: true });
+  await users.createIndex({ role: 1, createdAt: -1 });
   await users.createIndex({ createdAt: 1 });
   await users.createIndex({ deleted: 1, updatedAt: -1 }, { sparse: true });
   await users.createIndex({ apiKeyHash: 1 }, { unique: true, sparse: true });

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { jwtVerify, SignJWT } from "jose";
 import { ObjectId } from "mongodb";
 import { createHash, randomBytes } from "node:crypto";
-import { getDb, type UserDoc } from "@/lib/db";
+import { getDb, isUserRole, type UserDoc, type UserRole } from "@/lib/db";
 
 export const AUTH_COOKIE_NAME = "admin_token";
 const API_KEY_PREFIX = "rh_";
@@ -16,7 +16,7 @@ const jwtSecret = () => {
 export type JwtUser = {
   id: string;
   email: string;
-  role: "admin";
+  role: UserRole;
 };
 
 export async function signAuthToken(user: JwtUser) {
@@ -33,7 +33,7 @@ export async function verifyAuthToken(token: string): Promise<JwtUser> {
 
   const id = typeof payload.sub === "string" ? payload.sub : "";
   const email = typeof payload.email === "string" ? payload.email : "";
-  const role = payload.role === "admin" ? "admin" : "admin";
+  const role = isUserRole(payload.role) ? payload.role : "user";
 
   if (!id || !email) throw new Error("Invalid token payload");
   return { id, email, role };
@@ -88,11 +88,11 @@ export async function authenticateApiKey(apiKey: string): Promise<JwtUser | null
   return {
     id: user._id instanceof ObjectId ? user._id.toHexString() : String(user._id),
     email: user.email,
-    role: user.role === "admin" ? "admin" : "admin",
+    role: isUserRole(user.role) ? user.role : "user",
   };
 }
 
-export async function requireAdminRequest(req: Request) {
+export async function requireUserRequest(req: Request) {
   const apiKey = getApiKeyFromHeaders(req);
   if (apiKey) {
     const auth = await authenticateApiKey(apiKey);
@@ -112,13 +112,32 @@ export async function requireAdminRequest(req: Request) {
     const users = db.collection<UserDoc>("users");
     const user = await users.findOne(
       { _id: new ObjectId(auth.id), deleted: { $ne: true } },
-      { projection: { _id: 1 } }
+      { projection: { _id: 1, role: 1, email: 1 } }
     );
     if (!user) {
       return { ok: false as const, res: Response.json({ error: "Account not available" }, { status: 401 }) };
     }
-    return { ok: true as const, auth, method: "cookie" as const };
+    return {
+      ok: true as const,
+      auth: {
+        id: auth.id,
+        email: user.email,
+        role: isUserRole(user.role) ? user.role : "user",
+      },
+      method: "cookie" as const,
+    };
   } catch {
     return { ok: false as const, res: Response.json({ error: "Invalid token" }, { status: 401 }) };
   }
 }
+
+export async function requireRoles(req: Request, roles: UserRole[]) {
+  const gate = await requireUserRequest(req);
+  if (!gate.ok) return gate;
+  if (!roles.includes(gate.auth.role)) {
+    return { ok: false as const, res: Response.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+  return gate;
+}
+
+export const requireAdminRequest = requireUserRequest;

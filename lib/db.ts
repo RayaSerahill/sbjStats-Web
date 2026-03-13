@@ -1,13 +1,15 @@
 import type { Db, ObjectId } from "mongodb";
 import clientPromise from "./mongodb";
 
+export type UserRole = "owner" | "admin" | "user";
+
 export type UserDoc = {
   _id?: ObjectId;
   email: string;
   passwordHash: string;
   name?: string;
   username?: string;
-  role: "admin";
+  role: UserRole;
   apiKeyHash?: string;
   apiKeyPrefix?: string;
   apiKeyCreatedAt?: Date;
@@ -27,6 +29,10 @@ export async function getDb(): Promise<Db> {
   return client.db(dbName());
 }
 
+export function isUserRole(value: unknown): value is UserRole {
+  return value === "owner" || value === "admin" || value === "user";
+}
+
 export async function ensureAuthCollections() {
   if (!initPromise) {
     initPromise = (async () => {
@@ -34,6 +40,7 @@ export async function ensureAuthCollections() {
       const users = db.collection<UserDoc>("users");
       await users.createIndex({ email: 1 }, { unique: true });
       await users.createIndex({ username: 1 }, { unique: true, sparse: true });
+      await users.createIndex({ role: 1, createdAt: -1 });
       await users.createIndex({ createdAt: 1 });
       await users.createIndex({ deleted: 1, updatedAt: -1 }, { sparse: true });
       await users.createIndex({ apiKeyHash: 1 }, { unique: true, sparse: true });

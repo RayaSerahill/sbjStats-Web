@@ -1,7 +1,7 @@
 import type { Db, ObjectId } from "mongodb";
 import clientPromise from "./mongodb";
 
-export type UserRole = "owner" | "admin" | "user";
+export type UserRole = "owner" | "admin" | "dealer";
 
 export type UserDoc = {
   _id?: ObjectId;
@@ -30,7 +30,7 @@ export async function getDb(): Promise<Db> {
 }
 
 export function isUserRole(value: unknown): value is UserRole {
-  return value === "owner" || value === "admin" || value === "user";
+  return value === "owner" || value === "admin" || value === "dealer";
 }
 
 export async function ensureAuthCollections() {

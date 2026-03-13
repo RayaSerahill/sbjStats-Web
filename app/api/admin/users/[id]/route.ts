@@ -10,7 +10,7 @@ function basicEmailValid(email: string) {
 }
 
 function isRole(value: unknown): value is UserRole {
-  return value === "owner" || value === "admin" || value === "user";
+  return value === "owner" || value === "admin" || value === "dealer";
 }
 
 async function ownerCount(users: Collection<UserDoc>) {

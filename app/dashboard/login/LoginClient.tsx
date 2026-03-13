@@ -21,11 +21,24 @@ export default function AdminLoginPage() {
 
   return (
     <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <h1 className="text-xl font-semibold">Admin login</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Enter your credentials to continue.</p>
+      <h1 className="text-xl font-semibold">Dashboard login</h1>
+      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Sign in with your email and password, or continue with Discord if you registered that way.</p>
+
+      <a
+        href="/api/auth/discord/start"
+        className="mt-6 flex w-full items-center justify-center rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+      >
+        Continue with Discord
+      </a>
+
+      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-zinc-400">
+        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        <span>or</span>
+        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+      </div>
 
       <form
-        className="mt-6 space-y-4"
+        className="space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
@@ -93,7 +106,7 @@ export default function AdminLoginPage() {
           Back to site
         </Link>
         <Link href="/dashboard/register" className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
-          Create admin account
+Create account
         </Link>
       </div>
     </div>

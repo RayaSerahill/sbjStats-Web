@@ -33,7 +33,7 @@ export async function verifyAuthToken(token: string): Promise<JwtUser> {
 
   const id = typeof payload.sub === "string" ? payload.sub : "";
   const email = typeof payload.email === "string" ? payload.email : "";
-  const role = isUserRole(payload.role) ? payload.role : "user";
+  const role = isUserRole(payload.role) ? payload.role  : "dealer";
 
   if (!id || !email) throw new Error("Invalid token payload");
   return { id, email, role };
@@ -88,7 +88,7 @@ export async function authenticateApiKey(apiKey: string): Promise<JwtUser | null
   return {
     id: user._id instanceof ObjectId ? user._id.toHexString() : String(user._id),
     email: user.email,
-    role: isUserRole(user.role) ? user.role : "user",
+    role: isUserRole(user.role) ? user.role : "dealer",
   };
 }
 
@@ -122,7 +122,7 @@ export async function requireUserRequest(req: Request) {
       auth: {
         id: auth.id,
         email: user.email,
-        role: isUserRole(user.role) ? user.role : "user",
+        role: isUserRole(user.role) ? user.role : "dealer",
       },
       method: "cookie" as const,
     };

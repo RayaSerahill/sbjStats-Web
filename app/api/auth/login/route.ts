@@ -36,13 +36,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
+  if (!user.passwordHash) {
+    return NextResponse.json({ error: "Use Discord sign-in for this account, or set a password later" }, { status: 401 });
+  }
+
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
   const id = user._id instanceof ObjectId ? user._id.toHexString() : String(user._id);
-  const role = user.role ?? "user";
+  const role = user.role ?? "dealer";
   const token = await signAuthToken({ id, email: user.email, role });
 
   const res = NextResponse.json({ user: { id, email: user.email, role } });

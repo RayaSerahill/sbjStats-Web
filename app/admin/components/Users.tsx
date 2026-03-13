@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type UserRole = "owner" | "admin" | "user";
+type UserRole = "owner" | "admin" | "dealer";
 
 type UserRow = {
   id: string;
@@ -35,7 +35,7 @@ const emptyEditor = {
   email: "",
   username: "",
   name: "",
-  role: "user" as UserRole,
+  role: "dealer" as UserRole,
   newPassword: "",
 };
 
@@ -267,7 +267,7 @@ export function Users() {
                         <select value={editor.role} onChange={(e) => setEditor((prev) => ({ ...prev, role: e.target.value as UserRole }))} className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400">
                           <option value="owner">owner</option>
                           <option value="admin">admin</option>
-                          <option value="user">user</option>
+                          <option value="dealer">dealer</option>
                         </select>
                       </label>
                       <label className="block text-sm md:col-span-2">

@@ -11,6 +11,7 @@ import { ApiKeys } from "./components/ApiKeys";
 import { AdminSectionsClient } from "./AdminSectionsClient";
 import { StatsStyleEditor } from "./components/StatsStyleEditor";
 import { Account } from "./components/Account";
+import { Games } from "./components/Games";
 
 export default async function AdminPage() {
   await ensureAuthCollections();
@@ -27,29 +28,30 @@ export default async function AdminPage() {
   const user = await users.findOne({ _id: new ObjectId(auth.id) });
 
   return (
-    <>
-      <div className="mx-auto w-full max-w-6xl px-4">
-        <div className="rounded-3xl p-6 cute-border">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-zinc-900">Admin</h1>
-              <p className="mt-2 text-sm text-zinc-600">
-                Logged in as <span className="font-medium text-zinc-900">{user?.name ?? user?.username ?? auth.email}</span>
-              </p>
+      <>
+        <div className="mx-auto w-full max-w-6xl px-4">
+          <div className="rounded-3xl p-6 cute-border">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 className="text-xl font-semibold text-zinc-900">Admin</h1>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Logged in as <span className="font-medium text-zinc-900">{user?.name ?? user?.username ?? auth.email}</span>
+                </p>
+              </div>
+              <LogoutButton />
             </div>
-            <LogoutButton />
           </div>
-        </div>
 
-        <AdminSectionsClient
-          gameImport={<GameImport />}
-          account={<Account />}
-          aliases={<Aliases />}
-          hiddenPlayers={<HiddenPlayers />}
-          apiKeys={<ApiKeys />}
-          statsStyle={<StatsStyleEditor />}
-        />
-      </div>
-    </>
+          <AdminSectionsClient
+              gameImport={<GameImport />}
+              account={<Account />}
+              games={<Games />}
+              aliases={<Aliases />}
+              hiddenPlayers={<HiddenPlayers />}
+              apiKeys={<ApiKeys />}
+              statsStyle={<StatsStyleEditor />}
+          />
+        </div>
+      </>
   );
 }

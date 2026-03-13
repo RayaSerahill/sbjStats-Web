@@ -191,8 +191,8 @@ export function Account() {
             void saveUsername();
           }}
         >
-          <h3 className="text-sm font-semibold text-zinc-900">Username / stats URL</h3>
-          <p className="mt-1 text-xs text-zinc-500">This controls the suffix used in your public stats page URL.</p>
+          <h3 className="text-sm font-semibold text-zinc-900">Stats URL</h3>
+          <p className="mt-1 text-xs text-zinc-500">This controls the URL of your stats page.</p>
 
           <label className="mt-4 block text-xs font-medium text-zinc-700">Public URL</label>
           <div className="mt-2 flex flex-col rounded-2xl border border-zinc-200 bg-[#fff7fb] px-3 py-3 text-sm text-zinc-900 sm:flex-row sm:items-center sm:gap-1">
@@ -210,7 +210,6 @@ export function Account() {
             />
           </div>
           <p className="mt-2 text-xs text-zinc-500">Allowed: lowercase letters, numbers, hyphens, underscores. 3 to 32 characters.</p>
-          <p className="mt-2 text-xs text-zinc-500">Preview: {visibleUrlPrefix}{previewUsername || "username"}</p>
 
           <button
             type="submit"

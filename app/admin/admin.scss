@@ -1,0 +1,36 @@
+$pink: #ff9fc6;
+
+body {
+  background: white;
+}
+
+.admin-container {
+  border: 2px dashed $pink;
+}
+
+.admin-item-container {
+  padding: 20px;
+}
+
+.cute-border {
+  border: 2px solid $pink;
+  border-radius: 0;
+  background: #fefefe;
+}
+
+
+.admin-nav-container {
+  top: 48px;
+
+  .admin-nav {
+    button {
+      border: none;
+      border-radius: 0;
+      cursor: pointer;
+
+      &:hover {
+        background: rgba($pink, 0.5);
+      }
+    }
+  }
+}

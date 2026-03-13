@@ -65,7 +65,7 @@ export function ApiKeys() {
   };
 
   return (
-    <div className="rounded-3xl border border-[#FF9FC6]/35 bg-white/75 p-5 shadow-[0_0_0_1px_rgba(255,159,198,0.12)] backdrop-blur">
+    <div className="rounded-3xl cute-border admin-item-container">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900">API Key</h2>

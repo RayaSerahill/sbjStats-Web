@@ -429,7 +429,7 @@ export function StatsStyleEditor() {
   };
 
   return (
-    <div className="rounded-3xl border border-[#FF9FC6]/35 bg-white/75 p-5 shadow-[0_0_0_1px_rgba(255,159,198,0.12)] backdrop-blur">
+    <div className="rounded-3xl cute-border admin-item-container">
       <div>
         <h2 className="text-lg font-semibold text-zinc-900">Stats style</h2>
         <p className="mt-1 text-sm text-zinc-600">Customize the public stats page with richer surface backgrounds, fonts, chart colors, and leaderboard sizing.</p>

@@ -39,7 +39,7 @@ export function HiddenPlayers() {
   }, []);
 
   return (
-    <div className="section section-hidden-players mt-6 rounded-2xl border border-[#FF9FC6]/35 bg-white p-4 text-sm text-zinc-700 shadow-[0_0_0_1px_rgba(255,159,198,0.14),0_14px_40px_rgba(255,159,198,0.18)]">
+    <div className="section section-hidden-players mt-6 cute-border admin-item-container">
       <div className="flex flex-col gap-1">
         <h2 className="text-base font-semibold text-zinc-900">Hidden players</h2>
         <p className="text-xs text-zinc-600">Players who won't be shown in leaderboards</p>

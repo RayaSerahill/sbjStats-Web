@@ -1,0 +1,31 @@
+body {
+  background: white;
+}
+
+.admin-container {
+  border: 2px dashed #ff9fc6;
+}
+
+.admin-item-container {
+  padding: 20px;
+}
+
+.cute-border {
+  border: 2px solid #ff9fc6;
+  border-radius: 0;
+  background: #fefefe;
+}
+
+.admin-nav-container {
+  top: 48px;
+}
+.admin-nav-container .admin-nav button {
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+.admin-nav-container .admin-nav button:hover {
+  background: rgba(255, 159, 198, 0.5);
+}
+
+/*# sourceMappingURL=admin.css.map */

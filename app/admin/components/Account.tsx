@@ -8,11 +8,12 @@ type AccountState = {
   suggestedUsername: string;
   statsUrl: string;
   name: string | null;
+  deleted?: boolean;
 };
 
 export function Account() {
   const [account, setAccount] = useState<AccountState | null>(null);
-  const [busy, setBusy] = useState<null | "displayName" | "username" | "email" | "password">(null);
+  const [busy, setBusy] = useState<null | "displayName" | "username" | "email" | "password" | "delete">(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -44,8 +45,6 @@ export function Account() {
       setVisibleUrlPrefix(`${window.location.origin}/stats/`);
     }
   }, []);
-
-  const previewUsername = (username || account?.suggestedUsername || "").trim().toLowerCase();
 
   const saveDisplayName = async () => {
     setBusy("displayName");
@@ -136,6 +135,28 @@ export function Account() {
     }
   };
 
+  const deleteAccount = async () => {
+    if (!window.confirm("Are you sure")) return;
+    if (!window.confirm("This is a permanent operation")) return;
+
+    setBusy("delete");
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch("/api/admin/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deleteAccount: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to delete account");
+      window.location.href = "/admin/login";
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to delete account");
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="rounded-3xl cute-border admin-item-container">
       <div>
@@ -144,6 +165,12 @@ export function Account() {
           Update the title shown on your stats page, the public stats URL, email address, and password for this account.
         </p>
       </div>
+
+      {account?.deleted ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          This account is marked as deleted.
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
@@ -177,7 +204,7 @@ export function Account() {
 
           <button
             type="submit"
-            disabled={busy === "displayName"}
+            disabled={busy === "displayName" || busy === "delete"}
             className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
           >
             {busy === "displayName" ? "Saving…" : "Save display name"}
@@ -213,7 +240,7 @@ export function Account() {
 
           <button
             type="submit"
-            disabled={busy === "username"}
+            disabled={busy === "username" || busy === "delete"}
             className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
           >
             {busy === "username" ? "Saving…" : "Save username"}
@@ -241,7 +268,7 @@ export function Account() {
 
           <button
             type="submit"
-            disabled={busy === "email"}
+            disabled={busy === "email" || busy === "delete"}
             className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
           >
             {busy === "email" ? "Saving…" : "Save email"}
@@ -292,12 +319,27 @@ export function Account() {
 
           <button
             type="submit"
-            disabled={busy === "password"}
+            disabled={busy === "password" || busy === "delete"}
             className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
           >
             {busy === "password" ? "Saving…" : "Change password"}
           </button>
         </form>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4">
+        <h3 className="text-sm font-semibold text-red-900">Delete account</h3>
+        <p className="mt-1 text-xs text-red-700">
+          Delete your account! Note, this is a permanent operation. Your stats page will no longer be accessible, and you will need to register a new account to use the admin dashboard again.
+        </p>
+        <button
+          type="button"
+          onClick={() => void deleteAccount()}
+          disabled={busy === "delete"}
+          className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+        >
+          {busy === "delete" ? "Deleting…" : "Delete account"}
+        </button>
       </div>
     </div>
   );

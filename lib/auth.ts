@@ -79,7 +79,7 @@ export async function authenticateApiKey(apiKey: string): Promise<JwtUser | null
   const db = await getDb();
   const users = db.collection<UserDoc>("users");
   const user = await users.findOne(
-    { apiKeyHash: hashApiKey(apiKey) },
+    { apiKeyHash: hashApiKey(apiKey), deleted: { $ne: true } },
     { projection: { _id: 1, email: 1, role: 1 } }
   );
 
@@ -108,6 +108,15 @@ export async function requireAdminRequest(req: Request) {
 
   try {
     const auth = await verifyAuthToken(token);
+    const db = await getDb();
+    const users = db.collection<UserDoc>("users");
+    const user = await users.findOne(
+      { _id: new ObjectId(auth.id), deleted: { $ne: true } },
+      { projection: { _id: 1 } }
+    );
+    if (!user) {
+      return { ok: false as const, res: Response.json({ error: "Account not available" }, { status: 401 }) };
+    }
     return { ok: true as const, auth, method: "cookie" as const };
   } catch {
     return { ok: false as const, res: Response.json({ error: "Invalid token" }, { status: 401 }) };

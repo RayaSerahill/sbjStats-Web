@@ -65,6 +65,7 @@ export async function POST(req: Request) {
       name: name || undefined,
       username,
       role: "admin",
+      deleted: false,
       createdAt: now,
       updatedAt: now,
     });

@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   const db = await getDb();
   const users = db.collection<UserDoc>("users");
 
-  const user = await users.findOne({ email });
+  const user = await users.findOne({ email, deleted: { $ne: true } });
   if (!user) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }

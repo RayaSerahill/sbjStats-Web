@@ -16,7 +16,10 @@ export async function GET(req: Request) {
 
   const db = await getDb();
   const users = db.collection<UserDoc>("users");
-  const user = await users.findOne({ _id: new ObjectId(gate.auth.id) }, { projection: { email: 1, username: 1, name: 1 } });
+  const user = await users.findOne(
+    { _id: new ObjectId(gate.auth.id) },
+    { projection: { email: 1, username: 1, name: 1, deleted: 1 } }
+  );
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -31,6 +34,7 @@ export async function GET(req: Request) {
       username: user.username ?? null,
       suggestedUsername,
       name: user.name ?? null,
+      deleted: user.deleted === true,
       statsUrl: `/stats/${user.username ?? suggestedUsername}`,
     },
   });
@@ -48,6 +52,7 @@ export async function PATCH(req: Request) {
     currentPassword?: string;
     newPassword?: string;
     newPasswordConfirm?: string;
+    deleteAccount?: boolean;
   };
 
   try {
@@ -63,6 +68,28 @@ export async function PATCH(req: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  if (body.deleteAccount === true) {
+    await users.updateOne(
+      { _id: userId },
+      {
+        $set: {
+          deleted: true,
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    const res = NextResponse.json({ ok: true, deleted: true });
+    if (gate.method === "cookie") {
+      res.cookies.set(AUTH_COOKIE_NAME, "", {
+        ...authCookieOptions(),
+        maxAge: 0,
+      });
+    }
+    return res;
   }
 
   const set: Partial<UserDoc> & Record<string, unknown> = {};
@@ -158,6 +185,7 @@ export async function PATCH(req: Request) {
       email: updatedEmail,
       username: latestUsername,
       name: latestName,
+      deleted: false,
       statsUrl: `/stats/${latestUsername}`,
     },
   });

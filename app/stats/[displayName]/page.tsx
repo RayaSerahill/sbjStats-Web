@@ -116,12 +116,13 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   const dnNorm = norm(dn);
 
   let user =
-    (await users.findOne({ username: dnNorm })) ??
+    (await users.findOne({ username: dnNorm, deleted: { $ne: true } })) ??
     (await users.findOne(
-      { name: dn },
+      { name: dn, deleted: { $ne: true } },
       { collation: { locale: "en", strength: 2 } }
     )) ??
     (await users.findOne({
+      deleted: { $ne: true },
       $expr: {
         $eq: [
           { $toLower: { $trim: { input: { $ifNull: ["$name", ""] } } } },
@@ -129,8 +130,9 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
         ],
       },
     })) ??
-    (await users.findOne({ email: dnNorm })) ??
+    (await users.findOne({ email: dnNorm, deleted: { $ne: true } })) ??
     (await users.findOne({
+      deleted: { $ne: true },
       $expr: {
         $eq: [
           {
@@ -153,7 +155,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
 
   if (!user?._id) {
     const fallback = await users
-      .find({}, { projection: { _id: 1, name: 1, email: 1, username: 1 } })
+      .find({ deleted: { $ne: true } }, { projection: { _id: 1, name: 1, email: 1, username: 1 } })
       .limit(2000)
       .toArray();
     user =
@@ -167,7 +169,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   if (!user?._id) {
     if (process.env.NODE_ENV !== "production") {
       const samples = await users
-        .find({}, { projection: { name: 1 } })
+        .find({ deleted: { $ne: true } }, { projection: { name: 1 } })
         .limit(25)
         .toArray();
       return {

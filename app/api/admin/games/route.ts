@@ -39,15 +39,40 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const pageRaw = Number(url.searchParams.get("page") || 1);
     const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const fromRaw = url.searchParams.get("from");
+    const toRaw = url.searchParams.get("to");
+    const fromDate = fromRaw ? new Date(fromRaw) : null;
+    const toDate = toRaw ? new Date(toRaw) : null;
+
+    if (fromRaw && (!fromDate || Number.isNaN(fromDate.getTime()))) {
+        return NextResponse.json({ error: "Invalid from date" }, { status: 400 });
+    }
+
+    if (toRaw && (!toDate || Number.isNaN(toDate.getTime()))) {
+        return NextResponse.json({ error: "Invalid to date" }, { status: 400 });
+    }
+
+    if (fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
+        return NextResponse.json({ error: "From date must be before to date" }, { status: 400 });
+    }
+
     const pageSize = 20;
     const skip = (page - 1) * pageSize;
 
     const db = await getDb();
     const games = db.collection<GameDoc>("games");
 
+    const filter: Record<string, unknown> = { uploaderId: gate.auth.id };
+    if (fromDate || toDate) {
+        filter.createdAt = {
+            ...(fromDate ? { $gte: fromDate } : {}),
+            ...(toDate ? { $lte: toDate } : {}),
+        };
+    }
+
     const rows = await games
         .find(
-            { uploaderId: gate.auth.id },
+            filter,
             { projection: { createdAt: 1, collected: 1, paidOut: 1, profit: 1, players: 1 } }
         )
         .sort({ createdAt: -1, _id: -1 })

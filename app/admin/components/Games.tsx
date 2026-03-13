@@ -53,14 +53,29 @@ export function Games() {
     const [busyId, setBusyId] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [confirming, setConfirming] = useState<GameRow | null>(null);
+    const [fromInput, setFromInput] = useState("");
+    const [toInput, setToInput] = useState("");
+    const [appliedFrom, setAppliedFrom] = useState("");
+    const [appliedTo, setAppliedTo] = useState("");
 
     const canPrev = page > 1;
 
-    const load = async (nextPage: number) => {
+    const buildUrl = (nextPage: number, from: string, to: string) => {
+        const params = new URLSearchParams();
+        params.set("page", String(nextPage));
+        if (from) params.set("from", new Date(from).toISOString());
+        if (to) params.set("to", new Date(to).toISOString());
+        return `/api/admin/games?${params.toString()}`;
+    };
+
+    const load = async (nextPage: number, filters?: { from?: string; to?: string }) => {
+        const nextFrom = filters?.from ?? appliedFrom;
+        const nextTo = filters?.to ?? appliedTo;
+
         setLoading(true);
         setMessage(null);
         try {
-            const res = await fetch(`/api/admin/games?page=${nextPage}`, { cache: "no-store" });
+            const res = await fetch(buildUrl(nextPage, nextFrom, nextTo), { cache: "no-store" });
             const data = (await res.json().catch(() => ({}))) as Partial<GamesResponse> & { error?: string };
             if (!res.ok) throw new Error(data?.error ?? "Failed to load games");
             setGames(Array.isArray(data.games) ? data.games : []);
@@ -75,14 +90,37 @@ export function Games() {
     };
 
     useEffect(() => {
-        void load(1);
+        void load(1, { from: "", to: "" });
     }, []);
 
     const title = useMemo(() => {
         const start = (page - 1) * 20 + 1;
         const end = start + Math.max(games.length - 1, 0);
-        return games.length ? `Showing ${start}-${end}` : "No games yet";
-    }, [games.length, page]);
+        const base = games.length ? `Showing ${start}-${end}` : "No games yet";
+
+        if (!appliedFrom && !appliedTo) return base;
+        const parts = [appliedFrom ? `from ${fmtDate(appliedFrom)}` : null, appliedTo ? `to ${fmtDate(appliedTo)}` : null].filter(Boolean);
+        return `${base} · ${parts.join(" ")}`;
+    }, [appliedFrom, appliedTo, games.length, page]);
+
+    const applyFilters = async () => {
+        if (fromInput && toInput && new Date(fromInput).getTime() > new Date(toInput).getTime()) {
+            setMessage("Start date must be before end date");
+            return;
+        }
+
+        setAppliedFrom(fromInput);
+        setAppliedTo(toInput);
+        await load(1, { from: fromInput, to: toInput });
+    };
+
+    const clearFilters = async () => {
+        setFromInput("");
+        setToInput("");
+        setAppliedFrom("");
+        setAppliedTo("");
+        await load(1, { from: "", to: "" });
+    };
 
     const deleteGame = async (game: GameRow) => {
         setBusyId(game.id);
@@ -106,9 +144,60 @@ export function Games() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-zinc-900">Games</h2>
-                    <p className="mt-1 text-sm text-zinc-600">Lists your imported games 20 at a time. Deleting a game updates related stats.</p>
+                    <p className="mt-1 text-sm text-zinc-600">Lists your imported games 20 at a time. You can filter between two date times. Deleting a game updates related stats.</p>
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+                <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                    <label className="block">
+                        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-600">From</span>
+                        <input
+                            type="datetime-local"
+                            value={fromInput}
+                            onChange={(e) => setFromInput(e.target.value)}
+                            className="w-full rounded-2xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400"
+                        />
+                    </label>
+
+                    <label className="block">
+                        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-600">To</span>
+                        <input
+                            type="datetime-local"
+                            value={toInput}
+                            onChange={(e) => setToInput(e.target.value)}
+                            className="w-full rounded-2xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400"
+                        />
+                    </label>
+
+                    <div className="flex gap-2 md:justify-end">
+                        <button
+                            type="button"
+                            onClick={() => void clearFilters()}
+                            disabled={loading || (!fromInput && !toInput && !appliedFrom && !appliedTo)}
+                            className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Clear
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void applyFilters()}
+                            disabled={loading}
+                            className="rounded-xl border border-zinc-300 bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Search
+                        </button>
+                    </div>
+                </div>
+
+                {(appliedFrom || appliedTo) && !loading ? (
+                    <p className="mt-3 text-xs text-zinc-500">
+                        Active filter
+                        {appliedFrom ? ` from ${fmtDate(appliedFrom)}` : ""}
+                        {appliedTo ? ` to ${fmtDate(appliedTo)}` : ""}
+                    </p>
+                ) : null}
             </div>
 
             {message ? <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">{message}</div> : null}
@@ -151,7 +240,7 @@ export function Games() {
                         ))}
                     </div>
                 ) : (
-                    <div className="px-3 py-4 text-sm text-zinc-600">No games imported yet.</div>
+                    <div className="px-3 py-4 text-sm text-zinc-600">No games found for this date range.</div>
                 )}
             </div>
 

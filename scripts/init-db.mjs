@@ -107,7 +107,10 @@ const run = async () => {
   await books.createIndex({ uploaderId: 1, author: 1 });
   await books.createIndex({ uploaderId: 1, additionalTags: 1 }, { sparse: true });
 
-  console.log(`OK: indexes ready in db "${dbName}" (users, games, players, aliases, blacklist, stats_*, stats_styles, books)`);
+  const traffic = db.collection("traffic");
+  await traffic.createIndex({ userId: 1, at: 1 })
+
+  console.log(`OK: indexes ready in db "${dbName}" (users, games, players, aliases, blacklist, stats_*, stats_styles, books, traffic)`);
 };
 
 run()

@@ -14,6 +14,7 @@ import { Account } from "./components/Account";
 import { Games } from "./components/Games";
 import { Users } from "./components/Users";
 import { Home } from "./components/Home";
+import { Traffic } from "./components/Traffic";
 
 export default async function AdminPage() {
   await ensureAuthCollections();
@@ -48,6 +49,7 @@ export default async function AdminPage() {
 
           <AdminSectionsClient
               home={<Home />}
+              traffic={<Traffic />}
               gameImport={<GameImport />}
               account={<Account />}
               games={<Games />}

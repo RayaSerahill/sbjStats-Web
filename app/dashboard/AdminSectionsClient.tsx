@@ -6,6 +6,7 @@ type AdminSection = "home" | "import" | "account" | "games" | "aliases" | "hidde
 
 export function AdminSectionsClient({
                                       home,
+                                      traffic,
                                       gameImport,
                                       account,
                                       games,
@@ -17,6 +18,7 @@ export function AdminSectionsClient({
                                       canManageUsers,
                                     }: {
   home: React.ReactNode;
+  traffic: React.ReactNode;
   gameImport: React.ReactNode;
   account: React.ReactNode;
   games: React.ReactNode;
@@ -32,6 +34,7 @@ export function AdminSectionsClient({
   const items = useMemo(
       () => [
         { id: "home" as const, label: "Home" },
+        { id: "traffic" as const, label: "Traffic" },
         { id: "account" as const, label: "Account" },
         { id: "import" as const, label: "Game Import" },
         { id: "games" as const, label: "Games" },
@@ -81,6 +84,10 @@ export function AdminSectionsClient({
           <main className="min-w-0">
             <section id="home" className={["mt-6 scroll-mt-28", activeSection === "home" ? "" : "lg:hidden"].join(" ")}>
               {home}
+            </section>
+
+            <section id="traffic" className={["mt-6 scroll-mt-28", activeSection === "traffic" ? "" : "lg:hidden"].join(" ")}>
+              {traffic}
             </section>
 
             <section id="import" className={["mt-6 scroll-mt-28", activeSection === "import" ? "" : "lg:hidden"].join(" ")}>

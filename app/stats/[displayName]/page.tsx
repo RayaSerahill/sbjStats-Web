@@ -192,6 +192,11 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
 
   const uploaderId = user._id.toHexString();
 
+  await db.collection("traffic").insertOne({
+    userId: user._id,
+    at: new Date()
+  });
+
   const [
     newestGame,
     roundsHosted,

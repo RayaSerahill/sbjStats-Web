@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-type AdminSection = "home" | "import" | "account" | "games" | "aliases" | "hidden-players" | "api-keys" | "stats-style" | "users" | null;
+type AdminSection = "home" | "traffic" | "import" | "account" | "games" | "aliases" | "hidden-players" | "api-keys" | "stats-style" | "users" | null;
 
 export function AdminSectionsClient({
                                       home,

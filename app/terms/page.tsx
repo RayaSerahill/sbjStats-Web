@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — serahill.net",
-  description: "Terms of Service for serahill.net Blackjack Statistics Tracker.",
+  title: "Terms of Service — stats.serahill.net",
+  description: "Terms of Service for stats.serahill.net Blackjack Statistics Tracker.",
 };
 
 const EFFECTIVE_DATE = "March 15, 2025";
@@ -283,7 +283,7 @@ export default function Page() {
         <header className="tos-header">
           <p className="header-eyebrow">Legal</p>
           <h1 className="header-title">Terms of Service</h1>
-          <p className="header-site">serahill.net</p>
+          <p className="header-site">stats.serahill.net</p>
           <span className="header-date">Effective {EFFECTIVE_DATE}</span>
         </header>
 
@@ -322,23 +322,23 @@ export default function Page() {
           {/* Sections */}
           <Section number="01" title="Acceptance of Terms">
             <p>
-              By creating an account on serahill.net (the &ldquo;Service&rdquo;), you agree to be
+              By creating an account on stats.serahill.net (the &ldquo;Service&rdquo;), you agree to be
               bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree to these
               Terms, do not register for or use the Service. These Terms constitute a legally
               binding agreement between you (&ldquo;User&rdquo; or &ldquo;Dealer&rdquo;) and the
-              operator of serahill.net.
+              operator of stats.serahill.net.
             </p>
           </Section>
 
           <Section number="02" title="Description of the Service">
             <p>
-              serahill.net is a statistics tracking platform for Blackjack hosts
+              stats.serahill.net is a statistics tracking platform for Blackjack hosts
               (&ldquo;Dealers&rdquo;). The Service allows registered Dealers to:
             </p>
             <BulletList
               items={[
                 "Record and store data about Blackjack sessions they host, including rounds hosted, profit/loss figures, and volume of money exchanged.",
-                "Display a public profile page accessible at serahill.net/stats/<username>, showing aggregated statistics and leaderboards.",
+                "Display a public profile page accessible at stats.serahill.net/<username>, showing aggregated statistics and leaderboards.",
                 "Search through player histories associated with their own hosted sessions.",
               ]}
             />
@@ -386,7 +386,7 @@ export default function Page() {
           <Section number="05" title="User-Submitted Data">
             <p>
               You retain full ownership of all data you submit to the Service (&ldquo;User
-              Data&rdquo;). By submitting data, you grant serahill.net a limited, non-exclusive
+              Data&rdquo;). By submitting data, you grant stats.serahill.net a limited, non-exclusive
               license to store and display that data on your public profile page for the purpose of
               providing the Service.
             </p>
@@ -412,7 +412,7 @@ export default function Page() {
             <p>
               Your profile page at{" "}
               <code style={{ fontFamily: "monospace", color: "var(--accent)", fontSize: "0.85em" }}>
-                serahill.net/stats/&lt;username&gt;
+                stats.serahill.net/&lt;username&gt;
               </code>{" "}
               is publicly accessible to anyone with the URL. By using the Service, you acknowledge
               and consent to this public display.
@@ -508,7 +508,7 @@ export default function Page() {
 
           <Section number="11" title="Limitation of Liability">
             <p>
-              To the fullest extent permitted by applicable law, serahill.net and its operator
+              To the fullest extent permitted by applicable law, stats.serahill.net and its operator
               shall not be liable for any indirect, incidental, special, consequential, or punitive
               damages arising out of or related to your use of (or inability to use) the Service,
               even if advised of the possibility of such damages.
@@ -558,7 +558,7 @@ export default function Page() {
           </Section>
 
           <footer className="tos-footer">
-            <p>serahill.net — Blackjack Statistics Tracker</p>
+            <p>stats.serahill.net — Blackjack Statistics Tracker</p>
             <p style={{ marginTop: "0.4rem" }}>
               Questions?{" "}
               <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>

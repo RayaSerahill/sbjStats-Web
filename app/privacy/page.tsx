@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — serahill.net",
-  description: "Privacy Policy for serahill.net Blackjack Statistics Tracker.",
+  title: "Privacy Policy — stats.serahill.net",
+  description: "Privacy Policy for stats.serahill.net Blackjack Statistics Tracker.",
 };
 
 const EFFECTIVE_DATE = "March 15, 2025";
@@ -434,7 +434,7 @@ export default function Page() {
         <header className="tos-header">
           <p className="header-eyebrow">Legal</p>
           <h1 className="header-title">Privacy Policy</h1>
-          <p className="header-site">serahill.net</p>
+          <p className="header-site">stats.serahill.net</p>
           <span className="header-date">Effective {EFFECTIVE_DATE}</span>
         </header>
 
@@ -470,10 +470,10 @@ export default function Page() {
           {/* ── 1. Who We Are ── */}
           <Section id="section-1" number="01" title="Who We Are">
             <p>
-              serahill.net (&ldquo;the Service,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or
+              stats.serahill.net (&ldquo;the Service,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or
               &ldquo;our&rdquo;) is a Blackjack statistics tracking platform for Blackjack hosts.
               The Service is operated independently. For the purposes of GDPR, the operator of
-              serahill.net is the <strong style={{ color: "var(--heading)", fontWeight: 500 }}>data controller</strong>.
+              stats.serahill.net is the <strong style={{ color: "var(--heading)", fontWeight: 500 }}>data controller</strong>.
             </p>
             <p>
               If you have any questions about this Privacy Policy or how your data is handled,
@@ -563,7 +563,7 @@ export default function Page() {
             <p>
               Dealer profile pages at{" "}
               <code style={{ fontFamily: "monospace", color: "var(--accent)", fontSize: "0.85em" }}>
-                serahill.net/stats/&lt;username&gt;
+                stats.serahill.net/&lt;username&gt;
               </code>{" "}
               are publicly accessible. These pages may display player names and associated
               statistics (rounds played, profit/loss, etc.) as submitted by the Dealer.
@@ -676,7 +676,7 @@ export default function Page() {
           <Section id="section-9" number="09" title="Right to Be Removed — Players">
             <p>
               If you are a player whose name or statistics appear on a Dealer&rsquo;s public
-              profile page on serahill.net, you have the right to request removal of your data
+              profile page on stats.serahill.net, you have the right to request removal of your data
               from the Service — regardless of whether you are located in the EEA.
             </p>
             <p>
@@ -721,7 +721,7 @@ export default function Page() {
             <Callout accent>
               <p>
                 <strong>No account required.</strong> You do not need to be a registered user of
-                serahill.net to submit a removal request. Anyone whose data appears on the Service
+                stats.serahill.net to submit a removal request. Anyone whose data appears on the Service
                 may request removal at any time, for any reason, with no questions asked.
               </p>
             </Callout>
@@ -730,7 +730,7 @@ export default function Page() {
           {/* ── 10. Cookies ── */}
           <Section id="section-10" number="10" title="Cookies & Tracking">
             <p>
-              serahill.net uses only the cookies strictly necessary to operate the Service, such as
+              stats.serahill.net uses only the cookies strictly necessary to operate the Service, such as
               session authentication tokens. We do not use advertising cookies, third-party
               tracking cookies, or analytics cookies that identify individual users.
             </p>
@@ -790,7 +790,7 @@ export default function Page() {
             </p>
             <Callout>
               <p>
-                <strong>Data Controller:</strong> serahill.net
+                <strong>Data Controller:</strong> stats.serahill.net
               </p>
               <p>
                 <strong>Contact Email:</strong>{" "}
@@ -803,7 +803,7 @@ export default function Page() {
           </Section>
 
           <footer className="tos-footer">
-            <p>serahill.net — Blackjack Statistics Tracker</p>
+            <p>stats.serahill.net — Blackjack Statistics Tracker</p>
             <p style={{ marginTop: "0.4rem" }}>
               Privacy questions?{" "}
               <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>

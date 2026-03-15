@@ -1,5 +1,5 @@
 "use client";
-import { useAdminNav } from "../AdminSectionsClient";
+import { useAdminNav } from "../dashboard/AdminSectionsClient";
 
 export function Home() {
   const navigate = useAdminNav();

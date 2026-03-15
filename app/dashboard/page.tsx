@@ -4,17 +4,17 @@ import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/lib/auth";
 import { ensureAuthCollections, getDb, type UserDoc } from "@/lib/db";
 import { LogoutButton } from "./LogoutButton";
 import { redirect } from "next/navigation";
-import { GameImport } from "./components/GameImport";
-import { Aliases } from "./components/Aliases";
-import { HiddenPlayers } from "./components/HiddenPlayers";
-import { ApiKeys } from "./components/ApiKeys";
+import { GameImport } from "../components/GameImport";
+import { Aliases } from "../components/Aliases";
+import { HiddenPlayers } from "../components/HiddenPlayers";
+import { ApiKeys } from "../components/ApiKeys";
 import { AdminSectionsClient } from "./AdminSectionsClient";
-import { StatsStyleEditor } from "./components/StatsStyleEditor";
-import { Account } from "./components/Account";
-import { Games } from "./components/Games";
-import { Users } from "./components/Users";
-import { Home } from "./components/Home";
-import { Traffic } from "./components/Traffic";
+import { StatsStyleEditor } from "../components/StatsStyleEditor";
+import { Account } from "../components/Account";
+import { Games } from "../components/Games";
+import { Users } from "../components/Users";
+import { Home } from "../components/Home";
+import { Traffic } from "../components/Traffic";
 import { StatsFooterSection } from "../components/StatsFooterSection"
 
 export default async function AdminPage() {

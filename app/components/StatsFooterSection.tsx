@@ -46,11 +46,11 @@ export function StatsFooterSection() {
     <section className="footer pt-16">
       <div className="mx-auto max-w-4xl px-6">
         <p className="mt-3 text-center" style={{ color: textColor }}>
-          <a href={"/stats/terms"} className={"hover:underline"}>
+          <a href={"/terms"} className={"hover:underline"}>
             Terms of Service
           </a>
           &nbsp;|&nbsp;
-          <a href={"/stats/privacy"} className={"hover:underline"}>
+          <a href={"/privacy"} className={"hover:underline"}>
            Privacy Policy
           </a>
           &nbsp;|&nbsp;

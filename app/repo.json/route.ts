@@ -51,7 +51,7 @@ export async function GET() {
             Author: "Raya Serahill",
             Name: "SimpleStats",
             InternalName: "SimpleStats",
-            AssemblyVersion: `${version}.0`,
+            AssemblyVersion: `${version}`,
             RepoUrl: REPO_URL,
             Description: "Automatically upload SBJ stast to the web interface",
             ApplicableVersion: "any",

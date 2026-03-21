@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 export const revalidate = 300;
 
 const OWNER = "RayaSerahill";
-const REPO = "sbjstats";
+const REPO = "SimpleStats";
 const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
 
 function normalizeVersion(tag: string) {
@@ -49,8 +49,8 @@ export async function GET() {
     const payload = [
         {
             Author: "Raya Serahill",
-            Name: "sbjStats",
-            InternalName: "sbjStats",
+            Name: "SimpleStats",
+            InternalName: "SimpleStats",
             AssemblyVersion: `${version}.0`,
             RepoUrl: REPO_URL,
             Description: "Automatically upload SBJ stast to the web interface",

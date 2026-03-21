@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DEFAULT_STATS_LAYOUT_MARKDOWN } from "@/lib/statsStyleShared";
 
 type StatsFontStyle = "sans" | "serif" | "mono" | "old-london";
 type StatsBackgroundMode = "color" | "image" | "gradient";
@@ -35,6 +36,7 @@ type StatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  layoutMarkdown: string;
 };
 
 const makeBackground = (color: string): StatsBackgroundStyle => ({
@@ -57,6 +59,7 @@ const defaults: StatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  layoutMarkdown: DEFAULT_STATS_LAYOUT_MARKDOWN,
 };
 
 const fontOptions = [
@@ -498,6 +501,68 @@ export function StatsStyleEditor() {
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <AdvancedColorField label="Bar chart profit color" value={style.barChartProfitColor} onChange={(barChartProfitColor) => setStyle((s) => ({ ...s, barChartProfitColor }))} />
         <AdvancedColorField label="Bar chart loss color" value={style.barChartLossColor} onChange={(barChartLossColor) => setStyle((s) => ({ ...s, barChartLossColor }))} />
+      </div>
+
+
+      <div className="mt-5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div>
+            <div className="text-sm font-medium text-zinc-900">Stats layout demo</div>
+            <p className="mt-1 max-w-3xl text-sm text-zinc-600">
+              This is a markdown-ish layout field. Normal markdown text like headings, paragraphs, quotes, and bullet lists is supported, and
+              special widgets can be dropped in with tokens such as <code>{"{{summary}}"}</code>, <code>{"{{leaderboards}}"}</code>, and <code>{"{{dealer-charts}}"}</code>.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStyle((s) => ({ ...s, layoutMarkdown: DEFAULT_STATS_LAYOUT_MARKDOWN }))}
+            className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 transition hover:border-zinc-400"
+          >
+            Restore demo template
+          </button>
+        </div>
+
+        <label className="mt-4 block text-sm text-zinc-800">
+          <span className="text-xs font-medium">Layout markdown</span>
+          <textarea
+            value={style.layoutMarkdown}
+            onChange={(e) => setStyle((s) => ({ ...s, layoutMarkdown: e.target.value }))}
+            spellCheck={false}
+            rows={16}
+            className="mt-2 min-h-[320px] w-full rounded-2xl border border-zinc-200 bg-zinc-950 px-4 py-3 font-mono text-sm text-zinc-100 outline-none"
+          />
+        </label>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+            <div className="font-medium text-zinc-900">Available widgets</div>
+            <ul className="mt-3 space-y-1 font-mono text-xs">
+              <li>{"{{empty-state}}"}</li>
+              <li>{"{{summary}}"}</li>
+              <li>{"{{leaderboards}}"}</li>
+              <li>{"{{leaderboard:winners}}"}</li>
+              <li>{"{{leaderboard:losers}}"}</li>
+              <li>{"{{leaderboard:active}}"}</li>
+              <li>{"{{dealer-charts}}"}</li>
+              <li>{"{{footer-note}}"}</li>
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+            <div className="font-medium text-zinc-900">Available placeholders</div>
+            <ul className="mt-3 space-y-1 font-mono text-xs">
+              <li>{"{{dealerName}}"}</li>
+              <li>{"{{usernameOrName}}"}</li>
+              <li>{"{{totalPlayers}}"}</li>
+              <li>{"{{roundsHosted}}"}</li>
+              <li>{"{{dealerNet}}"}</li>
+              <li>{"{{playerNet}}"}</li>
+              <li>{"{{totalBet}}"}</li>
+              <li>{"{{totalPayout}}"}</li>
+              <li>{"{{newestHostTag}}"}</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">

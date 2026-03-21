@@ -33,6 +33,7 @@ export type NormalizedStatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  layoutMarkdown: string;
 };
 
 const defaultBackground = (color: string): StatsBackgroundStyle => ({
@@ -43,6 +44,18 @@ const defaultBackground = (color: string): StatsBackgroundStyle => ({
   gradientColors: [color, color],
   gradientDirection: "to bottom",
 });
+
+export const DEFAULT_STATS_LAYOUT_MARKDOWN = `# {{dealerName}}
+Stats for uploader **{{usernameOrName}}** • {{totalPlayers}} tracked players
+
+{{summary}}
+
+## Leaderboards
+{{leaderboards}}
+
+{{dealer-charts}}
+
+{{footer-note}}`;
 
 export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   background: defaultBackground("#000000"),
@@ -55,6 +68,7 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  layoutMarkdown: DEFAULT_STATS_LAYOUT_MARKDOWN,
 };
 
 const FONT_STYLE_VALUES: StatsFontStyle[] = ["sans", "serif", "mono", "old-london"];
@@ -143,6 +157,13 @@ function normalizeBackgroundStyle(input: unknown, fallback: StatsBackgroundStyle
   };
 }
 
+function normalizeLayoutMarkdown(input: unknown, fallback: string) {
+  if (typeof input !== "string") return fallback;
+  const normalized = input.replace(/\r\n?/g, "\n").trim();
+  if (!normalized) return fallback;
+  return normalized.slice(0, 12000);
+}
+
 export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null): NormalizedStatsStyle {
   return {
     background: normalizeBackgroundStyle(input?.background, DEFAULT_STATS_STYLE.background),
@@ -155,6 +176,7 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
     barChartProfitColor: normalizeHex(input?.barChartProfitColor, DEFAULT_STATS_STYLE.barChartProfitColor),
     barChartLossColor: normalizeHex(input?.barChartLossColor, DEFAULT_STATS_STYLE.barChartLossColor),
     barChartDays: normalizeInt(input?.barChartDays, DEFAULT_STATS_STYLE.barChartDays, 1, 365),
+    layoutMarkdown: normalizeLayoutMarkdown(input?.layoutMarkdown, DEFAULT_STATS_STYLE.layoutMarkdown),
   };
 }
 
@@ -175,7 +197,7 @@ export function getBackgroundStyleCss(surface: StatsBackgroundStyle): CSSPropert
   if (surface.mode === "image" && surface.imageUrl) {
     return {
       backgroundColor: surface.color,
-      backgroundImage: `url("${surface.imageUrl.replace(/"/g, "\\\"")}")`,
+      backgroundImage: `url("${surface.imageUrl.replace(/"/g, "\"")}")`,
       backgroundPosition: "center",
       backgroundRepeat: surface.imageFit === "repeat" ? "repeat" : "no-repeat",
       backgroundSize: surface.imageFit === "repeat" ? "auto" : "cover",

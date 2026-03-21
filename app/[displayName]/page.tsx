@@ -5,7 +5,8 @@ import { playerTagToParts } from "@/lib/gameIngest";
 import { DealerStats } from "./DealerStats";
 import { loadDealerStats } from "@/lib/dealerStats";
 import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } from "@/lib/statsStyle";
-import {StatsFooterSection} from "@/app/components/StatsFooterSection";
+import { StatsFooterSection } from "@/app/components/StatsFooterSection";
+import { StatsLayoutRenderer } from "./StatsLayoutRenderer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -497,130 +498,38 @@ export default async function DealerStatsPage({
   const pageBackgroundStyle = getBackgroundStyleCss(style.background);
   const containerBackgroundStyle = getBackgroundStyleCss(style.containerBackground);
   const elementBackgroundStyle = getBackgroundStyleCss(style.elementBackground);
-  const title = data.displayName;
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.fontColor, fontFamily }}>
       <div className="mx-auto w-full max-w-5xl rounded-3xl border border-black/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={containerBackgroundStyle}>
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold" style={{ color: style.fontColor }}>{title}</h1>
-          <p className="text-sm" style={{ color: style.fontColor }}>
-            Stats for uploader{" "}
-            <span className="font-medium" style={{ color: style.fontColor }}>
-              {data.username || data.displayName}
-            </span>
-            {data.totalPlayers ? (
-                <>
-                  {" "}• {fmtInt(data.totalPlayers)} players
-                </>
-            ) : null}
-          </p>
-
-        </div>
-
-        {data.roundsHosted === 0 ? (
-          <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...containerBackgroundStyle, color: style.fontColor }}>
-            No rounds uploaded yet.
-          </div>
-        ) : (
-          <>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Rounds hosted</div>
-                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(data.roundsHosted)}</div>
-              </div>
-              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Profit / loss (dealer)</div>
-                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtMoney(data.dealerNet)}</div>
-                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Players net: {fmtMoney(data.playerNet)}</div>
-              </div>
-              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Volume</div>
-                <div className="mt-2 text-sm" style={{ color: style.fontColor }}>
-                  <div className="flex items-center justify-between gap-3">
-                    <span style={{ color: style.fontColor, opacity: 0.75 }}>Total bet</span>
-                    <span className="font-medium" style={{ color: style.fontColor }}>{fmtInt(data.totalBet)}</span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <span style={{ color: style.fontColor, opacity: 0.75 }}>Total payout</span>
-                    <span className="font-medium" style={{ color: style.fontColor }}>{fmtInt(data.totalPayout)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold" style={{ color: style.fontColor }}>Top {style.leaderboardSize} winners</h2>
-                  <span className="text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>by net</span>
-                </div>
-                <ol className="mt-3 space-y-2 text-sm" style={{ color: style.fontColor }}>
-                  {data.topWinners.length ? (
-                      data.topWinners.map((p, idx) => (
-                          <li key={p.name} className="flex items-center justify-between gap-3">
-                        <span className="truncate" style={{ color: style.fontColor }}>
-                          <span className="mr-2 text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>#{idx + 1}</span>
-                          <span className="font-medium" style={{ color: style.fontColor }}>{p.playerTag}</span>
-                        </span>
-                            <span className="shrink-0 font-medium" style={{ color: style.fontColor }}>{fmtMoney(p.net)}</span>
-                          </li>
-                      ))
-                  ) : (
-                      <li style={{ color: style.fontColor, opacity: 0.75 }}>No winners yet.</li>
-                  )}
-                </ol>
-              </div>
-
-              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold" style={{ color: style.fontColor }}>Top {style.leaderboardSize} losers</h2>
-                  <span className="text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>by net</span>
-                </div>
-                <ol className="mt-3 space-y-2 text-sm" style={{ color: style.fontColor }}>
-                  {data.topLosers.length ? (
-                      data.topLosers.map((p, idx) => (
-                          <li key={p.name} className="flex items-center justify-between gap-3">
-                        <span className="truncate" style={{ color: style.fontColor }}>
-                          <span className="mr-2 text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>#{idx + 1}</span>
-                          <span className="font-medium" style={{ color: style.fontColor }}>{p.playerTag}</span>
-                        </span>
-                            <span className="shrink-0 font-medium" style={{ color: style.fontColor }}>{fmtMoney(p.net)}</span>
-                          </li>
-                      ))
-                  ) : (
-                      <li style={{ color: style.fontColor, opacity: 0.75 }}>No losers yet.</li>
-                  )}
-                </ol>
-              </div>
-
-              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold" style={{ color: style.fontColor }}>Top {style.leaderboardSize} most active</h2>
-                  <span className="text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>by games</span>
-                </div>
-                <ol className="mt-3 space-y-2 text-sm" style={{ color: style.fontColor }}>
-                  {data.topActive.length ? (
-                      data.topActive.map((p, idx) => (
-                          <li key={p.name} className="flex items-center justify-between gap-3">
-                        <span className="truncate" style={{ color: style.fontColor }}>
-                          <span className="mr-2 text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>#{idx + 1}</span>
-                          <span className="font-medium" style={{ color: style.fontColor }}>{p.playerTag}</span>
-                        </span>
-                            <span className="shrink-0 font-medium" style={{ color: style.fontColor }}>{fmtInt(p.games)}</span>
-                          </li>
-                      ))
-                  ) : (
-                      <li style={{ color: style.fontColor, opacity: 0.75 }}>No players yet.</li>
-                  )}
-                </ol>
-              </div>
-            </div>
-
-            {data.uploaderId ? (
+        <StatsLayoutRenderer
+          data={{
+            displayName: data.displayName,
+            username: data.username,
+            uploaderId: data.uploaderId,
+            newestHostTag: data.newestHostTag,
+            roundsHosted: data.roundsHosted,
+            totalNet: data.totalNet,
+            dealerNet: data.dealerNet,
+            totalBet: data.totalBet,
+            totalPayout: data.totalPayout,
+            playerNet: data.playerNet,
+            totalPlayers: data.totalPlayers,
+            topWinners: data.topWinners,
+            topLosers: data.topLosers,
+            topActive: data.topActive,
+          }}
+          style={{
+            fontColor: style.fontColor,
+            leaderboardSize: style.leaderboardSize,
+            containerBackground: style.containerBackground,
+            elementBackground: style.elementBackground,
+            layoutMarkdown: style.layoutMarkdown,
+          }}
+          dealerCharts={
+            data.uploaderId ? (
               <Suspense
                 fallback={(
-                  <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
+                  <div className="rounded-2xl border border-black/10 p-4 text-sm" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
                     Loading dealer stats…
                   </div>
                 )}
@@ -637,17 +546,12 @@ export default async function DealerStatsPage({
                 />
               </Suspense>
             ) : (
-                <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
-                  Could not resolve uploader ID for this display name.
-                </div>
-            )}
-
-
-            <div className="mt-6 rounded-2xl border border-black/10 p-4 text-xs shadow-[0_0_0_1px_rgba(0,0,0,0.04)]" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
-              Stats are usually updated after each hosting session.
-            </div>
-          </>
-        )}
+              <div className="rounded-2xl border border-black/10 p-4 text-sm" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
+                Could not resolve uploader ID for this display name.
+              </div>
+            )
+          }
+        />
       </div>
       <StatsFooterSection />
     </div>

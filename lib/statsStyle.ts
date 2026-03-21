@@ -5,6 +5,7 @@ import { getDb } from "./db";
 import {
   normalizeStatsStyle,
   DEFAULT_STATS_STYLE,
+  DEFAULT_STATS_LAYOUT_MARKDOWN,
   getStatsFontFamily,
   getBackgroundStyleCss,
   type NormalizedStatsStyle,
@@ -30,6 +31,7 @@ export type StatsStyleDoc = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  layoutMarkdown: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,10 +49,11 @@ export type StatsStyleInput = Partial<
     | "barChartProfitColor"
     | "barChartLossColor"
     | "barChartDays"
+    | "layoutMarkdown"
   >
 >;
 
-export { normalizeStatsStyle, DEFAULT_STATS_STYLE, getStatsFontFamily, getBackgroundStyleCss };
+export { normalizeStatsStyle, DEFAULT_STATS_STYLE, DEFAULT_STATS_LAYOUT_MARKDOWN, getStatsFontFamily, getBackgroundStyleCss };
 
 export async function getStatsStyleForUploader(uploaderId: string, db?: Db): Promise<NormalizedStatsStyle> {
   const database = db ?? (await getDb());

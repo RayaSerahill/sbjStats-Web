@@ -2,7 +2,20 @@
 
 import { useMemo, useState, createContext, useContext  } from "react";
 
-export type AdminSection = "home" | "traffic" | "import" | "account" | "games" | "aliases" | "hidden-players" | "api-keys" | "stats-style" | "users" | null;
+export type AdminSection =
+  | "home"
+  | "traffic"
+  | "import"
+  | "account"
+  | "games"
+  | "scratch-games"
+  | "scratch-prizes"
+  | "aliases"
+  | "hidden-players"
+  | "api-keys"
+  | "stats-style"
+  | "users"
+  | null;
 
 const AdminNavContext = createContext<(section: AdminSection) => void>(() => {});
 
@@ -16,6 +29,8 @@ export function AdminSectionsClient({
                                       gameImport,
                                       account,
                                       games,
+                                      scratchGames,
+                                      scratchPrizes,
                                       aliases,
                                       hiddenPlayers,
                                       apiKeys,
@@ -28,6 +43,8 @@ export function AdminSectionsClient({
   gameImport: React.ReactNode;
   account: React.ReactNode;
   games: React.ReactNode;
+  scratchGames: React.ReactNode;
+  scratchPrizes: React.ReactNode;
   aliases: React.ReactNode;
   hiddenPlayers: React.ReactNode;
   apiKeys: React.ReactNode;
@@ -44,6 +61,8 @@ export function AdminSectionsClient({
         { id: "account" as const, label: "Account" },
         { id: "import" as const, label: "Game Import" },
         { id: "games" as const, label: "Games" },
+        { id: "scratch-games" as const, label: "Scratch Games" },
+        { id: "scratch-prizes" as const, label: "Scratch Prizes" },
         { id: "aliases" as const, label: "Aliases" },
         { id: "hidden-players" as const, label: "Hidden Players" },
         { id: "stats-style" as const, label: "Stats Style" },
@@ -107,6 +126,20 @@ export function AdminSectionsClient({
 
             <section id="games" className={["mt-6 scroll-mt-28", activeSection === "games" ? "" : "lg:hidden"].join(" ")}>
               {games}
+            </section>
+
+            <section
+              id="scratch-games"
+              className={["mt-6 scroll-mt-28", activeSection === "scratch-games" ? "" : "lg:hidden"].join(" ")}
+            >
+              {scratchGames}
+            </section>
+
+            <section
+              id="scratch-prizes"
+              className={["mt-6 scroll-mt-28", activeSection === "scratch-prizes" ? "" : "lg:hidden"].join(" ")}
+            >
+              {scratchPrizes}
             </section>
 
             <section id="aliases" className={["mt-6 scroll-mt-28", activeSection === "aliases" ? "" : "lg:hidden"].join(" ")}>

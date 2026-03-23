@@ -24,7 +24,7 @@ export function Home() {
             </p>
             <ol className="mt-2 list-inside list-decimal">
               <li>
-                Add a new custom repository in the experimental tab of dalamud with the following URL: <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm text-zinc-800">https://status.serahill.net/repo.json</code>
+                Add a new custom repository in the experimental tab of dalamud with the following URL: <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm text-zinc-800">https://serahill.net/plugins.json</code>
               </li>
               <li>
                 Install the sbjStats plugin from the repository, and open it up in the plugin list

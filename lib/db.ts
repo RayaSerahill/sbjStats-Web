@@ -79,6 +79,7 @@ export async function ensureGameCollections() {
       await ensureCollection(db, "stats_combo");
       await ensureCollection(db, "stats_styles");
       await ensureCollection(db, "scratch_games");
+      await ensureCollection(db, "scratch_prizes");
 
       const players = db.collection("players");
       await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -160,6 +161,19 @@ export async function ensureGameCollections() {
       );
       await scratchGames.createIndex({ uploaderId: 1, archivedAt: -1 });
       await scratchGames.createIndex({ uploaderId: 1, playerName: 1, archivedAt: -1 });
+
+      const scratchPrizes = db.collection("scratch_prizes");
+      await scratchPrizes.createIndex(
+        { uploaderId: 1, prize: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            prize: { $exists: true },
+          },
+        }
+      );
+      await scratchPrizes.createIndex({ uploaderId: 1, updatedAt: -1 }, { sparse: true });
     })();
   }
 

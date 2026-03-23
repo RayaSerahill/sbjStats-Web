@@ -107,10 +107,38 @@ const run = async () => {
   await books.createIndex({ uploaderId: 1, author: 1 });
   await books.createIndex({ uploaderId: 1, additionalTags: 1 }, { sparse: true });
 
+  const scratchGames = db.collection("scratch_games");
+  await scratchGames.createIndex(
+    { uploaderId: 1, playerName: 1, archivedAt: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        uploaderId: { $exists: true },
+        playerName: { $exists: true },
+        archivedAt: { $exists: true },
+      },
+    }
+  );
+  await scratchGames.createIndex({ uploaderId: 1, archivedAt: -1 });
+  await scratchGames.createIndex({ uploaderId: 1, playerName: 1, archivedAt: -1 });
+
+  const scratchPrizes = db.collection("scratch_prizes");
+  await scratchPrizes.createIndex(
+    { uploaderId: 1, prize: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        uploaderId: { $exists: true },
+        prize: { $exists: true },
+      },
+    }
+  );
+  await scratchPrizes.createIndex({ uploaderId: 1, updatedAt: -1 }, { sparse: true });
+
   const traffic = db.collection("traffic");
   await traffic.createIndex({ userId: 1, at: 1 })
 
-  console.log(`OK: indexes ready in db "${dbName}" (users, games, players, aliases, blacklist, stats_*, stats_styles, books, traffic)`);
+  console.log(`OK: indexes ready in db "${dbName}" (users, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, books, traffic)`);
 };
 
 run()

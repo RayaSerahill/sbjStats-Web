@@ -12,6 +12,8 @@ import { AdminSectionsClient } from "./AdminSectionsClient";
 import { StatsStyleEditor } from "../components/StatsStyleEditor";
 import { Account } from "../components/Account";
 import { Games } from "../components/Games";
+import { ScratchGames } from "../components/ScratchGames";
+import { ScratchPrizes } from "../components/ScratchPrizes";
 import { Users } from "../components/Users";
 import { Home } from "../components/Home";
 import { Traffic } from "../components/Traffic";
@@ -54,6 +56,8 @@ export default async function AdminPage() {
               gameImport={<GameImport />}
               account={<Account />}
               games={<Games />}
+              scratchGames={<ScratchGames />}
+              scratchPrizes={<ScratchPrizes />}
               aliases={<Aliases />}
               hiddenPlayers={<HiddenPlayers />}
               apiKeys={<ApiKeys />}

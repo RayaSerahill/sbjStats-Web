@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, createContext, useContext  } from "react";
+import { useMemo, useState, createContext, useContext } from "react";
 
 export type AdminSection =
   | "home"
@@ -16,6 +16,19 @@ export type AdminSection =
   | "stats-style"
   | "users"
   | null;
+
+type NavGroup = "general" | "blackjack" | "scratch" | "admin";
+
+type NavItem = {
+  id: Exclude<AdminSection, null>;
+  label: string;
+};
+
+type NavCategory = {
+  id: NavGroup;
+  label: string;
+  items: NavItem[];
+};
 
 const AdminNavContext = createContext<(section: AdminSection) => void>(() => {});
 
@@ -53,29 +66,93 @@ export function AdminSectionsClient({
   canManageUsers: boolean;
 }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("home");
+  const [openGroups, setOpenGroups] = useState<Record<NavGroup, boolean>>({
+    general: true,
+    blackjack: true,
+    scratch: true,
+    admin: true,
+  });
 
-  const items = useMemo(
-      () => [
-        { id: "home" as const, label: "Home" },
-        { id: "traffic" as const, label: "Traffic" },
-        { id: "account" as const, label: "Account" },
-        { id: "import" as const, label: "Game Import" },
-        { id: "games" as const, label: "Games" },
-        { id: "scratch-games" as const, label: "Scratch Games" },
-        { id: "scratch-prizes" as const, label: "Scratch Prizes" },
-        { id: "aliases" as const, label: "Aliases" },
-        { id: "hidden-players" as const, label: "Hidden Players" },
-        { id: "stats-style" as const, label: "Stats Style" },
-        { id: "api-keys" as const, label: "API Keys" },
-        ...(canManageUsers ? [{ id: "users" as const, label: "Users" }] : []),
-      ],
-      [canManageUsers]
+  const groups = useMemo<NavCategory[]>(() => {
+    const base: NavCategory[] = [
+      {
+        id: "general",
+        label: "General",
+        items: [
+          { id: "home", label: "Home" },
+          { id: "account", label: "Account" },
+          { id: "aliases", label: "Aliases" },
+          { id: "hidden-players", label: "Hidden Players" },
+          { id: "stats-style", label: "Stats Style" },
+          { id: "api-keys", label: "API Keys" },
+        ],
+      },
+      {
+        id: "blackjack",
+        label: "Blackjack",
+        items: [
+          { id: "games", label: "Games" },
+        ],
+      },
+      {
+        id: "scratch",
+        label: "Scratch",
+        items: [
+          { id: "scratch-games", label: "Games" },
+          { id: "scratch-prizes", label: "Prizes" },
+        ],
+      },
+    ];
+
+    if (canManageUsers) {
+      base.push({
+        id: "admin",
+        label: "Admin",
+        items: [{ id: "users", label: "Users" }],
+      });
+    }
+
+    return base;
+  }, [canManageUsers]);
+
+  const sectionToGroup = useMemo<Record<Exclude<AdminSection, null>, NavGroup>>(
+    () => ({
+      home: "general",
+      traffic: "general",
+      account: "general",
+      aliases: "general",
+      "hidden-players": "general",
+      "stats-style": "general",
+      "api-keys": "general",
+      import: "blackjack",
+      games: "blackjack",
+      "scratch-games": "scratch",
+      "scratch-prizes": "scratch",
+      users: "admin",
+    }),
+    []
   );
+
+  const toggleGroup = (group: NavGroup) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [group]: !prev[group],
+    }));
+  };
 
   const showSection = (id: AdminSection) => {
     setActiveSection(id);
-    if (id) window.location.hash = id;
-    else history.replaceState(null, "", window.location.pathname + window.location.search);
+
+    if (id) {
+      const group = sectionToGroup[id];
+      setOpenGroups((prev) => ({
+        ...prev,
+        [group]: true,
+      }));
+      window.location.hash = id;
+    } else {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
   };
 
   return (
@@ -84,40 +161,50 @@ export function AdminSectionsClient({
         <aside className="hidden lg:block">
           <div className="fixed admin-nav-container left-[max(1rem,calc(50%-36rem))] z-30 w-[245px]">
             <div className="rounded-3xl cute-border admin-item-container admin-nav">
-              <nav className="mt-4 space-y-2">
-                {items.map((it) => {
-                  const selected = it.id === activeSection;
+              <nav className="mt-4 space-y-3">
+                {groups.map((group) => (
+                  <div key={group.id} className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.id)}
+                      className="flex w-full items-center justify-between px-1 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500"
+                    >
+                      <span>{group.label}</span>
+                      <span className="text-xs">{openGroups[group.id] ? "−" : "+"}</span>
+                    </button>
 
-                  return (
-                      <button
-                          key={it.label}
-                          type="button"
-                          onClick={() => showSection(it.id as AdminSection)}
-                          className={[
-                            "block w-full rounded-2xl px-3 py-2 text-left text-sm font-medium text-zinc-900 transition",
-                            selected ? "bg-white/80" : "bg-white/55 hover:bg-white/75",
-                          ].join(" ")}
-                      >
-                        {it.label}
-                      </button>
-                  );
-                })}
+                    {openGroups[group.id] ? (
+                      <div className="space-y-2">
+                        {group.items.map((it) => {
+                          const selected = it.id === activeSection;
+
+                          return (
+                            <button
+                              key={it.label}
+                              type="button"
+                              onClick={() => showSection(it.id)}
+                              className={[
+                                "block w-full rounded-2xl px-3 py-2 text-left text-sm font-medium text-zinc-900 transition",
+                                selected ? "bg-white/80" : "bg-white/55 hover:bg-white/75",
+                              ].join(" ")}
+                            >
+                              {it.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
               </nav>
             </div>
           </div>
         </aside>
+
         <div className="lg:relative">
           <main className="min-w-0">
             <section id="home" className={["mt-6 scroll-mt-28", activeSection === "home" ? "" : "lg:hidden"].join(" ")}>
               {home}
-            </section>
-
-            <section id="traffic" className={["mt-6 scroll-mt-28", activeSection === "traffic" ? "" : "lg:hidden"].join(" ")}>
-              {traffic}
-            </section>
-
-            <section id="import" className={["mt-6 scroll-mt-28", activeSection === "import" ? "" : "lg:hidden"].join(" ")}>
-              {gameImport}
             </section>
 
             <section id="account" className={["mt-6 scroll-mt-28", activeSection === "account" ? "" : "lg:hidden"].join(" ")}>
@@ -147,8 +234,8 @@ export function AdminSectionsClient({
             </section>
 
             <section
-                id="hidden-players"
-                className={["mt-6 scroll-mt-28", activeSection === "hidden-players" ? "" : "lg:hidden"].join(" ")}
+              id="hidden-players"
+              className={["mt-6 scroll-mt-28", activeSection === "hidden-players" ? "" : "lg:hidden"].join(" ")}
             >
               {hiddenPlayers}
             </section>

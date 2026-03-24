@@ -31,20 +31,6 @@ type BlacklistRow = {
   playerTag?: string;
 };
 
-export type LoadStatsResult =
-  | { ok: false }
-  | {
-  ok: true;
-  displayName: string;
-  username: string;
-  uploaderId: string;
-  games: ScratchGameRow[];
-  prizes: ScratchPrizeRow[];
-  aliases: AliasRow[];
-  blacklist: BlacklistRow[];
-  style: StatsPageStyle;
-};
-
 export default async function Scratch({
                                         params,
                                       }: {
@@ -62,6 +48,8 @@ export default async function Scratch({
       </div>
     );
   }
+  const gamesStats = calculateGames(result);
+  console.log(gamesStats);
 
   const style = result.style;
   const fontFamily = getStatsFontFamily(style.fontStyle);
@@ -74,7 +62,38 @@ export default async function Scratch({
       <div className="mx-auto w-full max-w-5xl rounded-3xl border border-black/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={containerBackgroundStyle}>
         <div className="flex flex-col gap-2">
           <h1 className={"text-2xl font-semibold"} style={{ color: style.fontColor }}>{result.displayName}</h1>
+          <p className="text-sm" style={{ color: style.fontColor }}>
+            Stats for uploader{" "}
+            <span className="font-medium" style={{ color: style.fontColor }}>
+              {result.username || result.displayName}
+            </span>
+          </p>
         </div>
+        {result.games.length === 0 ? (
+          <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...containerBackgroundStyle, color: style.fontColor }}>
+            No rounds uploaded yet.
+          </div>
+        ) : (
+          <>
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Scratch cards given out</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(gamesStats.totalCards)}</div>
+                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalCards)}</div>
+              </div>
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Total winning cards</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(gamesStats.totalWins)}</div>
+                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalWins)}</div>
+              </div>
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Total money won from cards</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(gamesStats.totalWinValue)}</div>
+                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalWinValue)}</div>
+              </div>
+            </div>
+          </>
+          )}
       </div>
     </div>
   );
@@ -200,4 +219,246 @@ function norm(value: unknown): string {
 function emailLocalPart(email: unknown): string {
   const v = String(email ?? "").trim().toLowerCase();
   return v.split("@")[0] ?? "";
+}
+
+function fmtInt(n: number) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+}
+
+function fmtMoney(n: number) {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "+";
+  return `${sign}${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(abs)}`;
+}
+
+export type LoadStatsResult =
+  | { ok: false }
+  | {
+  ok: true;
+  displayName: string;
+  username: string;
+  uploaderId: string;
+  games: ScratchGameRow[];
+  prizes: ScratchPrizeRow[];
+  aliases: AliasRow[];
+  blacklist: BlacklistRow[];
+  style: StatsPageStyle;
+};
+
+type GamesStatsPrize = {
+  name: string;
+  value: number;
+  prizeValue: number;
+  totalWinValue: number;
+};
+
+type GamesStatsPlayer = {
+  name: string;
+  totalCards: number;
+  totalWins: number;
+  totalWinValue: number;
+  prizes: GamesStatsPrize[];
+};
+
+type GamesStatsSummary = {
+  totalCards: number;
+  totalWins: number;
+  totalWinValue: number;
+};
+
+type GamesStats = {
+  totalCards: number;
+  totalWins: number;
+  totalWinValue: number;
+  new: GamesStatsSummary;
+  players: GamesStatsPlayer[];
+  prizes: GamesStatsPrize[];
+};
+
+export function calculateGames(result: LoadStatsResult): GamesStats {
+  const empty: GamesStats = {
+    totalCards: 0,
+    totalWins: 0,
+    totalWinValue: 0,
+    new: {
+      totalCards: 0,
+      totalWins: 0,
+      totalWinValue: 0,
+    },
+    players: [],
+    prizes: [],
+  };
+
+  if (!result.ok) {
+    return empty;
+  }
+
+  const prizeValueByName = new Map<string, number>();
+
+  for (const prize of result.prizes) {
+    const name = String(prize.prize ?? "").trim();
+    if (!name) continue;
+    prizeValueByName.set(name, Number(prize.value ?? 0));
+  }
+
+  const totalPrizeCounts = new Map<string, number>();
+  const playerMap = new Map<
+    string,
+    {
+      name: string;
+      totalCards: number;
+      totalWins: number;
+      totalWinValue: number;
+      prizeCounts: Map<string, number>;
+    }
+  >();
+
+  let totalCards = 0;
+  let totalWins = 0;
+  let totalWinValue = 0;
+
+  let newestDayKey: string | null = null;
+
+  for (const game of result.games) {
+    const archivedAt = Number(game.archivedAt ?? 0);
+    if (!archivedAt) continue;
+
+    const dayKey = toUtcDayKey(archivedAt);
+    if (newestDayKey === null || dayKey > newestDayKey) {
+      newestDayKey = dayKey;
+    }
+  }
+
+  let newTotalCards = 0;
+  let newTotalWins = 0;
+  let newTotalWinValue = 0;
+
+  for (const game of result.games) {
+    const playerName = String(game.playerName ?? "").trim() || "Unknown";
+    const playerKey = playerName.toLowerCase();
+    const cards = Number(game.totalCards ?? 0);
+    const wins = Number(game.wins ?? 0);
+    const archivedAt = Number(game.archivedAt ?? 0);
+    const prizesWon = Array.isArray(game.prizesWon) ? game.prizesWon : [];
+
+    let gameWinValue = 0;
+
+    for (const rawPrize of prizesWon) {
+      const prizeName = String(rawPrize ?? "").trim();
+      if (!prizeName) continue;
+
+      const configuredPrizeValue = Number(prizeValueByName.get(prizeName) ?? 0);
+      gameWinValue += configuredPrizeValue;
+
+      totalPrizeCounts.set(prizeName, (totalPrizeCounts.get(prizeName) ?? 0) + 1);
+    }
+
+    totalCards += cards;
+    totalWins += wins;
+    totalWinValue += gameWinValue;
+
+    if (newestDayKey && archivedAt && toUtcDayKey(archivedAt) === newestDayKey) {
+      newTotalCards += cards;
+      newTotalWins += wins;
+      newTotalWinValue += gameWinValue;
+    }
+
+    const existingPlayer = playerMap.get(playerKey) ?? {
+      name: playerName,
+      totalCards: 0,
+      totalWins: 0,
+      totalWinValue: 0,
+      prizeCounts: new Map<string, number>(),
+    };
+
+    existingPlayer.totalCards += cards;
+    existingPlayer.totalWins += wins;
+    existingPlayer.totalWinValue += gameWinValue;
+
+    for (const rawPrize of prizesWon) {
+      const prizeName = String(rawPrize ?? "").trim();
+      if (!prizeName) continue;
+
+      existingPlayer.prizeCounts.set(
+        prizeName,
+        (existingPlayer.prizeCounts.get(prizeName) ?? 0) + 1
+      );
+    }
+
+    playerMap.set(playerKey, existingPlayer);
+  }
+
+  const allPrizeNames = new Set<string>([
+    ...Array.from(prizeValueByName.keys()),
+    ...Array.from(totalPrizeCounts.keys()),
+  ]);
+
+  const prizes: GamesStatsPrize[] = Array.from(allPrizeNames)
+    .map((name) => {
+      const count = totalPrizeCounts.get(name) ?? 0;
+      const prizeValue = prizeValueByName.get(name) ?? 0;
+
+      return {
+        name,
+        value: count,
+        prizeValue,
+        totalWinValue: count * prizeValue,
+      };
+    })
+    .sort((a, b) => {
+      if (b.value !== a.value) return b.value - a.value;
+      if (b.totalWinValue !== a.totalWinValue) return b.totalWinValue - a.totalWinValue;
+      return a.name.localeCompare(b.name);
+    });
+
+  const players: GamesStatsPlayer[] = Array.from(playerMap.values())
+    .map((player) => ({
+      name: player.name,
+      totalCards: player.totalCards,
+      totalWins: player.totalWins,
+      totalWinValue: player.totalWinValue,
+      prizes: Array.from(player.prizeCounts.entries())
+        .map(([name, count]) => {
+          const prizeValue = prizeValueByName.get(name) ?? 0;
+
+          return {
+            name,
+            value: count,
+            prizeValue,
+            totalWinValue: count * prizeValue,
+          };
+        })
+        .sort((a, b) => {
+          if (b.value !== a.value) return b.value - a.value;
+          if (b.totalWinValue !== a.totalWinValue) return b.totalWinValue - a.totalWinValue;
+          return a.name.localeCompare(b.name);
+        }),
+    }))
+    .sort((a, b) => {
+      if (b.totalWinValue !== a.totalWinValue) return b.totalWinValue - a.totalWinValue;
+      if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
+      if (b.totalCards !== a.totalCards) return b.totalCards - a.totalCards;
+      return a.name.localeCompare(b.name);
+    });
+
+  return {
+    totalCards,
+    totalWins,
+    totalWinValue,
+    new: {
+      totalCards: newTotalCards,
+      totalWins: newTotalWins,
+      totalWinValue: newTotalWinValue,
+    },
+    players,
+    prizes,
+  };
+}
+
+function toUtcDayKey(unixSeconds: number): string {
+  const d = new Date(unixSeconds * 1000);
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

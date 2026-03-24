@@ -2,6 +2,7 @@ import {getBackgroundStyleCss, getStatsFontFamily} from "@/lib/statsStyleShared"
 import { cache } from "react";
 import { getStatsStyleForUploader } from "@/lib/statsStyle";
 import { getDb, type UserDoc } from "@/lib/db";
+import { ScratchCharts } from "./charts";
 
 const loadStatsCached = cache(loadStats);
 
@@ -90,6 +91,19 @@ export default async function Scratch({
                 <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Total money won from cards</div>
                 <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(gamesStats.totalWinValue)}</div>
                 <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalWinValue)}</div>
+              </div>
+            </div>
+
+
+            <div className="my-12">
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <ScratchCharts
+                  dailyProfits={gamesStats.dailyProfits}
+                  fontColor={style.fontColor}
+                />
+                <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                  fdsfd
+                </div>
               </div>
             </div>
           </>
@@ -266,11 +280,19 @@ type GamesStatsSummary = {
   totalWinValue: number;
 };
 
+type GamesStatsDailyProfit = {
+  date: string;
+  totalCards: number;
+  totalWins: number;
+  totalWinValue: number;
+};
+
 type GamesStats = {
   totalCards: number;
   totalWins: number;
   totalWinValue: number;
   new: GamesStatsSummary;
+  dailyProfits: GamesStatsDailyProfit[];
   players: GamesStatsPlayer[];
   prizes: GamesStatsPrize[];
 };
@@ -285,6 +307,7 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
       totalWins: 0,
       totalWinValue: 0,
     },
+    dailyProfits: [],
     players: [],
     prizes: [],
   };
@@ -310,6 +333,16 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
       totalWins: number;
       totalWinValue: number;
       prizeCounts: Map<string, number>;
+    }
+  >();
+
+  const dailyMap = new Map<
+    string,
+    {
+      date: string;
+      totalCards: number;
+      totalWins: number;
+      totalWinValue: number;
     }
   >();
 
@@ -357,10 +390,26 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
     totalWins += wins;
     totalWinValue += gameWinValue;
 
-    if (newestDayKey && archivedAt && toUtcDayKey(archivedAt) === newestDayKey) {
-      newTotalCards += cards;
-      newTotalWins += wins;
-      newTotalWinValue += gameWinValue;
+    if (archivedAt) {
+      const dayKey = toUtcDayKey(archivedAt);
+      const existingDay = dailyMap.get(dayKey) ?? {
+        date: dayKey,
+        totalCards: 0,
+        totalWins: 0,
+        totalWinValue: 0,
+      };
+
+      existingDay.totalCards += cards;
+      existingDay.totalWins += wins;
+      existingDay.totalWinValue += gameWinValue;
+
+      dailyMap.set(dayKey, existingDay);
+
+      if (newestDayKey && dayKey === newestDayKey) {
+        newTotalCards += cards;
+        newTotalWins += wins;
+        newTotalWinValue += gameWinValue;
+      }
     }
 
     const existingPlayer = playerMap.get(playerKey) ?? {
@@ -441,6 +490,10 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
       return a.name.localeCompare(b.name);
     });
 
+  const dailyProfits: GamesStatsDailyProfit[] = Array.from(dailyMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+
   return {
     totalCards,
     totalWins,
@@ -450,6 +503,7 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
       totalWins: newTotalWins,
       totalWinValue: newTotalWinValue,
     },
+    dailyProfits,
     players,
     prizes,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 type StatsFontStyle = "sans" | "serif" | "mono" | "old-london";
 type StatsBackgroundMode = "color" | "image" | "gradient";
@@ -24,6 +24,14 @@ type StatsBackgroundStyle = {
   gradientDirection: StatsGradientDirection;
 };
 
+type StatsNavItemStyle = {
+  background: StatsBackgroundStyle;
+  borderRadius: number;
+  fontColor: string;
+  fontSize: number;
+  fontStyle: StatsFontStyle;
+};
+
 type StatsStyle = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
@@ -35,6 +43,35 @@ type StatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  scratchBackground: StatsBackgroundStyle;
+  scratchContainerBackground: StatsBackgroundStyle;
+  scratchElementBackground: StatsBackgroundStyle;
+  scratchFontColor: string;
+  scratchFontStyle: StatsFontStyle;
+  scratchLeaderboardSize: number;
+  scratchChartCardsColor: string;
+  scratchChartWinsColor: string;
+  scratchChartValueColor: string;
+  scratchLeaderboardTableBackground: StatsBackgroundStyle;
+  scratchLeaderboardTableHeaderBackground: StatsBackgroundStyle;
+  scratchLeaderboardTableHeaderTextColor: string;
+  scratchLeaderboardTabContainerBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabActiveBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabInactiveBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabHoverBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabActiveTextColor: string;
+  scratchLeaderboardTabInactiveTextColor: string;
+  scratchLeaderboardTabHoverTextColor: string;
+  publicNavShowBlackjack: boolean;
+  publicNavShowScratch: boolean;
+  publicNavBackground: StatsBackgroundStyle;
+  publicNavBorderRadius: number;
+  publicNavFontColor: string;
+  publicNavFontSize: number;
+  publicNavFontStyle: StatsFontStyle;
+  publicNavInactive: StatsNavItemStyle;
+  publicNavHover: StatsNavItemStyle;
+  publicNavActive: StatsNavItemStyle;
 };
 
 const makeBackground = (color: string): StatsBackgroundStyle => ({
@@ -44,6 +81,14 @@ const makeBackground = (color: string): StatsBackgroundStyle => ({
   imageFit: "cover",
   gradientColors: [color, color],
   gradientDirection: "to bottom",
+});
+
+const makeNavItemStyle = (background: string, fontColor: string, fontStyle: StatsFontStyle): StatsNavItemStyle => ({
+  background: makeBackground(background),
+  borderRadius: 14,
+  fontColor,
+  fontSize: 14,
+  fontStyle,
 });
 
 const defaults: StatsStyle = {
@@ -57,6 +102,35 @@ const defaults: StatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  scratchBackground: makeBackground("#000000"),
+  scratchContainerBackground: makeBackground("#ffffff"),
+  scratchElementBackground: makeBackground("#ffffff"),
+  scratchFontColor: "#000000",
+  scratchFontStyle: "sans",
+  scratchLeaderboardSize: 20,
+  scratchChartCardsColor: "#3b82f6",
+  scratchChartWinsColor: "#ec4899",
+  scratchChartValueColor: "#22c55e",
+  scratchLeaderboardTableBackground: makeBackground("#ffffff"),
+  scratchLeaderboardTableHeaderBackground: makeBackground("#ffffff"),
+  scratchLeaderboardTableHeaderTextColor: "#000000",
+  scratchLeaderboardTabContainerBackground: makeBackground("#ffffff"),
+  scratchLeaderboardTabActiveBackground: makeBackground("#ec4899"),
+  scratchLeaderboardTabInactiveBackground: makeBackground("#ffffff"),
+  scratchLeaderboardTabHoverBackground: makeBackground("#fdf2f8"),
+  scratchLeaderboardTabActiveTextColor: "#ffffff",
+  scratchLeaderboardTabInactiveTextColor: "#000000",
+  scratchLeaderboardTabHoverTextColor: "#000000",
+  publicNavShowBlackjack: true,
+  publicNavShowScratch: true,
+  publicNavBackground: makeBackground("#ffffff"),
+  publicNavBorderRadius: 18,
+  publicNavFontColor: "#000000",
+  publicNavFontSize: 14,
+  publicNavFontStyle: "sans",
+  publicNavInactive: makeNavItemStyle("#ffffff", "#000000", "sans"),
+  publicNavHover: makeNavItemStyle("#f3f4f6", "#000000", "sans"),
+  publicNavActive: makeNavItemStyle("#111111", "#ffffff", "sans"),
 };
 
 const fontOptions = [
@@ -346,6 +420,150 @@ function BackgroundEditor({
   );
 }
 
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-3xl border border-zinc-200 bg-zinc-50/80 p-5">
+      <div>
+        <h3 className="text-base font-semibold text-zinc-900">{title}</h3>
+        <p className="mt-1 text-sm text-zinc-600">{description}</p>
+      </div>
+      <div className="mt-5 grid gap-5">{children}</div>
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: StatsFontStyle;
+  onChange: (value: StatsFontStyle) => void;
+}) {
+  return (
+    <label className="block text-sm text-zinc-800">
+      <span className="text-xs font-medium">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as StatsFontStyle)}
+        className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none"
+      >
+        {fontOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block text-sm text-zinc-800">
+      <span className="text-xs font-medium">{label}</span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || min)}
+        className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none"
+      />
+    </label>
+  );
+}
+
+function CheckboxField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-800">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded border-zinc-300"
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+function NavItemStyleEditor({
+  title,
+  value,
+  onChange,
+}: {
+  title: string;
+  value: StatsNavItemStyle;
+  onChange: (value: StatsNavItemStyle) => void;
+}) {
+  return (
+    <div className="grid gap-4 rounded-3xl border border-zinc-200 bg-zinc-50/60 p-4">
+      <div className="text-sm font-semibold text-zinc-900">{title}</div>
+      <BackgroundEditor
+        label={`${title} background`}
+        value={value.background}
+        onChange={(background) => onChange({ ...value, background })}
+      />
+      <div className="grid gap-4 md:grid-cols-2">
+        <NumberField
+          label={`${title} border radius`}
+          value={value.borderRadius}
+          min={0}
+          max={999}
+          onChange={(borderRadius) => onChange({ ...value, borderRadius })}
+        />
+        <NumberField
+          label={`${title} font size`}
+          value={value.fontSize}
+          min={8}
+          max={72}
+          onChange={(fontSize) => onChange({ ...value, fontSize })}
+        />
+        <AdvancedColorField
+          label={`${title} font color`}
+          value={value.fontColor}
+          onChange={(fontColor) => onChange({ ...value, fontColor })}
+        />
+        <SelectField
+          label={`${title} font family`}
+          value={value.fontStyle}
+          onChange={(fontStyle) => onChange({ ...value, fontStyle })}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function StatsStyleEditor() {
   const [style, setStyle] = useState<StatsStyle>(defaults);
   const [busy, setBusy] = useState(false);
@@ -432,72 +650,196 @@ export function StatsStyleEditor() {
     <div className="rounded-3xl cute-border admin-item-container">
       <div>
         <h2 className="text-lg font-semibold text-zinc-900">Stats style</h2>
-        <p className="mt-1 text-sm text-zinc-600">Customize the public stats page with richer surface backgrounds, fonts, chart colors, and leaderboard sizing.</p>
+        <p className="mt-1 text-sm text-zinc-600">
+          Customize the public stats pages with separate style groups for the main dealer page and the scratch page.
+        </p>
       </div>
 
       {loading ? <div className="mt-4 text-sm text-zinc-700">Loading…</div> : null}
 
-      <div className="mt-4 grid gap-4">
-        <BackgroundEditor label="Page background" value={style.background} onChange={(background) => setStyle((s) => ({ ...s, background }))} />
-        <BackgroundEditor label="Container background" value={style.containerBackground} onChange={(containerBackground) => setStyle((s) => ({ ...s, containerBackground }))} />
-        <BackgroundEditor label="Element background" value={style.elementBackground} onChange={(elementBackground) => setStyle((s) => ({ ...s, elementBackground }))} />
-      </div>
+      <div className="mt-6 grid gap-6">
+        <SectionCard
+          title="Shared nav"
+          description="These settings style the shared top navigation shown on both public stats pages."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <CheckboxField
+              label="Show Blackjack link"
+              checked={style.publicNavShowBlackjack}
+              onChange={(publicNavShowBlackjack) => setStyle((s) => ({ ...s, publicNavShowBlackjack }))}
+            />
+            <CheckboxField
+              label="Show Scratch link"
+              checked={style.publicNavShowScratch}
+              onChange={(publicNavShowScratch) => setStyle((s) => ({ ...s, publicNavShowScratch }))}
+            />
+          </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <AdvancedColorField label="Font color" value={style.fontColor} onChange={(fontColor) => setStyle((s) => ({ ...s, fontColor }))} />
-
-        <label className="block text-sm text-zinc-800">
-          <span className="text-xs font-medium">Font style</span>
-          <select
-            value={style.fontStyle}
-            onChange={(e) => setStyle((s) => ({ ...s, fontStyle: e.target.value as StatsFontStyle }))}
-            className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none"
-          >
-            {fontOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block text-sm text-zinc-800">
-          <span className="text-xs font-medium">Leaderboard size</span>
-          <input
-            type="number"
-            min={1}
-            max={100}
-            value={style.leaderboardSize}
-            onChange={(e) => setStyle((s) => ({ ...s, leaderboardSize: Number(e.target.value) || 1 }))}
-            className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none"
+          <BackgroundEditor
+            label="Nav container background"
+            value={style.publicNavBackground}
+            onChange={(publicNavBackground) => setStyle((s) => ({ ...s, publicNavBackground }))}
           />
-        </label>
 
-        <label className="block text-sm text-zinc-800">
-          <span className="text-xs font-medium">Bar chart days</span>
-          <input
-            type="number"
-            min={1}
-            max={365}
-            value={style.barChartDays}
-            onChange={(e) => setStyle((s) => ({ ...s, barChartDays: Number(e.target.value) || 1 }))}
-            className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none"
+          <div className="grid gap-4 md:grid-cols-2">
+            <NumberField
+              label="Nav container border radius"
+              value={style.publicNavBorderRadius}
+              min={0}
+              max={999}
+              onChange={(publicNavBorderRadius) => setStyle((s) => ({ ...s, publicNavBorderRadius }))}
+            />
+            <NumberField
+              label="Nav container font size"
+              value={style.publicNavFontSize}
+              min={8}
+              max={72}
+              onChange={(publicNavFontSize) => setStyle((s) => ({ ...s, publicNavFontSize }))}
+            />
+            <AdvancedColorField
+              label="Nav container font color"
+              value={style.publicNavFontColor}
+              onChange={(publicNavFontColor) => setStyle((s) => ({ ...s, publicNavFontColor }))}
+            />
+            <SelectField
+              label="Nav container font family"
+              value={style.publicNavFontStyle}
+              onChange={(publicNavFontStyle) => setStyle((s) => ({ ...s, publicNavFontStyle }))}
+            />
+          </div>
+
+          <NavItemStyleEditor
+            title="Inactive link"
+            value={style.publicNavInactive}
+            onChange={(publicNavInactive) => setStyle((s) => ({ ...s, publicNavInactive }))}
           />
-        </label>
-      </div>
+          <NavItemStyleEditor
+            title="Hover link"
+            value={style.publicNavHover}
+            onChange={(publicNavHover) => setStyle((s) => ({ ...s, publicNavHover }))}
+          />
+          <NavItemStyleEditor
+            title="Active link"
+            value={style.publicNavActive}
+            onChange={(publicNavActive) => setStyle((s) => ({ ...s, publicNavActive }))}
+          />
+        </SectionCard>
+        <SectionCard
+          title="Dealer page · /[displayName]"
+          description="These settings style the main blackjack stats page, including dealer charts and player leaderboards."
+        >
+          <div className="grid gap-4">
+            <BackgroundEditor label="Page background" value={style.background} onChange={(background) => setStyle((s) => ({ ...s, background }))} />
+            <BackgroundEditor label="Container background" value={style.containerBackground} onChange={(containerBackground) => setStyle((s) => ({ ...s, containerBackground }))} />
+            <BackgroundEditor label="Element background" value={style.elementBackground} onChange={(elementBackground) => setStyle((s) => ({ ...s, elementBackground }))} />
+          </div>
 
-      <div className="mt-5 rounded-2xl border border-[#FF9FC6]/30 bg-[#fff7fb] p-4">
-        <div className="text-sm font-medium text-zinc-900">Pie chart colors</div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {pieColors.map((color, index) => (
-            <AdvancedColorField key={index} label={`Color ${index + 1}`} value={color} onChange={(value) => setPieColor(index, value)} />
-          ))}
-        </div>
-      </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <AdvancedColorField label="Font color" value={style.fontColor} onChange={(fontColor) => setStyle((s) => ({ ...s, fontColor }))} />
+            <SelectField label="Font style" value={style.fontStyle} onChange={(fontStyle) => setStyle((s) => ({ ...s, fontStyle }))} />
+            <NumberField label="Leaderboard size" value={style.leaderboardSize} min={1} max={100} onChange={(leaderboardSize) => setStyle((s) => ({ ...s, leaderboardSize }))} />
+            <NumberField label="Bar chart days" value={style.barChartDays} min={1} max={365} onChange={(barChartDays) => setStyle((s) => ({ ...s, barChartDays }))} />
+          </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <AdvancedColorField label="Bar chart profit color" value={style.barChartProfitColor} onChange={(barChartProfitColor) => setStyle((s) => ({ ...s, barChartProfitColor }))} />
-        <AdvancedColorField label="Bar chart loss color" value={style.barChartLossColor} onChange={(barChartLossColor) => setStyle((s) => ({ ...s, barChartLossColor }))} />
+          <div className="rounded-2xl border border-[#FF9FC6]/30 bg-[#fff7fb] p-4">
+            <div className="text-sm font-medium text-zinc-900">Pie chart colors</div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {pieColors.map((color, index) => (
+                <AdvancedColorField key={index} label={`Color ${index + 1}`} value={color} onChange={(value) => setPieColor(index, value)} />
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <AdvancedColorField label="Bar chart profit color" value={style.barChartProfitColor} onChange={(barChartProfitColor) => setStyle((s) => ({ ...s, barChartProfitColor }))} />
+            <AdvancedColorField label="Bar chart loss color" value={style.barChartLossColor} onChange={(barChartLossColor) => setStyle((s) => ({ ...s, barChartLossColor }))} />
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Scratch page · /[displayName]/scratch"
+          description="These settings style the scratch page separately, with its own surfaces, fonts, leaderboard size, and chart palette."
+        >
+          <div className="grid gap-4">
+            <BackgroundEditor label="Page background" value={style.scratchBackground} onChange={(scratchBackground) => setStyle((s) => ({ ...s, scratchBackground }))} />
+            <BackgroundEditor label="Container background" value={style.scratchContainerBackground} onChange={(scratchContainerBackground) => setStyle((s) => ({ ...s, scratchContainerBackground }))} />
+            <BackgroundEditor label="Element background" value={style.scratchElementBackground} onChange={(scratchElementBackground) => setStyle((s) => ({ ...s, scratchElementBackground }))} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <AdvancedColorField label="Font color" value={style.scratchFontColor} onChange={(scratchFontColor) => setStyle((s) => ({ ...s, scratchFontColor }))} />
+            <SelectField label="Font style" value={style.scratchFontStyle} onChange={(scratchFontStyle) => setStyle((s) => ({ ...s, scratchFontStyle }))} />
+            <NumberField label="Leaderboard size" value={style.scratchLeaderboardSize} min={1} max={100} onChange={(scratchLeaderboardSize) => setStyle((s) => ({ ...s, scratchLeaderboardSize }))} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <AdvancedColorField label="Cards chart color" value={style.scratchChartCardsColor} onChange={(scratchChartCardsColor) => setStyle((s) => ({ ...s, scratchChartCardsColor }))} />
+            <AdvancedColorField label="Winning cards chart color" value={style.scratchChartWinsColor} onChange={(scratchChartWinsColor) => setStyle((s) => ({ ...s, scratchChartWinsColor }))} />
+            <AdvancedColorField label="Total value chart color" value={style.scratchChartValueColor} onChange={(scratchChartValueColor) => setStyle((s) => ({ ...s, scratchChartValueColor }))} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <BackgroundEditor
+              label="Leaderboard table background"
+              value={style.scratchLeaderboardTableBackground}
+              onChange={(scratchLeaderboardTableBackground) => setStyle((s) => ({ ...s, scratchLeaderboardTableBackground }))}
+            />
+            <BackgroundEditor
+              label="Leaderboard table header background"
+              value={style.scratchLeaderboardTableHeaderBackground}
+              onChange={(scratchLeaderboardTableHeaderBackground) => setStyle((s) => ({ ...s, scratchLeaderboardTableHeaderBackground }))}
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <AdvancedColorField
+              label="Leaderboard table header text color"
+              value={style.scratchLeaderboardTableHeaderTextColor}
+              onChange={(scratchLeaderboardTableHeaderTextColor) => setStyle((s) => ({ ...s, scratchLeaderboardTableHeaderTextColor }))}
+            />
+            <BackgroundEditor
+              label="Tab button container background"
+              value={style.scratchLeaderboardTabContainerBackground}
+              onChange={(scratchLeaderboardTabContainerBackground) => setStyle((s) => ({ ...s, scratchLeaderboardTabContainerBackground }))}
+            />
+          </div>
+
+          <div className="grid gap-4">
+            <BackgroundEditor
+              label="Tab button active background"
+              value={style.scratchLeaderboardTabActiveBackground}
+              onChange={(scratchLeaderboardTabActiveBackground) => setStyle((s) => ({ ...s, scratchLeaderboardTabActiveBackground }))}
+            />
+            <BackgroundEditor
+              label="Tab button inactive background"
+              value={style.scratchLeaderboardTabInactiveBackground}
+              onChange={(scratchLeaderboardTabInactiveBackground) => setStyle((s) => ({ ...s, scratchLeaderboardTabInactiveBackground }))}
+            />
+            <BackgroundEditor
+              label="Tab button hover background"
+              value={style.scratchLeaderboardTabHoverBackground}
+              onChange={(scratchLeaderboardTabHoverBackground) => setStyle((s) => ({ ...s, scratchLeaderboardTabHoverBackground }))}
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <AdvancedColorField
+              label="Tab active text color"
+              value={style.scratchLeaderboardTabActiveTextColor}
+              onChange={(scratchLeaderboardTabActiveTextColor) => setStyle((s) => ({ ...s, scratchLeaderboardTabActiveTextColor }))}
+            />
+            <AdvancedColorField
+              label="Tab inactive text color"
+              value={style.scratchLeaderboardTabInactiveTextColor}
+              onChange={(scratchLeaderboardTabInactiveTextColor) => setStyle((s) => ({ ...s, scratchLeaderboardTabInactiveTextColor }))}
+            />
+            <AdvancedColorField
+              label="Tab hover text color"
+              value={style.scratchLeaderboardTabHoverTextColor}
+              onChange={(scratchLeaderboardTabHoverTextColor) => setStyle((s) => ({ ...s, scratchLeaderboardTabHoverTextColor }))}
+            />
+          </div>
+        </SectionCard>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">

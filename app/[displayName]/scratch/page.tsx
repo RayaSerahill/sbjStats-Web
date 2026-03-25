@@ -4,6 +4,8 @@ import { getStatsStyleForUploader } from "@/lib/statsStyle";
 import { getDb, type UserDoc } from "@/lib/db";
 import { ScratchCharts } from "./charts";
 import { LeaderboardElement } from "./leaderboard";
+import { StatsPageNav } from "@/app/components/StatsPageNav";
+import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 
 const loadStatsCached = cache(loadStats);
 
@@ -51,47 +53,61 @@ export default async function Scratch({
     );
   }
   const gamesStats = calculateGames(result);
-  console.log(gamesStats);
 
   const style = result.style;
-  const fontFamily = getStatsFontFamily(style.fontStyle);
-  const pageBackgroundStyle = getBackgroundStyleCss(style.background);
-  const containerBackgroundStyle = getBackgroundStyleCss(style.containerBackground);
-  const elementBackgroundStyle = getBackgroundStyleCss(style.elementBackground);
+  const fontFamily = getStatsFontFamily(style.scratchFontStyle);
+  const pageBackgroundStyle = getBackgroundStyleCss(style.scratchBackground);
+  const containerBackgroundStyle = getBackgroundStyleCss(style.scratchContainerBackground);
+  const elementBackgroundStyle = getBackgroundStyleCss(style.scratchElementBackground);
 
   return (
-    <div className="container-main min-h-screen w-full px-4 py-10" style={pageBackgroundStyle}>
+    <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.scratchFontColor, fontFamily }}>
+      <div className="mx-auto w-full max-w-5xl">
+        <StatsPageNav
+          username={result.username || result.displayName}
+          showBlackjack={style.publicNavShowBlackjack}
+          showScratch={style.publicNavShowScratch}
+          background={style.publicNavBackground}
+          borderRadius={style.publicNavBorderRadius}
+          fontColor={style.publicNavFontColor}
+          fontSize={style.publicNavFontSize}
+          fontStyle={style.publicNavFontStyle}
+          inactive={style.publicNavInactive}
+          hover={style.publicNavHover}
+          active={style.publicNavActive}
+        />
+      </div>
       <div className="mx-auto w-full max-w-5xl rounded-3xl border border-black/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={containerBackgroundStyle}>
         <div className="flex flex-col gap-2">
-          <h1 className={"text-2xl font-semibold"} style={{ color: style.fontColor }}>{result.displayName}</h1>
-          <p className="text-sm" style={{ color: style.fontColor }}>
+          <h1 className={"text-2xl font-semibold"} style={{ color: style.scratchFontColor }}>{result.displayName}</h1>
+          <p className="text-sm" style={{ color: style.scratchFontColor }}>
             Stats for uploader{" "}
-            <span className="font-medium" style={{ color: style.fontColor }}>
+            <span className="font-medium" style={{ color: style.scratchFontColor }}>
               {result.username || result.displayName}
             </span>
           </p>
         </div>
         {result.games.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...containerBackgroundStyle, color: style.fontColor }}>
+          <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...containerBackgroundStyle, color: style.scratchFontColor }}>
             No rounds uploaded yet.
           </div>
         ) : (
           <>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Scratch cards given out</div>
-                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(gamesStats.totalCards)}</div>
-                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalCards)}</div>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.scratchFontColor }}>Scratch cards given out</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.scratchFontColor }}>{fmtInt(gamesStats.totalCards)}</div>
+                <div className="mt-1 text-xs opacity-70" style={{ color: style.scratchFontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalCards)}</div>
               </div>
               <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Total winning cards</div>
-                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(gamesStats.totalWins)}</div>
-                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalWins)}</div>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.scratchFontColor }}>Total winning cards</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.scratchFontColor }}>{fmtInt(gamesStats.totalWins)}</div>
+                <div className="mt-1 text-xs opacity-70" style={{ color: style.scratchFontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalWins)}</div>
               </div>
               <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Total money won from cards</div>
-                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(gamesStats.totalWinValue)}</div>
-                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalWinValue)}</div>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.scratchFontColor }}>Total money won from cards</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.scratchFontColor }}>{fmtInt(gamesStats.totalWinValue)}</div>
+                <div className="mt-1 text-xs opacity-70" style={{ color: style.scratchFontColor }}>Last hosting day: {fmtMoney(gamesStats.new.totalWinValue)}</div>
               </div>
             </div>
 
@@ -100,20 +116,34 @@ export default async function Scratch({
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <ScratchCharts
                   dailyProfits={gamesStats.dailyProfits}
-                  fontColor={style.fontColor}
+                  fontColor={style.scratchFontColor}
+                  elementBackground={style.scratchElementBackground}
+                  cardsColor={style.scratchChartCardsColor}
+                  winsColor={style.scratchChartWinsColor}
+                  valueColor={style.scratchChartValueColor}
                 />
                 <LeaderboardElement
-                  fontColor={style.fontColor}
-                  containerBackground={style.containerBackground}
-                  elementBackground={style.elementBackground}
+                  fontColor={style.scratchFontColor}
+                  elementBackground={style.scratchElementBackground}
+                  tableBackground={style.scratchLeaderboardTableBackground}
+                  tableHeaderBackground={style.scratchLeaderboardTableHeaderBackground}
+                  tableHeaderTextColor={style.scratchLeaderboardTableHeaderTextColor}
+                  tabContainerBackground={style.scratchLeaderboardTabContainerBackground}
+                  tabActiveBackground={style.scratchLeaderboardTabActiveBackground}
+                  tabInactiveBackground={style.scratchLeaderboardTabInactiveBackground}
+                  tabHoverBackground={style.scratchLeaderboardTabHoverBackground}
+                  tabActiveTextColor={style.scratchLeaderboardTabActiveTextColor}
+                  tabInactiveTextColor={style.scratchLeaderboardTabInactiveTextColor}
+                  tabHoverTextColor={style.scratchLeaderboardTabHoverTextColor}
                   data={gamesStats}
-                  leaderboardSize={style.leaderboardSize}
-                 />
+                  leaderboardSize={style.scratchLeaderboardSize}
+                />
               </div>
             </div>
           </>
           )}
       </div>
+      <StatsFooterSection />
     </div>
   );
 }
@@ -235,10 +265,6 @@ function norm(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
 }
 
-function emailLocalPart(email: unknown): string {
-  const v = String(email ?? "").trim().toLowerCase();
-  return v.split("@")[0] ?? "";
-}
 
 function fmtInt(n: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);

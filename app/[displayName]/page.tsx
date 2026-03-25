@@ -6,6 +6,7 @@ import { DealerStats } from "./DealerStats";
 import { loadDealerStats } from "@/lib/dealerStats";
 import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } from "@/lib/statsStyle";
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
+import { StatsPageNav } from "@/app/components/StatsPageNav";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -500,6 +501,21 @@ export default async function DealerStatsPage({
   const title = data.displayName;
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.fontColor, fontFamily }}>
+      <div className="mx-auto w-full max-w-5xl">
+        <StatsPageNav
+          username={data.username || data.displayName}
+          showBlackjack={style.publicNavShowBlackjack}
+          showScratch={style.publicNavShowScratch}
+          background={style.publicNavBackground}
+          borderRadius={style.publicNavBorderRadius}
+          fontColor={style.publicNavFontColor}
+          fontSize={style.publicNavFontSize}
+          fontStyle={style.publicNavFontStyle}
+          inactive={style.publicNavInactive}
+          hover={style.publicNavHover}
+          active={style.publicNavActive}
+        />
+      </div>
       <div className="mx-auto w-full max-w-5xl rounded-3xl border border-black/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={containerBackgroundStyle}>
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold" style={{ color: style.fontColor }}>{title}</h1>

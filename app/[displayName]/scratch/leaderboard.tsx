@@ -1,6 +1,7 @@
 "use client";
-import {StatsBackgroundMode, StatsFontStyle, StatsGradientDirection, StatsImageFit} from "@/lib/statsStyleShared";
-import { useState } from "react";
+
+import { useMemo, useState } from "react";
+import { getBackgroundStyleCss, type StatsBackgroundStyle } from "@/lib/statsStyleShared";
 import "../../globals.css";
 
 type LeaderboardPlayer = {
@@ -15,23 +16,59 @@ type LeaderboardData = {
 };
 
 type LeaderboardProps = {
-  fontColor: string,
-  containerBackground: StatsBackgroundStyle,
-  elementBackground: StatsBackgroundStyle,
-  data: LeaderboardData,
-  leaderboardSize: number,
+  fontColor: string;
+  elementBackground: StatsBackgroundStyle;
+  tableBackground: StatsBackgroundStyle;
+  tableHeaderBackground: StatsBackgroundStyle;
+  tableHeaderTextColor: string;
+  tabContainerBackground: StatsBackgroundStyle;
+  tabActiveBackground: StatsBackgroundStyle;
+  tabInactiveBackground: StatsBackgroundStyle;
+  tabHoverBackground: StatsBackgroundStyle;
+  tabActiveTextColor: string;
+  tabInactiveTextColor: string;
+  tabHoverTextColor: string;
+  data: LeaderboardData;
+  leaderboardSize: number;
 };
 
 export function LeaderboardElement({
-                                     fontColor,
-                                     containerBackground,
-                                     elementBackground,
-                                     data,
-                                     leaderboardSize,
-                                   } : LeaderboardProps) {
+  fontColor,
+  elementBackground,
+  tableBackground,
+  tableHeaderBackground,
+  tableHeaderTextColor,
+  tabContainerBackground,
+  tabActiveBackground,
+  tabInactiveBackground,
+  tabHoverBackground,
+  tabActiveTextColor,
+  tabInactiveTextColor,
+  tabHoverTextColor,
+  data,
+  leaderboardSize,
+}: LeaderboardProps) {
   const [tab, setTab] = useState<"won" | "cards" | "wins">("won");
-  const getButtonClassName = (buttonTab: "won" | "cards" | "wins") =>
-    `sc-lb-btn${tab === buttonTab ? " active-lb-btn" : ""}`;
+  const [hoveredTab, setHoveredTab] = useState<"won" | "cards" | "wins" | null>(null);
+  const elementBackgroundStyle = useMemo(() => getBackgroundStyleCss(elementBackground), [elementBackground]);
+  const tableBackgroundStyle = useMemo(() => getBackgroundStyleCss(tableBackground), [tableBackground]);
+  const tableHeaderBackgroundStyle = useMemo(() => getBackgroundStyleCss(tableHeaderBackground), [tableHeaderBackground]);
+  const tabContainerBackgroundStyle = useMemo(() => getBackgroundStyleCss(tabContainerBackground), [tabContainerBackground]);
+  const tabActiveBackgroundStyle = useMemo(() => getBackgroundStyleCss(tabActiveBackground), [tabActiveBackground]);
+  const tabInactiveBackgroundStyle = useMemo(() => getBackgroundStyleCss(tabInactiveBackground), [tabInactiveBackground]);
+  const tabHoverBackgroundStyle = useMemo(() => getBackgroundStyleCss(tabHoverBackground), [tabHoverBackground]);
+
+  const getButtonStyle = (buttonTab: "won" | "cards" | "wins") => {
+    if (tab === buttonTab) {
+      return { ...tabActiveBackgroundStyle, color: tabActiveTextColor };
+    }
+
+    if (hoveredTab === buttonTab) {
+      return { ...tabHoverBackgroundStyle, color: tabHoverTextColor };
+    }
+
+    return { ...tabInactiveBackgroundStyle, color: tabInactiveTextColor };
+  };
 
   const leadersByWon = data.players
     .slice()
@@ -63,46 +100,57 @@ export function LeaderboardElement({
     )
     .slice(0, leaderboardSize);
 
-  const activeLeaders =
-    tab === "won" ? leadersByWon :
-    tab === "cards" ? leadersByCards :
-    leadersByWins;
-
-  const metricLabel =
-    tab === "won" ? "by gil won" :
-    tab === "cards" ? "by cards" :
-    "by winning cards";
+  const activeLeaders = tab === "won" ? leadersByWon : tab === "cards" ? leadersByCards : leadersByWins;
 
   const renderMetric = (player: LeaderboardPlayer) => {
-    if (tab === "won") {
-      return fmtInt(player.totalWinValue);
-    }
-
-    if (tab === "cards") {
-      return fmtInt(player.totalCards);
-    }
-
+    if (tab === "won") return fmtInt(player.totalWinValue);
+    if (tab === "cards") return fmtInt(player.totalCards);
     return fmtInt(player.totalWins);
   };
 
   return (
-    <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackground}>
-      <div className={"grid gap-4 md:flex md:items-center md:justify-between mb-4"}>
-        <div className="mb-3 mb-1 text-lg font-semibold" style={{ color:fontColor }}>Leaderboards</div>
-        <div className={"sc-lb-btn-ctn flex bg-[#f5dae6] rounded-lg justify-end"}>
-          <button className={getButtonClassName("won") + " p-2"} onClick={() => setTab("won")}>Gil won</button>
-          <button className={getButtonClassName("cards") + " p-2"} onClick={() => setTab("cards")}>Cards</button>
-          <button className={getButtonClassName("wins") + " p-2"} onClick={() => setTab("wins")}>Winning cards</button>
+    <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+      <div className="mb-4 grid gap-4 md:flex md:items-center md:justify-between">
+        <div className="text-lg font-semibold" style={{ color: fontColor }}>Leaderboards</div>
+        <div className="flex rounded-lg border border-black/10 p-1" style={tabContainerBackgroundStyle}>
+          <button
+            className="rounded-md px-3 py-2 text-sm transition"
+            style={getButtonStyle("won")}
+            onClick={() => setTab("won")}
+            onMouseEnter={() => setHoveredTab("won")}
+            onMouseLeave={() => setHoveredTab((current) => (current === "won" ? null : current))}
+          >
+            Gil won
+          </button>
+          <button
+            className="rounded-md px-3 py-2 text-sm transition"
+            style={getButtonStyle("cards")}
+            onClick={() => setTab("cards")}
+            onMouseEnter={() => setHoveredTab("cards")}
+            onMouseLeave={() => setHoveredTab((current) => (current === "cards" ? null : current))}
+          >
+            Cards
+          </button>
+          <button
+            className="rounded-md px-3 py-2 text-sm transition"
+            style={getButtonStyle("wins")}
+            onClick={() => setTab("wins")}
+            onMouseEnter={() => setHoveredTab("wins")}
+            onMouseLeave={() => setHoveredTab((current) => (current === "wins" ? null : current))}
+          >
+            Winning cards
+          </button>
         </div>
       </div>
+
       {activeLeaders.length ? (
-        <div className="mt-3 overflow-hidden rounded-xl border border-black/10">
-          <table className="w-full text-sm bg-[#fdedf4]" style={{ color: fontColor }}>
+        <div className="mt-3 overflow-hidden rounded-xl border border-black/10" style={tableBackgroundStyle}>
+          <table className="w-full text-sm" style={{ color: fontColor }}>
             <thead>
-              <tr className="border-b border-black/10 text-left bg-[#ffd7e8]">
-                <th className="px-3 py-2 text-xs font-semibold" style={{ color: fontColor, opacity: 0.7 }}>#</th>
-                <th className="px-3 py-2 text-xs font-semibold" style={{ color: fontColor, opacity: 0.7 }}>Player</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold" style={{ color: fontColor, opacity: 0.7 }}>Value</th>
+              <tr className="border-b border-black/10 text-left" style={tableHeaderBackgroundStyle}>
+                <th className="px-3 py-2 text-xs font-semibold" style={{ color: tableHeaderTextColor, opacity: 0.7 }}>#</th>
+                <th className="px-3 py-2 text-xs font-semibold" style={{ color: tableHeaderTextColor, opacity: 0.7 }}>Player</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold" style={{ color: tableHeaderTextColor, opacity: 0.7 }}>Value</th>
               </tr>
             </thead>
             <tbody>
@@ -126,25 +174,3 @@ export function LeaderboardElement({
 function fmtInt(n: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 }
-
-export type StatsBackgroundStyle = {
-  mode: StatsBackgroundMode;
-  color: string;
-  imageUrl: string;
-  imageFit: StatsImageFit;
-  gradientColors: string[];
-  gradientDirection: StatsGradientDirection;
-};
-
-export type NormalizedStatsStyle = {
-  background: StatsBackgroundStyle;
-  containerBackground: StatsBackgroundStyle;
-  elementBackground: StatsBackgroundStyle;
-  fontColor: string;
-  fontStyle: StatsFontStyle;
-  leaderboardSize: number;
-  pieChartColors: string[];
-  barChartProfitColor: string;
-  barChartLossColor: string;
-  barChartDays: number;
-};

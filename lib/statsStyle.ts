@@ -10,12 +10,13 @@ import {
   type NormalizedStatsStyle,
   type StatsBackgroundStyle,
   type StatsFontStyle,
+  type StatsNavItemStyle,
   type StatsBackgroundMode,
   type StatsImageFit,
   type StatsGradientDirection,
 } from "./statsStyleShared";
 
-export type { StatsBackgroundStyle, StatsFontStyle, StatsBackgroundMode, StatsImageFit, StatsGradientDirection };
+export type { StatsBackgroundStyle, StatsFontStyle, StatsNavItemStyle, StatsBackgroundMode, StatsImageFit, StatsGradientDirection };
 
 export type StatsStyleDoc = {
   _id?: ObjectId;
@@ -30,6 +31,35 @@ export type StatsStyleDoc = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  scratchBackground: StatsBackgroundStyle;
+  scratchContainerBackground: StatsBackgroundStyle;
+  scratchElementBackground: StatsBackgroundStyle;
+  scratchFontColor: string;
+  scratchFontStyle: StatsFontStyle;
+  scratchLeaderboardSize: number;
+  scratchChartCardsColor: string;
+  scratchChartWinsColor: string;
+  scratchChartValueColor: string;
+  scratchLeaderboardTableBackground: StatsBackgroundStyle;
+  scratchLeaderboardTableHeaderBackground: StatsBackgroundStyle;
+  scratchLeaderboardTableHeaderTextColor: string;
+  scratchLeaderboardTabContainerBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabActiveBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabInactiveBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabHoverBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabActiveTextColor: string;
+  scratchLeaderboardTabInactiveTextColor: string;
+  scratchLeaderboardTabHoverTextColor: string;
+  publicNavShowBlackjack: boolean;
+  publicNavShowScratch: boolean;
+  publicNavBackground: StatsBackgroundStyle;
+  publicNavBorderRadius: number;
+  publicNavFontColor: string;
+  publicNavFontSize: number;
+  publicNavFontStyle: StatsFontStyle;
+  publicNavInactive: StatsNavItemStyle;
+  publicNavHover: StatsNavItemStyle;
+  publicNavActive: StatsNavItemStyle;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,6 +77,35 @@ export type StatsStyleInput = Partial<
     | "barChartProfitColor"
     | "barChartLossColor"
     | "barChartDays"
+    | "scratchBackground"
+    | "scratchContainerBackground"
+    | "scratchElementBackground"
+    | "scratchFontColor"
+    | "scratchFontStyle"
+    | "scratchLeaderboardSize"
+    | "scratchChartCardsColor"
+    | "scratchChartWinsColor"
+    | "scratchChartValueColor"
+    | "scratchLeaderboardTableBackground"
+    | "scratchLeaderboardTableHeaderBackground"
+    | "scratchLeaderboardTableHeaderTextColor"
+    | "scratchLeaderboardTabContainerBackground"
+    | "scratchLeaderboardTabActiveBackground"
+    | "scratchLeaderboardTabInactiveBackground"
+    | "scratchLeaderboardTabHoverBackground"
+    | "scratchLeaderboardTabActiveTextColor"
+    | "scratchLeaderboardTabInactiveTextColor"
+    | "scratchLeaderboardTabHoverTextColor"
+    | "publicNavShowBlackjack"
+    | "publicNavShowScratch"
+    | "publicNavBackground"
+    | "publicNavBorderRadius"
+    | "publicNavFontColor"
+    | "publicNavFontSize"
+    | "publicNavFontStyle"
+    | "publicNavInactive"
+    | "publicNavHover"
+    | "publicNavActive"
   >
 >;
 

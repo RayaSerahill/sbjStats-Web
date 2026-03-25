@@ -13,6 +13,7 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
+import { getBackgroundStyleCss, type StatsBackgroundStyle } from "@/lib/statsStyleShared";
 
 ChartJS.register(
   CategoryScale,
@@ -31,14 +32,32 @@ type GamesStatsDailyProfit = {
   totalWinValue: number;
 };
 
+function hexToRgba(hex: string, alpha: number) {
+  const clean = hex.replace("#", "").trim();
+  const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+  const r = parseInt(full.slice(0, 2), 16) || 0;
+  const g = parseInt(full.slice(2, 4), 16) || 0;
+  const b = parseInt(full.slice(4, 6), 16) || 0;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function ScratchCharts({
-                                dailyProfits,
-                                fontColor,
-                              }: {
+  dailyProfits,
+  fontColor,
+  elementBackground,
+  cardsColor,
+  winsColor,
+  valueColor,
+}: {
   dailyProfits: GamesStatsDailyProfit[];
   fontColor: string;
+  elementBackground: StatsBackgroundStyle;
+  cardsColor: string;
+  winsColor: string;
+  valueColor: string;
 }) {
   const labels = dailyProfits.map((day) => day.date);
+  const elementBackgroundStyle = getBackgroundStyleCss(elementBackground);
 
   const cardsAndWinsData: ChartData<"bar" | "line", number[], string> = {
     labels,
@@ -47,8 +66,8 @@ export function ScratchCharts({
         type: "line" as const,
         label: "Winning cards",
         data: dailyProfits.map((day) => day.totalWins),
-        borderColor: "rgba(236, 72, 153, 1)",
-        backgroundColor: "rgba(236, 72, 153, 0.2)",
+        borderColor: winsColor,
+        backgroundColor: hexToRgba(winsColor, 0.2),
         tension: 0.3,
         fill: false,
         pointRadius: 4,
@@ -58,21 +77,21 @@ export function ScratchCharts({
         type: "bar" as const,
         label: "Scratch cards",
         data: dailyProfits.map((day) => day.totalCards),
-        backgroundColor: "rgba(59, 130, 246, 1)",
-        borderColor: "rgba(59, 130, 246, 1)",
+        backgroundColor: cardsColor,
+        borderColor: cardsColor,
         borderWidth: 1,
       },
     ],
   };
 
-  const winValueData = {
+  const winValueData: ChartData<"line", number[], string> = {
     labels,
     datasets: [
       {
         label: "Money won",
         data: dailyProfits.map((day) => day.totalWinValue),
-        borderColor: "rgba(34, 197, 94, 1)",
-        backgroundColor: "rgba(34, 197, 94, 0.2)",
+        borderColor: valueColor,
+        backgroundColor: hexToRgba(valueColor, 0.2),
         tension: 0.3,
         fill: true,
         pointRadius: 4,
@@ -110,7 +129,7 @@ export function ScratchCharts({
           color: fontColor,
         },
         grid: {
-          color: "rgba(255,255,255,0.08)",
+          color: `${fontColor}22`,
         },
       },
       y: {
@@ -124,7 +143,7 @@ export function ScratchCharts({
           },
         },
         grid: {
-          color: "rgba(255,255,255,0.08)",
+          color: `${fontColor}22`,
         },
       },
     },
@@ -161,7 +180,7 @@ export function ScratchCharts({
           color: fontColor,
         },
         grid: {
-          color: "rgba(255,255,255,0.08)",
+          color: `${fontColor}22`,
         },
       },
       y: {
@@ -176,7 +195,7 @@ export function ScratchCharts({
           },
         },
         grid: {
-          color: "rgba(255,255,255,0.08)",
+          color: `${fontColor}22`,
         },
       },
     },
@@ -184,8 +203,8 @@ export function ScratchCharts({
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-2xl border border-black/10 p-4 shadow-sm">
-        <div className="mb-3 mb-1 text-lg font-semibold" style={{ color: fontColor }}>
+      <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+        <div className="mb-1 text-lg font-semibold" style={{ color: fontColor }}>
           Scratch cards and wins by day
         </div>
         <div className="h-[320px]">
@@ -193,8 +212,8 @@ export function ScratchCharts({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-black/10 p-4 shadow-sm">
-        <div className="mb-3 font-semibold mb-1 text-lg" style={{ color: fontColor }}>
+      <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+        <div className="mb-1 text-lg font-semibold" style={{ color: fontColor }}>
           Total win value by day
         </div>
         <div className="h-[320px]">

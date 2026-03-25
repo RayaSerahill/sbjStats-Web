@@ -369,7 +369,34 @@ body {
 
 /* ------------------------------ */
 /* Dealer stats */
+/* ------------------------------ */
 
 .d-stats, .d-stats canvas {
   max-height: 305px;
+}
+
+/* ------------------------------ */
+/* Scratch */
+/* ------------------------------ */
+
+.sc-lb-btn-ctn {
+  margin-top: -12px;
+  border-radius: 10px;
+}
+
+.sc-lb-btn {
+  color:black;
+  border-radius: 10px;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.sc-lb-btn:hover {
+  background-color: rgba(255, 255, 255, 0.45);
+  color:black;
+}
+
+.active-lb-btn {
+  background-color: #fcf3f6;
+  color:black;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }

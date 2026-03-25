@@ -3,6 +3,7 @@ import { cache } from "react";
 import { getStatsStyleForUploader } from "@/lib/statsStyle";
 import { getDb, type UserDoc } from "@/lib/db";
 import { ScratchCharts } from "./charts";
+import { LeaderboardElement } from "./leaderboard";
 
 const loadStatsCached = cache(loadStats);
 
@@ -101,9 +102,13 @@ export default async function Scratch({
                   dailyProfits={gamesStats.dailyProfits}
                   fontColor={style.fontColor}
                 />
-                <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                  fdsfd
-                </div>
+                <LeaderboardElement
+                  fontColor={style.fontColor}
+                  containerBackground={style.containerBackground}
+                  elementBackground={style.elementBackground}
+                  data={gamesStats}
+                  leaderboardSize={style.leaderboardSize}
+                 />
               </div>
             </div>
           </>

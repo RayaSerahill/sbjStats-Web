@@ -22,6 +22,14 @@ export type StatsBackgroundStyle = {
   gradientDirection: StatsGradientDirection;
 };
 
+export type StatsNavItemStyle = {
+  background: StatsBackgroundStyle;
+  borderRadius: number;
+  fontColor: string;
+  fontSize: number;
+  fontStyle: StatsFontStyle;
+};
+
 export type NormalizedStatsStyle = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
@@ -33,6 +41,35 @@ export type NormalizedStatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  scratchBackground: StatsBackgroundStyle;
+  scratchContainerBackground: StatsBackgroundStyle;
+  scratchElementBackground: StatsBackgroundStyle;
+  scratchFontColor: string;
+  scratchFontStyle: StatsFontStyle;
+  scratchLeaderboardSize: number;
+  scratchChartCardsColor: string;
+  scratchChartWinsColor: string;
+  scratchChartValueColor: string;
+  scratchLeaderboardTableBackground: StatsBackgroundStyle;
+  scratchLeaderboardTableHeaderBackground: StatsBackgroundStyle;
+  scratchLeaderboardTableHeaderTextColor: string;
+  scratchLeaderboardTabContainerBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabActiveBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabInactiveBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabHoverBackground: StatsBackgroundStyle;
+  scratchLeaderboardTabActiveTextColor: string;
+  scratchLeaderboardTabInactiveTextColor: string;
+  scratchLeaderboardTabHoverTextColor: string;
+  publicNavShowBlackjack: boolean;
+  publicNavShowScratch: boolean;
+  publicNavBackground: StatsBackgroundStyle;
+  publicNavBorderRadius: number;
+  publicNavFontColor: string;
+  publicNavFontSize: number;
+  publicNavFontStyle: StatsFontStyle;
+  publicNavInactive: StatsNavItemStyle;
+  publicNavHover: StatsNavItemStyle;
+  publicNavActive: StatsNavItemStyle;
 };
 
 const defaultBackground = (color: string): StatsBackgroundStyle => ({
@@ -42,6 +79,14 @@ const defaultBackground = (color: string): StatsBackgroundStyle => ({
   imageFit: "cover",
   gradientColors: [color, color],
   gradientDirection: "to bottom",
+});
+
+const defaultNavItemStyle = (backgroundColor: string, fontColor: string, fontStyle: StatsFontStyle): StatsNavItemStyle => ({
+  background: defaultBackground(backgroundColor),
+  borderRadius: 14,
+  fontColor,
+  fontSize: 14,
+  fontStyle,
 });
 
 export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
@@ -55,6 +100,35 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  scratchBackground: defaultBackground("#000000"),
+  scratchContainerBackground: defaultBackground("#ffffff"),
+  scratchElementBackground: defaultBackground("#ffffff"),
+  scratchFontColor: "#000000",
+  scratchFontStyle: "sans",
+  scratchLeaderboardSize: 20,
+  scratchChartCardsColor: "#3b82f6",
+  scratchChartWinsColor: "#ec4899",
+  scratchChartValueColor: "#22c55e",
+  scratchLeaderboardTableBackground: defaultBackground("#ffffff"),
+  scratchLeaderboardTableHeaderBackground: defaultBackground("#ffffff"),
+  scratchLeaderboardTableHeaderTextColor: "#000000",
+  scratchLeaderboardTabContainerBackground: defaultBackground("#ffffff"),
+  scratchLeaderboardTabActiveBackground: defaultBackground("#ec4899"),
+  scratchLeaderboardTabInactiveBackground: defaultBackground("#ffffff"),
+  scratchLeaderboardTabHoverBackground: defaultBackground("#fdf2f8"),
+  scratchLeaderboardTabActiveTextColor: "#ffffff",
+  scratchLeaderboardTabInactiveTextColor: "#000000",
+  scratchLeaderboardTabHoverTextColor: "#000000",
+  publicNavShowBlackjack: true,
+  publicNavShowScratch: true,
+  publicNavBackground: defaultBackground("#ffffff"),
+  publicNavBorderRadius: 18,
+  publicNavFontColor: "#000000",
+  publicNavFontSize: 14,
+  publicNavFontStyle: "sans",
+  publicNavInactive: defaultNavItemStyle("#ffffff", "#000000", "sans"),
+  publicNavHover: defaultNavItemStyle("#f3f4f6", "#000000", "sans"),
+  publicNavActive: defaultNavItemStyle("#111111", "#ffffff", "sans"),
 };
 
 const FONT_STYLE_VALUES: StatsFontStyle[] = ["sans", "serif", "mono", "old-london"];
@@ -86,6 +160,10 @@ function normalizeFontStyle(input: unknown, fallback: StatsFontStyle): StatsFont
   return typeof input === "string" && FONT_STYLE_VALUES.includes(input as StatsFontStyle)
     ? (input as StatsFontStyle)
     : fallback;
+}
+
+function normalizeBool(input: unknown, fallback: boolean) {
+  return typeof input === "boolean" ? input : fallback;
 }
 
 function normalizePieChartColors(input: unknown, fallback: string[]) {
@@ -143,18 +221,99 @@ function normalizeBackgroundStyle(input: unknown, fallback: StatsBackgroundStyle
   };
 }
 
-export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null): NormalizedStatsStyle {
+function normalizeNavItemStyle(input: unknown, fallback: StatsNavItemStyle): StatsNavItemStyle {
+  const raw = input && typeof input === "object" ? (input as Partial<StatsNavItemStyle>) : {};
   return {
-    background: normalizeBackgroundStyle(input?.background, DEFAULT_STATS_STYLE.background),
-    containerBackground: normalizeBackgroundStyle(input?.containerBackground, DEFAULT_STATS_STYLE.containerBackground),
-    elementBackground: normalizeBackgroundStyle(input?.elementBackground, DEFAULT_STATS_STYLE.elementBackground),
-    fontColor: normalizeHex(input?.fontColor, DEFAULT_STATS_STYLE.fontColor),
-    fontStyle: normalizeFontStyle(input?.fontStyle, DEFAULT_STATS_STYLE.fontStyle),
-    leaderboardSize: normalizeInt(input?.leaderboardSize, DEFAULT_STATS_STYLE.leaderboardSize, 1, 100),
-    pieChartColors: normalizePieChartColors(input?.pieChartColors, DEFAULT_STATS_STYLE.pieChartColors),
-    barChartProfitColor: normalizeHex(input?.barChartProfitColor, DEFAULT_STATS_STYLE.barChartProfitColor),
-    barChartLossColor: normalizeHex(input?.barChartLossColor, DEFAULT_STATS_STYLE.barChartLossColor),
-    barChartDays: normalizeInt(input?.barChartDays, DEFAULT_STATS_STYLE.barChartDays, 1, 365),
+    background: normalizeBackgroundStyle(raw.background, fallback.background),
+    borderRadius: normalizeInt(raw.borderRadius, fallback.borderRadius, 0, 999),
+    fontColor: normalizeHex(raw.fontColor, fallback.fontColor),
+    fontSize: normalizeInt(raw.fontSize, fallback.fontSize, 8, 72),
+    fontStyle: normalizeFontStyle(raw.fontStyle, fallback.fontStyle),
+  };
+}
+
+export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null): NormalizedStatsStyle {
+  const background = normalizeBackgroundStyle(input?.background, DEFAULT_STATS_STYLE.background);
+  const containerBackground = normalizeBackgroundStyle(input?.containerBackground, DEFAULT_STATS_STYLE.containerBackground);
+  const elementBackground = normalizeBackgroundStyle(input?.elementBackground, DEFAULT_STATS_STYLE.elementBackground);
+  const fontColor = normalizeHex(input?.fontColor, DEFAULT_STATS_STYLE.fontColor);
+  const fontStyle = normalizeFontStyle(input?.fontStyle, DEFAULT_STATS_STYLE.fontStyle);
+  const leaderboardSize = normalizeInt(input?.leaderboardSize, DEFAULT_STATS_STYLE.leaderboardSize, 1, 100);
+  const pieChartColors = normalizePieChartColors(input?.pieChartColors, DEFAULT_STATS_STYLE.pieChartColors);
+  const barChartProfitColor = normalizeHex(input?.barChartProfitColor, DEFAULT_STATS_STYLE.barChartProfitColor);
+  const barChartLossColor = normalizeHex(input?.barChartLossColor, DEFAULT_STATS_STYLE.barChartLossColor);
+  const barChartDays = normalizeInt(input?.barChartDays, DEFAULT_STATS_STYLE.barChartDays, 1, 365);
+
+  return {
+    background,
+    containerBackground,
+    elementBackground,
+    fontColor,
+    fontStyle,
+    leaderboardSize,
+    pieChartColors,
+    barChartProfitColor,
+    barChartLossColor,
+    barChartDays,
+    scratchBackground: normalizeBackgroundStyle(input?.scratchBackground, background),
+    scratchContainerBackground: normalizeBackgroundStyle(input?.scratchContainerBackground, containerBackground),
+    scratchElementBackground: normalizeBackgroundStyle(input?.scratchElementBackground, elementBackground),
+    scratchFontColor: normalizeHex(input?.scratchFontColor, fontColor),
+    scratchFontStyle: normalizeFontStyle(input?.scratchFontStyle, fontStyle),
+    scratchLeaderboardSize: normalizeInt(input?.scratchLeaderboardSize, leaderboardSize, 1, 100),
+    scratchChartCardsColor: normalizeHex(input?.scratchChartCardsColor, pieChartColors[0] ?? DEFAULT_STATS_STYLE.scratchChartCardsColor),
+    scratchChartWinsColor: normalizeHex(input?.scratchChartWinsColor, pieChartColors[1] ?? DEFAULT_STATS_STYLE.scratchChartWinsColor),
+    scratchChartValueColor: normalizeHex(input?.scratchChartValueColor, barChartProfitColor),
+    scratchLeaderboardTableBackground: normalizeBackgroundStyle(
+      input?.scratchLeaderboardTableBackground,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTableBackground
+    ),
+    scratchLeaderboardTableHeaderBackground: normalizeBackgroundStyle(
+      input?.scratchLeaderboardTableHeaderBackground,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTableHeaderBackground
+    ),
+    scratchLeaderboardTableHeaderTextColor: normalizeHex(
+      input?.scratchLeaderboardTableHeaderTextColor,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTableHeaderTextColor
+    ),
+    scratchLeaderboardTabContainerBackground: normalizeBackgroundStyle(
+      input?.scratchLeaderboardTabContainerBackground,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTabContainerBackground
+    ),
+    scratchLeaderboardTabActiveBackground: normalizeBackgroundStyle(
+      input?.scratchLeaderboardTabActiveBackground,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTabActiveBackground
+    ),
+    scratchLeaderboardTabInactiveBackground: normalizeBackgroundStyle(
+      input?.scratchLeaderboardTabInactiveBackground,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTabInactiveBackground
+    ),
+    scratchLeaderboardTabHoverBackground: normalizeBackgroundStyle(
+      input?.scratchLeaderboardTabHoverBackground,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTabHoverBackground
+    ),
+    scratchLeaderboardTabActiveTextColor: normalizeHex(
+      input?.scratchLeaderboardTabActiveTextColor,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTabActiveTextColor
+    ),
+    scratchLeaderboardTabInactiveTextColor: normalizeHex(
+      input?.scratchLeaderboardTabInactiveTextColor,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTabInactiveTextColor
+    ),
+    scratchLeaderboardTabHoverTextColor: normalizeHex(
+      input?.scratchLeaderboardTabHoverTextColor,
+      DEFAULT_STATS_STYLE.scratchLeaderboardTabHoverTextColor
+    ),
+    publicNavShowBlackjack: normalizeBool(input?.publicNavShowBlackjack, DEFAULT_STATS_STYLE.publicNavShowBlackjack),
+    publicNavShowScratch: normalizeBool(input?.publicNavShowScratch, DEFAULT_STATS_STYLE.publicNavShowScratch),
+    publicNavBackground: normalizeBackgroundStyle(input?.publicNavBackground, DEFAULT_STATS_STYLE.publicNavBackground),
+    publicNavBorderRadius: normalizeInt(input?.publicNavBorderRadius, DEFAULT_STATS_STYLE.publicNavBorderRadius, 0, 999),
+    publicNavFontColor: normalizeHex(input?.publicNavFontColor, DEFAULT_STATS_STYLE.publicNavFontColor),
+    publicNavFontSize: normalizeInt(input?.publicNavFontSize, DEFAULT_STATS_STYLE.publicNavFontSize, 8, 72),
+    publicNavFontStyle: normalizeFontStyle(input?.publicNavFontStyle, DEFAULT_STATS_STYLE.publicNavFontStyle),
+    publicNavInactive: normalizeNavItemStyle(input?.publicNavInactive, DEFAULT_STATS_STYLE.publicNavInactive),
+    publicNavHover: normalizeNavItemStyle(input?.publicNavHover, DEFAULT_STATS_STYLE.publicNavHover),
+    publicNavActive: normalizeNavItemStyle(input?.publicNavActive, DEFAULT_STATS_STYLE.publicNavActive),
   };
 }
 
@@ -171,24 +330,28 @@ export function getStatsFontFamily(fontStyle: StatsFontStyle) {
   }
 }
 
-export function getBackgroundStyleCss(surface: StatsBackgroundStyle): CSSProperties {
-  if (surface.mode === "image" && surface.imageUrl) {
+export function getBackgroundStyleCss(surface?: StatsBackgroundStyle | string | null): CSSProperties {
+  const resolvedSurface = normalizeBackgroundStyle(surface, DEFAULT_STATS_STYLE.background);
+
+  if (resolvedSurface.mode === "image" && resolvedSurface.imageUrl) {
     return {
-      backgroundColor: surface.color,
-      backgroundImage: `url("${surface.imageUrl.replace(/"/g, "\\\"")}")`,
+      backgroundColor: resolvedSurface.color,
+      backgroundImage: `url("${resolvedSurface.imageUrl.replace(/"/g, "\\\"")}")`,
       backgroundPosition: "center",
-      backgroundRepeat: surface.imageFit === "repeat" ? "repeat" : "no-repeat",
-      backgroundSize: surface.imageFit === "repeat" ? "auto" : "cover",
+      backgroundRepeat: resolvedSurface.imageFit === "repeat" ? "repeat" : "no-repeat",
+      backgroundSize: resolvedSurface.imageFit === "repeat" ? "auto" : "cover",
     };
   }
 
-  if (surface.mode === "gradient") {
-    const colors = surface.gradientColors.length >= 2 ? surface.gradientColors : [surface.color, surface.color];
+  if (resolvedSurface.mode === "gradient") {
+    const colors = resolvedSurface.gradientColors.length >= 2
+      ? resolvedSurface.gradientColors
+      : [resolvedSurface.color, resolvedSurface.color];
     return {
       backgroundColor: colors[0],
-      backgroundImage: `linear-gradient(${surface.gradientDirection}, ${colors.join(", ")})`,
+      backgroundImage: `linear-gradient(${resolvedSurface.gradientDirection}, ${colors.join(", ")})`,
     };
   }
 
-  return { backgroundColor: surface.color };
+  return { backgroundColor: resolvedSurface.color };
 }

@@ -10,13 +10,25 @@ type AliasRow = {
   createdBy?: string;
 };
 
+type AliasDraft = {
+  primaryTag: string;
+  aliasTag: string;
+};
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export function Aliases() {
   const [primaryTag, setPrimaryTag] = useState("");
   const [aliasTag, setAliasTag] = useState("");
   const [busy, setBusy] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [rows, setRows] = useState<AliasRow[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, AliasDraft>>({});
 
   const sorted = useMemo(() => rows.slice().sort((a, b) => (a.primaryTag + a.aliasTag).localeCompare(b.primaryTag + b.aliasTag)), [rows]);
 
@@ -24,7 +36,13 @@ export function Aliases() {
     const res = await fetch("/api/admin/aliases", { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error ?? "Failed to load aliases");
-    setRows(Array.isArray(data?.aliases) ? data.aliases : []);
+    const nextRows: AliasRow[] = Array.isArray(data?.aliases) ? (data.aliases as AliasRow[]) : [];
+    setRows(nextRows);
+    const nextDrafts: Record<string, AliasDraft> = {};
+    nextRows.forEach((row) => {
+      nextDrafts[row.id] = { primaryTag: row.primaryTag, aliasTag: row.aliasTag };
+    });
+    setDrafts(nextDrafts);
   };
 
   useEffect(() => {
@@ -32,8 +50,8 @@ export function Aliases() {
       setLoading(true);
       try {
         await refresh();
-      } catch (e: any) {
-        setMessage(e?.message ?? "Failed to load aliases");
+      } catch (error: unknown) {
+        setMessage(getErrorMessage(error, "Failed to load aliases"));
       } finally {
         setLoading(false);
       }
@@ -65,8 +83,8 @@ export function Aliases() {
             setAliasTag("");
             await refresh();
             setMessage("Alias saved");
-          } catch (err: any) {
-            setMessage(err?.message ?? "Failed to create alias");
+          } catch (error: unknown) {
+            setMessage(getErrorMessage(error, "Failed to create alias"));
           } finally {
             setBusy(false);
           }
@@ -114,8 +132,8 @@ export function Aliases() {
               setLoading(true);
               try {
                 await refresh();
-              } catch (e: any) {
-                setMessage(e?.message ?? "Failed to load aliases");
+              } catch (error: unknown) {
+                setMessage(getErrorMessage(error, "Failed to load aliases"));
               } finally {
                 setLoading(false);
               }
@@ -139,29 +157,92 @@ export function Aliases() {
             <div>
               {sorted.map((r) => (
                 <div key={r.id} className="grid grid-cols-[1fr_1fr_auto] items-center gap-3 border-b border-zinc-100 px-3 py-2 text-xs text-zinc-800 last:border-b-0">
-                  <div className="truncate font-medium text-zinc-900">{r.primaryTag}</div>
-                  <div className="truncate">{r.aliasTag}</div>
+                  <input
+                    value={drafts[r.id]?.primaryTag ?? ""}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [r.id]: {
+                          primaryTag: e.target.value,
+                          aliasTag: prev[r.id]?.aliasTag ?? r.aliasTag,
+                        },
+                      }))
+                    }
+                    className="min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-900 outline-none transition focus:border-[#FF9FC6] focus:ring-4 focus:ring-[#FF9FC6]/25"
+                  />
+                  <input
+                    value={drafts[r.id]?.aliasTag ?? ""}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [r.id]: {
+                          primaryTag: prev[r.id]?.primaryTag ?? r.primaryTag,
+                          aliasTag: e.target.value,
+                        },
+                      }))
+                    }
+                    className="min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none transition focus:border-[#FF9FC6] focus:ring-4 focus:ring-[#FF9FC6]/25"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const draft = drafts[r.id] ?? { primaryTag: r.primaryTag, aliasTag: r.aliasTag };
+                        setMessage(null);
+                        setSavingId(r.id);
+                        try {
+                          const res = await fetch(`/api/admin/aliases/${r.id}`, {
+                            method: "PATCH",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify(draft),
+                          });
+                          const data = await res.json().catch(() => ({}));
+                          if (!res.ok) throw new Error(data?.error ?? "Failed to update alias");
+                          await refresh();
+                          setMessage("Alias updated");
+                        } catch (error: unknown) {
+                          setMessage(getErrorMessage(error, "Failed to update alias"));
+                        } finally {
+                          setSavingId(null);
+                        }
+                      }}
+                      disabled={
+                        busy ||
+                        removingId === r.id ||
+                        savingId === r.id ||
+                        !(drafts[r.id]?.primaryTag ?? r.primaryTag).trim() ||
+                        !(drafts[r.id]?.aliasTag ?? r.aliasTag).trim() ||
+                        (
+                          (drafts[r.id]?.primaryTag ?? r.primaryTag).trim() === r.primaryTag &&
+                          (drafts[r.id]?.aliasTag ?? r.aliasTag).trim() === r.aliasTag
+                        )
+                      }
+                      className="rounded-xl border border-[#FF9FC6]/35 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 transition hover:bg-[#FF9FC6]/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9FC6]/25 disabled:cursor-not-allowed disabled:opacity-60 hover:cursor-pointer"
+                    >
+                      {savingId === r.id ? "Saving..." : "Save"}
+                    </button>
                   <button
                     type="button"
                     onClick={async () => {
                       setMessage(null);
-                      setBusy(true);
+                      setRemovingId(r.id);
                       try {
                         const res = await fetch(`/api/admin/aliases/${r.id}`, { method: "DELETE" });
                         const data = await res.json().catch(() => ({}));
                         if (!res.ok) throw new Error(data?.error ?? "Failed to delete");
                         await refresh();
-                      } catch (e: any) {
-                        setMessage(e?.message ?? "Failed to delete");
+                      } catch (error: unknown) {
+                        setMessage(getErrorMessage(error, "Failed to delete"));
                       } finally {
-                        setBusy(false);
+                        setRemovingId(null);
                       }
                     }}
-                    disabled={busy}
+                    disabled={busy || savingId === r.id || removingId === r.id}
                     className="rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9FC6]/25 disabled:cursor-not-allowed disabled:opacity-60 hover:cursor-pointer"
                   >
-                    Remove
+                    {removingId === r.id ? "Removing..." : "Remove"}
                   </button>
+                  </div>
                 </div>
               ))}
             </div>

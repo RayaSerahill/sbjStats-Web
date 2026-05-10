@@ -15,6 +15,7 @@ export type AdminSection =
   | "api-keys"
   | "stats-style"
   | "users"
+  | "whitelist"
   | null;
 
 type NavGroup = "general" | "blackjack" | "scratch" | "admin";
@@ -49,6 +50,7 @@ export function AdminSectionsClient({
                                       apiKeys,
                                       statsStyle,
                                       users,
+                                      whitelist,
                                       canManageUsers,
                                     }: {
   home: React.ReactNode;
@@ -63,6 +65,7 @@ export function AdminSectionsClient({
   apiKeys: React.ReactNode;
   statsStyle: React.ReactNode;
   users?: React.ReactNode;
+  whitelist?: React.ReactNode;
   canManageUsers: boolean;
 }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("home");
@@ -80,6 +83,7 @@ export function AdminSectionsClient({
         label: "General",
         items: [
           { id: "home", label: "Home" },
+          { id: "traffic", label: "Traffic" },
           { id: "account", label: "Account" },
           { id: "aliases", label: "Aliases" },
           { id: "hidden-players", label: "Hidden Players" },
@@ -91,6 +95,7 @@ export function AdminSectionsClient({
         id: "blackjack",
         label: "Blackjack",
         items: [
+          { id: "import", label: "Game Import" },
           { id: "games", label: "Games" },
         ],
       },
@@ -108,7 +113,10 @@ export function AdminSectionsClient({
       base.push({
         id: "admin",
         label: "Admin",
-        items: [{ id: "users", label: "Users" }],
+        items: [
+          { id: "users", label: "Users" },
+          { id: "whitelist", label: "Whitelist" },
+        ],
       });
     }
 
@@ -129,6 +137,7 @@ export function AdminSectionsClient({
       "scratch-games": "scratch",
       "scratch-prizes": "scratch",
       users: "admin",
+      whitelist: "admin",
     }),
     []
   );
@@ -149,7 +158,7 @@ export function AdminSectionsClient({
         ...prev,
         [group]: true,
       }));
-      window.location.hash = id;
+      history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
     } else {
       history.replaceState(null, "", window.location.pathname + window.location.search);
     }
@@ -207,6 +216,14 @@ export function AdminSectionsClient({
               {home}
             </section>
 
+            <section id="traffic" className={["mt-6 scroll-mt-28", activeSection === "traffic" ? "" : "lg:hidden"].join(" ")}>
+              {traffic}
+            </section>
+
+            <section id="import" className={["mt-6 scroll-mt-28", activeSection === "import" ? "" : "lg:hidden"].join(" ")}>
+              {gameImport}
+            </section>
+
             <section id="account" className={["mt-6 scroll-mt-28", activeSection === "account" ? "" : "lg:hidden"].join(" ")}>
               {account}
             </section>
@@ -251,6 +268,12 @@ export function AdminSectionsClient({
             {canManageUsers ? (
               <section id="users" className={["mt-6 scroll-mt-28", activeSection === "users" ? "" : "lg:hidden"].join(" ")}>
                 {users}
+              </section>
+            ) : null}
+
+            {canManageUsers ? (
+              <section id="whitelist" className={["mt-6 scroll-mt-28", activeSection === "whitelist" ? "" : "lg:hidden"].join(" ")}>
+                {whitelist}
               </section>
             ) : null}
           </main>

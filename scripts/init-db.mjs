@@ -17,6 +17,7 @@ const run = async () => {
   const db = client.db(dbName);
 
   const users = db.collection("users");
+  const whitelist = db.collection("whitelist");
   await users.createIndex({ email: 1 }, { unique: true });
   await users.createIndex({ username: 1 }, { unique: true, sparse: true });
   await users.createIndex({ discord: 1 }, { unique: true, sparse: true });
@@ -25,6 +26,8 @@ const run = async () => {
   await users.createIndex({ deleted: 1, updatedAt: -1 }, { sparse: true });
   await users.createIndex({ apiKeyHash: 1 }, { unique: true, sparse: true });
   await users.createIndex({ apiKeyCreatedAt: -1 }, { sparse: true });
+  await whitelist.createIndex({ type: 1, value: 1 }, { unique: true });
+  await whitelist.createIndex({ createdAt: -1 });
 
   const players = db.collection("players");
   await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -138,7 +141,7 @@ const run = async () => {
   const traffic = db.collection("traffic");
   await traffic.createIndex({ userId: 1, at: 1 })
 
-  console.log(`OK: indexes ready in db "${dbName}" (users, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, books, traffic)`);
+  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, books, traffic)`);
 };
 
 run()

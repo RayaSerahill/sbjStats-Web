@@ -3,9 +3,19 @@ import { ensureAuthCollections, getDb, type UserDoc, type UserRole } from "@/lib
 import { AUTH_COOKIE_NAME, authCookieOptions, signAuthToken } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
 import { getAvailableUsername, isValidUsername, normalizeUsername, usernameValidationMessage } from "@/lib/account";
+import { findRegistrationWhitelistMatch } from "@/lib/whitelist";
 
 function basicEmailValid(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getErrorCode(error: unknown) {
+  if (!error || typeof error !== "object" || !("code" in error)) return undefined;
+  return (error as { code?: unknown }).code;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "";
 }
 
 export async function POST(req: Request) {
@@ -62,6 +72,11 @@ export async function POST(req: Request) {
 
   const db = await getDb();
   const users = db.collection<UserDoc>("users");
+  const whitelistMatch = await findRegistrationWhitelistMatch(db, { email });
+
+  if (!whitelistMatch) {
+    return NextResponse.json({ error: "That email address is not whitelisted for registration" }, { status: 403 });
+  }
 
   const existingCount = await users.countDocuments({}, { limit: 2 });
   const role: UserRole = existingCount === 0 ? "owner" : "dealer";
@@ -96,9 +111,9 @@ export async function POST(req: Request) {
     const res = NextResponse.json({ user: { id, email, username: username ?? null, name: name || null, role } });
     res.cookies.set(AUTH_COOKIE_NAME, token, authCookieOptions());
     return res;
-  } catch (err: any) {
-    if (err?.code === 11000) {
-      const dupField = err?.message?.includes("email") ? "That email is already registered" : "That username is already taken";
+  } catch (error: unknown) {
+    if (getErrorCode(error) === 11000) {
+      const dupField = getErrorMessage(error).includes("email") ? "That email is already registered" : "That username is already taken";
       return NextResponse.json({ error: dupField }, { status: 409 });
     }
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });

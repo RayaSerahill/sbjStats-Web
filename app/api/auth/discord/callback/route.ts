@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { AUTH_COOKIE_NAME, authCookieOptions, signAuthToken, verifyAuthToken } from "@/lib/auth";
 import { ensureAuthCollections, getDb, type UserDoc, type UserRole } from "@/lib/db";
+import { findRegistrationWhitelistMatch } from "@/lib/whitelist";
 
 const STATE_COOKIE = "discord_oauth_state";
 const MODE_COOKIE = "discord_oauth_mode";
@@ -176,6 +177,19 @@ export async function GET(req: Request) {
       if (!email) {
         throw new Error("Discord did not return an email address");
       }
+
+      const whitelistMatch = await findRegistrationWhitelistMatch(db, { email, discord: discordId });
+      if (!whitelistMatch) {
+        return clearOauthCookies(
+          NextResponse.redirect(
+            new URL(
+              `/dashboard/register?error=${encodeURIComponent("Your email address or Discord ID is not whitelisted for registration")}`,
+              baseUrl
+            )
+          )
+        );
+      }
+
       const existingCount = await users.countDocuments({}, { limit: 2 });
       role = existingCount === 0 ? "owner" : "dealer";
       const now = new Date();

@@ -2,6 +2,7 @@ import type { Db, ObjectId } from "mongodb";
 import clientPromise from "./mongodb";
 
 export type UserRole = "owner" | "admin" | "dealer";
+export type WhitelistEntryType = "email" | "discord";
 
 export type UserDoc = {
   _id?: ObjectId;
@@ -20,6 +21,14 @@ export type UserDoc = {
   updatedAt: Date;
 };
 
+export type WhitelistEntryDoc = {
+  _id?: ObjectId;
+  type: WhitelistEntryType;
+  value: string;
+  createdBy: string;
+  createdAt: Date;
+};
+
 const dbName = () => process.env.MONGODB_DB ?? "gamba";
 
 let initPromise: Promise<void> | null = null;
@@ -34,11 +43,16 @@ export function isUserRole(value: unknown): value is UserRole {
   return value === "owner" || value === "admin" || value === "dealer";
 }
 
+export function isWhitelistEntryType(value: unknown): value is WhitelistEntryType {
+  return value === "email" || value === "discord";
+}
+
 export async function ensureAuthCollections() {
   if (!initPromise) {
     initPromise = (async () => {
       const db = await getDb();
       const users = db.collection<UserDoc>("users");
+      const whitelist = db.collection<WhitelistEntryDoc>("whitelist");
       await users.createIndex({ email: 1 }, { unique: true });
       await users.createIndex({ username: 1 }, { unique: true, sparse: true });
       await users.createIndex({ discord: 1 }, { unique: true, sparse: true });
@@ -47,6 +61,8 @@ export async function ensureAuthCollections() {
       await users.createIndex({ deleted: 1, updatedAt: -1 }, { sparse: true });
       await users.createIndex({ apiKeyHash: 1 }, { unique: true, sparse: true });
       await users.createIndex({ apiKeyCreatedAt: -1 }, { sparse: true });
+      await whitelist.createIndex({ type: 1, value: 1 }, { unique: true });
+      await whitelist.createIndex({ createdAt: -1 });
     })();
   }
 

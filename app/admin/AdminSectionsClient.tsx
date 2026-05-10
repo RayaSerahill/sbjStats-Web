@@ -13,6 +13,7 @@ type AdminSection =
   | "api-keys"
   | "stats-style"
   | "users"
+  | "whitelist"
   | null;
 
 export function AdminSectionsClient({
@@ -26,6 +27,7 @@ export function AdminSectionsClient({
                                       apiKeys,
                                       statsStyle,
                                       users,
+                                      whitelist,
                                       canManageUsers,
                                     }: {
   gameImport: React.ReactNode;
@@ -38,6 +40,7 @@ export function AdminSectionsClient({
   apiKeys: React.ReactNode;
   statsStyle: React.ReactNode;
   users?: React.ReactNode;
+  whitelist?: React.ReactNode;
   canManageUsers: boolean;
 }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("import");
@@ -54,13 +57,14 @@ export function AdminSectionsClient({
         { id: "stats-style" as const, label: "Stats Style" },
         { id: "api-keys" as const, label: "API Keys" },
         ...(canManageUsers ? [{ id: "users" as const, label: "Users" }] : []),
+        ...(canManageUsers ? [{ id: "whitelist" as const, label: "Whitelist" }] : []),
       ],
       [canManageUsers]
   );
 
   const showSection = (id: AdminSection) => {
     setActiveSection(id);
-    if (id) window.location.hash = id;
+    if (id) history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
     else history.replaceState(null, "", window.location.pathname + window.location.search);
   };
 
@@ -141,6 +145,12 @@ export function AdminSectionsClient({
             {canManageUsers ? (
               <section id="users" className={["mt-6 scroll-mt-28", activeSection === "users" ? "" : "lg:hidden"].join(" ")}>
                 {users}
+              </section>
+            ) : null}
+
+            {canManageUsers ? (
+              <section id="whitelist" className={["mt-6 scroll-mt-28", activeSection === "whitelist" ? "" : "lg:hidden"].join(" ")}>
+                {whitelist}
               </section>
             ) : null}
           </main>

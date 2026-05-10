@@ -17,7 +17,8 @@ import { ScratchPrizes } from "../components/ScratchPrizes";
 import { Users } from "../components/Users";
 import { Home } from "../components/Home";
 import { Traffic } from "../components/Traffic";
-import { StatsFooterSection } from "../components/StatsFooterSection"
+import { StatsFooterSection } from "../components/StatsFooterSection";
+import { Whitelist } from "../components/Whitelist";
 
 export default async function AdminPage() {
   await ensureAuthCollections();
@@ -36,37 +37,38 @@ export default async function AdminPage() {
   const canManageUsers = user.role === "owner" || user.role === "admin";
 
   return (
-      <>
-        <div className="mx-auto w-full max-w-6xl px-4">
-          <div className="rounded-3xl p-6 cute-border">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h1 className="text-xl font-semibold text-zinc-900">Admin</h1>
-                <p className="mt-2 text-sm text-zinc-600">
-                  Logged in as <span className="font-medium text-zinc-900">{user?.name ?? user?.username ?? auth.email}</span>
-                </p>
-              </div>
-              <LogoutButton />
+    <>
+      <div className="mx-auto w-full max-w-6xl px-4">
+        <div className="rounded-3xl p-6 cute-border">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-xl font-semibold text-zinc-900">Admin</h1>
+              <p className="mt-2 text-sm text-zinc-600">
+                Logged in as <span className="font-medium text-zinc-900">{user?.name ?? user?.username ?? auth.email}</span>
+              </p>
             </div>
+            <LogoutButton />
           </div>
-
-          <AdminSectionsClient
-              home={<Home />}
-              traffic={<Traffic />}
-              gameImport={<GameImport />}
-              account={<Account />}
-              games={<Games />}
-              scratchGames={<ScratchGames />}
-              scratchPrizes={<ScratchPrizes />}
-              aliases={<Aliases />}
-              hiddenPlayers={<HiddenPlayers />}
-              apiKeys={<ApiKeys />}
-              statsStyle={<StatsStyleEditor />}
-              users={canManageUsers ? <Users /> : null}
-              canManageUsers={canManageUsers}
-          />
-          <StatsFooterSection />
         </div>
-      </>
+
+        <AdminSectionsClient
+          home={<Home />}
+          traffic={<Traffic />}
+          gameImport={<GameImport />}
+          account={<Account />}
+          games={<Games />}
+          scratchGames={<ScratchGames />}
+          scratchPrizes={<ScratchPrizes />}
+          aliases={<Aliases />}
+          hiddenPlayers={<HiddenPlayers />}
+          apiKeys={<ApiKeys />}
+          statsStyle={<StatsStyleEditor />}
+          users={canManageUsers ? <Users /> : null}
+          whitelist={canManageUsers ? <Whitelist /> : null}
+          canManageUsers={canManageUsers}
+        />
+        <StatsFooterSection />
+      </div>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-const STATS_PREFIX = "https://serahill.net/stats/";
+const STATS_PREFIX = "https://stats.serahill.net/";
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -26,7 +26,7 @@ export default function RegisterForm() {
         <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
             <h1 className="text-xl font-semibold">Create dashboard account</h1>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                Register for SBJ Stats account with either email and password or Discord!
+                Register for SBJ Stats with email and password or with Discord. New registrations require a whitelisted email address or Discord ID.
             </p>
 
             <a

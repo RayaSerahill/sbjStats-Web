@@ -59,10 +59,19 @@ export default async function AdminPage() {
           games={<Games />}
           scratchGames={<ScratchGames />}
           scratchPrizes={<ScratchPrizes />}
-          aliases={<Aliases />}
+          aliases={<Aliases showGlobalToggle />}
           hiddenPlayers={<HiddenPlayers />}
           apiKeys={<ApiKeys />}
           statsStyle={<StatsStyleEditor />}
+          globalAliases={
+            canManageUsers ? (
+              <Aliases
+                title="Global aliases"
+                description="Aliases managed by admins and applied to public pages before each user's own aliases."
+                endpoint="/api/admin/global-aliases"
+              />
+            ) : null
+          }
           users={canManageUsers ? <Users /> : null}
           whitelist={canManageUsers ? <Whitelist /> : null}
           canManageUsers={canManageUsers}

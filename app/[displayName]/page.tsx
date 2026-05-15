@@ -8,6 +8,7 @@ import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } f
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
+import { PlayerSearch } from "./PlayerSearch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -517,6 +518,7 @@ export default async function DealerStatsPage({
   const pageBackgroundStyle = getBackgroundStyleCss(style.background);
   const containerBackgroundStyle = getBackgroundStyleCss(style.containerBackground);
   const elementBackgroundStyle = getBackgroundStyleCss(style.elementBackground);
+  const headerTextColor = style.headerTextColor;
   const title = data.displayName;
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.fontColor, fontFamily }}>
@@ -537,10 +539,10 @@ export default async function DealerStatsPage({
       </div>
       <div className="mx-auto w-full max-w-5xl rounded-3xl border border-black/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={containerBackgroundStyle}>
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold" style={{ color: style.fontColor }}>{title}</h1>
-          <p className="text-sm" style={{ color: style.fontColor }}>
+          <h1 className="text-2xl font-semibold" style={{ color: headerTextColor }}>{title}</h1>
+          <p className="text-sm" style={{ color: headerTextColor }}>
             Stats for uploader{" "}
-            <span className="font-medium" style={{ color: style.fontColor }}>
+            <span className="font-medium" style={{ color: headerTextColor }}>
               {data.username || data.displayName}
             </span>
             {data.totalPlayers ? (
@@ -651,6 +653,18 @@ export default async function DealerStatsPage({
                 </ol>
               </div>
             </div>
+
+            <PlayerSearch
+                uploaderId={data.uploaderId}
+                fontColor={style.fontColor}
+                headerTextColor={headerTextColor}
+                elementBackground={style.elementBackground}
+                popupBackground={style.playerSearchPopupBackground}
+                searchAccentColor={style.playerSearchAccentColor}
+                chartProfitColor={style.playerSearchChartProfitColor}
+                chartLossColor={style.playerSearchChartLossColor}
+                chartTotalProfitColor={style.playerSearchChartTotalProfitColor}
+            />
 
             {data.uploaderId ? (
               <Suspense

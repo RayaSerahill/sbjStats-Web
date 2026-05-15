@@ -34,6 +34,7 @@ export type NormalizedStatsStyle = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
+  headerTextColor: string;
   fontColor: string;
   fontStyle: StatsFontStyle;
   leaderboardSize: number;
@@ -41,6 +42,11 @@ export type NormalizedStatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  playerSearchPopupBackground: StatsBackgroundStyle;
+  playerSearchAccentColor: string;
+  playerSearchChartProfitColor: string;
+  playerSearchChartLossColor: string;
+  playerSearchChartTotalProfitColor: string;
   scratchBackground: StatsBackgroundStyle;
   scratchContainerBackground: StatsBackgroundStyle;
   scratchElementBackground: StatsBackgroundStyle;
@@ -93,6 +99,7 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   background: defaultBackground("#000000"),
   containerBackground: defaultBackground("#ffffff"),
   elementBackground: defaultBackground("#ffffff"),
+  headerTextColor: "#000000",
   fontColor: "#000000",
   fontStyle: "sans",
   leaderboardSize: 20,
@@ -100,6 +107,11 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  playerSearchPopupBackground: defaultBackground("#ffffff"),
+  playerSearchAccentColor: "#ff9fc6",
+  playerSearchChartProfitColor: "#16a34a",
+  playerSearchChartLossColor: "#dc2626",
+  playerSearchChartTotalProfitColor: "#ff9fc6",
   scratchBackground: defaultBackground("#000000"),
   scratchContainerBackground: defaultBackground("#ffffff"),
   scratchElementBackground: defaultBackground("#ffffff"),
@@ -237,17 +249,24 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
   const containerBackground = normalizeBackgroundStyle(input?.containerBackground, DEFAULT_STATS_STYLE.containerBackground);
   const elementBackground = normalizeBackgroundStyle(input?.elementBackground, DEFAULT_STATS_STYLE.elementBackground);
   const fontColor = normalizeHex(input?.fontColor, DEFAULT_STATS_STYLE.fontColor);
+  const headerTextColor = normalizeHex(input?.headerTextColor, fontColor);
   const fontStyle = normalizeFontStyle(input?.fontStyle, DEFAULT_STATS_STYLE.fontStyle);
   const leaderboardSize = normalizeInt(input?.leaderboardSize, DEFAULT_STATS_STYLE.leaderboardSize, 1, 100);
   const pieChartColors = normalizePieChartColors(input?.pieChartColors, DEFAULT_STATS_STYLE.pieChartColors);
   const barChartProfitColor = normalizeHex(input?.barChartProfitColor, DEFAULT_STATS_STYLE.barChartProfitColor);
   const barChartLossColor = normalizeHex(input?.barChartLossColor, DEFAULT_STATS_STYLE.barChartLossColor);
   const barChartDays = normalizeInt(input?.barChartDays, DEFAULT_STATS_STYLE.barChartDays, 1, 365);
+  const playerSearchPopupBackground = normalizeBackgroundStyle(input?.playerSearchPopupBackground, containerBackground);
+  const playerSearchAccentColor = normalizeHex(input?.playerSearchAccentColor, DEFAULT_STATS_STYLE.playerSearchAccentColor);
+  const playerSearchChartProfitColor = normalizeHex(input?.playerSearchChartProfitColor, barChartProfitColor);
+  const playerSearchChartLossColor = normalizeHex(input?.playerSearchChartLossColor, barChartLossColor);
+  const playerSearchChartTotalProfitColor = normalizeHex(input?.playerSearchChartTotalProfitColor, playerSearchAccentColor);
 
   return {
     background,
     containerBackground,
     elementBackground,
+    headerTextColor,
     fontColor,
     fontStyle,
     leaderboardSize,
@@ -255,6 +274,11 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
     barChartProfitColor,
     barChartLossColor,
     barChartDays,
+    playerSearchPopupBackground,
+    playerSearchAccentColor,
+    playerSearchChartProfitColor,
+    playerSearchChartLossColor,
+    playerSearchChartTotalProfitColor,
     scratchBackground: normalizeBackgroundStyle(input?.scratchBackground, background),
     scratchContainerBackground: normalizeBackgroundStyle(input?.scratchContainerBackground, containerBackground),
     scratchElementBackground: normalizeBackgroundStyle(input?.scratchElementBackground, elementBackground),

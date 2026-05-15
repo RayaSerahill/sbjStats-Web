@@ -24,6 +24,7 @@ export type StatsStyleDoc = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
+  headerTextColor: string;
   fontColor: string;
   fontStyle: StatsFontStyle;
   leaderboardSize: number;
@@ -31,6 +32,11 @@ export type StatsStyleDoc = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  playerSearchPopupBackground: StatsBackgroundStyle;
+  playerSearchAccentColor: string;
+  playerSearchChartProfitColor: string;
+  playerSearchChartLossColor: string;
+  playerSearchChartTotalProfitColor: string;
   scratchBackground: StatsBackgroundStyle;
   scratchContainerBackground: StatsBackgroundStyle;
   scratchElementBackground: StatsBackgroundStyle;
@@ -70,6 +76,7 @@ export type StatsStyleInput = Partial<
     | "background"
     | "containerBackground"
     | "elementBackground"
+    | "headerTextColor"
     | "fontColor"
     | "fontStyle"
     | "leaderboardSize"
@@ -77,6 +84,11 @@ export type StatsStyleInput = Partial<
     | "barChartProfitColor"
     | "barChartLossColor"
     | "barChartDays"
+    | "playerSearchPopupBackground"
+    | "playerSearchAccentColor"
+    | "playerSearchChartProfitColor"
+    | "playerSearchChartLossColor"
+    | "playerSearchChartTotalProfitColor"
     | "scratchBackground"
     | "scratchContainerBackground"
     | "scratchElementBackground"

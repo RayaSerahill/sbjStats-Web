@@ -36,6 +36,7 @@ type StatsStyle = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
+  headerTextColor: string;
   fontColor: string;
   fontStyle: StatsFontStyle;
   leaderboardSize: number;
@@ -43,6 +44,11 @@ type StatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  playerSearchPopupBackground: StatsBackgroundStyle;
+  playerSearchAccentColor: string;
+  playerSearchChartProfitColor: string;
+  playerSearchChartLossColor: string;
+  playerSearchChartTotalProfitColor: string;
   scratchBackground: StatsBackgroundStyle;
   scratchContainerBackground: StatsBackgroundStyle;
   scratchElementBackground: StatsBackgroundStyle;
@@ -95,6 +101,7 @@ const defaults: StatsStyle = {
   background: makeBackground("#000000"),
   containerBackground: makeBackground("#ffffff"),
   elementBackground: makeBackground("#ffffff"),
+  headerTextColor: "#000000",
   fontColor: "#000000",
   fontStyle: "sans",
   leaderboardSize: 20,
@@ -102,6 +109,11 @@ const defaults: StatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  playerSearchPopupBackground: makeBackground("#ffffff"),
+  playerSearchAccentColor: "#ff9fc6",
+  playerSearchChartProfitColor: "#16a34a",
+  playerSearchChartLossColor: "#dc2626",
+  playerSearchChartTotalProfitColor: "#ff9fc6",
   scratchBackground: makeBackground("#000000"),
   scratchContainerBackground: makeBackground("#ffffff"),
   scratchElementBackground: makeBackground("#ffffff"),
@@ -169,6 +181,10 @@ const quickColors = [
 function normalizeHex(value: string, fallback: string) {
   const clean = value.trim().toLowerCase();
   return /^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(clean) ? clean : fallback;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 function hexToRgb(hex: string) {
@@ -582,8 +598,8 @@ export function StatsStyleEditor() {
       setLoading(true);
       try {
         await load();
-      } catch (e: any) {
-        setMessage(e?.message ?? "Failed to load stats style");
+      } catch (e: unknown) {
+        setMessage(getErrorMessage(e, "Failed to load stats style"));
       } finally {
         setLoading(false);
       }
@@ -609,8 +625,8 @@ export function StatsStyleEditor() {
       if (!res.ok) throw new Error(data?.error ?? "Failed to save stats style");
       setStyle({ ...defaults, ...(data?.style ?? {}) });
       setMessage("Stats style saved");
-    } catch (e: any) {
-      setMessage(e?.message ?? "Failed to save stats style");
+    } catch (e: unknown) {
+      setMessage(getErrorMessage(e, "Failed to save stats style"));
     } finally {
       setBusy(false);
     }
@@ -630,8 +646,8 @@ export function StatsStyleEditor() {
       if (!res.ok) throw new Error(data?.error ?? "Failed to reset stats style");
       setStyle({ ...defaults, ...(data?.style ?? {}) });
       setMessage("Stats style reset to defaults");
-    } catch (e: any) {
-      setMessage(e?.message ?? "Failed to reset stats style");
+    } catch (e: unknown) {
+      setMessage(getErrorMessage(e, "Failed to reset stats style"));
     } finally {
       setBusy(false);
     }
@@ -735,6 +751,11 @@ export function StatsStyleEditor() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            <AdvancedColorField
+              label="Title/subtitle text color"
+              value={style.headerTextColor}
+              onChange={(headerTextColor) => setStyle((s) => ({ ...s, headerTextColor }))}
+            />
             <AdvancedColorField label="Font color" value={style.fontColor} onChange={(fontColor) => setStyle((s) => ({ ...s, fontColor }))} />
             <SelectField label="Font style" value={style.fontStyle} onChange={(fontStyle) => setStyle((s) => ({ ...s, fontStyle }))} />
             <NumberField label="Leaderboard size" value={style.leaderboardSize} min={1} max={100} onChange={(leaderboardSize) => setStyle((s) => ({ ...s, leaderboardSize }))} />
@@ -753,6 +774,36 @@ export function StatsStyleEditor() {
           <div className="grid gap-4 md:grid-cols-2">
             <AdvancedColorField label="Bar chart profit color" value={style.barChartProfitColor} onChange={(barChartProfitColor) => setStyle((s) => ({ ...s, barChartProfitColor }))} />
             <AdvancedColorField label="Bar chart loss color" value={style.barChartLossColor} onChange={(barChartLossColor) => setStyle((s) => ({ ...s, barChartLossColor }))} />
+          </div>
+
+          <div className="grid gap-4">
+            <BackgroundEditor
+              label="Player search popup background"
+              value={style.playerSearchPopupBackground}
+              onChange={(playerSearchPopupBackground) => setStyle((s) => ({ ...s, playerSearchPopupBackground }))}
+            />
+            <AdvancedColorField
+              label="Player search field accent color"
+              value={style.playerSearchAccentColor}
+              onChange={(playerSearchAccentColor) => setStyle((s) => ({ ...s, playerSearchAccentColor }))}
+            />
+            <div className="grid gap-4 md:grid-cols-3">
+              <AdvancedColorField
+                label="Player popup daily profit color"
+                value={style.playerSearchChartProfitColor}
+                onChange={(playerSearchChartProfitColor) => setStyle((s) => ({ ...s, playerSearchChartProfitColor }))}
+              />
+              <AdvancedColorField
+                label="Player popup daily loss color"
+                value={style.playerSearchChartLossColor}
+                onChange={(playerSearchChartLossColor) => setStyle((s) => ({ ...s, playerSearchChartLossColor }))}
+              />
+              <AdvancedColorField
+                label="Player popup total profit line color"
+                value={style.playerSearchChartTotalProfitColor}
+                onChange={(playerSearchChartTotalProfitColor) => setStyle((s) => ({ ...s, playerSearchChartTotalProfitColor }))}
+              />
+            </div>
           </div>
         </SectionCard>
 

@@ -558,11 +558,12 @@ export default async function DealerStatsPage({
           uploaderId={data.uploaderId}
           fontColor={style.fontColor}
           headerTextColor={headerTextColor}
-          containerBackground={style.containerBackground}
           elementBackground={style.elementBackground}
-          barChartProfitColor={style.barChartProfitColor}
-          barChartLossColor={style.barChartLossColor}
-          winLineColor={style.pieChartColors[0] ?? headerTextColor}
+          popupBackground={style.playerSearchPopupBackground}
+          searchAccentColor={style.playerSearchAccentColor}
+          chartProfitColor={style.playerSearchChartProfitColor}
+          chartLossColor={style.playerSearchChartLossColor}
+          chartTotalProfitColor={style.playerSearchChartTotalProfitColor}
         />
 
         {data.roundsHosted === 0 ? (

@@ -44,6 +44,11 @@ type StatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  playerSearchPopupBackground: StatsBackgroundStyle;
+  playerSearchAccentColor: string;
+  playerSearchChartProfitColor: string;
+  playerSearchChartLossColor: string;
+  playerSearchChartTotalProfitColor: string;
   scratchBackground: StatsBackgroundStyle;
   scratchContainerBackground: StatsBackgroundStyle;
   scratchElementBackground: StatsBackgroundStyle;
@@ -104,6 +109,11 @@ const defaults: StatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  playerSearchPopupBackground: makeBackground("#ffffff"),
+  playerSearchAccentColor: "#ff9fc6",
+  playerSearchChartProfitColor: "#16a34a",
+  playerSearchChartLossColor: "#dc2626",
+  playerSearchChartTotalProfitColor: "#ff9fc6",
   scratchBackground: makeBackground("#000000"),
   scratchContainerBackground: makeBackground("#ffffff"),
   scratchElementBackground: makeBackground("#ffffff"),
@@ -764,6 +774,36 @@ export function StatsStyleEditor() {
           <div className="grid gap-4 md:grid-cols-2">
             <AdvancedColorField label="Bar chart profit color" value={style.barChartProfitColor} onChange={(barChartProfitColor) => setStyle((s) => ({ ...s, barChartProfitColor }))} />
             <AdvancedColorField label="Bar chart loss color" value={style.barChartLossColor} onChange={(barChartLossColor) => setStyle((s) => ({ ...s, barChartLossColor }))} />
+          </div>
+
+          <div className="grid gap-4">
+            <BackgroundEditor
+              label="Player search popup background"
+              value={style.playerSearchPopupBackground}
+              onChange={(playerSearchPopupBackground) => setStyle((s) => ({ ...s, playerSearchPopupBackground }))}
+            />
+            <AdvancedColorField
+              label="Player search field accent color"
+              value={style.playerSearchAccentColor}
+              onChange={(playerSearchAccentColor) => setStyle((s) => ({ ...s, playerSearchAccentColor }))}
+            />
+            <div className="grid gap-4 md:grid-cols-3">
+              <AdvancedColorField
+                label="Player popup daily profit color"
+                value={style.playerSearchChartProfitColor}
+                onChange={(playerSearchChartProfitColor) => setStyle((s) => ({ ...s, playerSearchChartProfitColor }))}
+              />
+              <AdvancedColorField
+                label="Player popup daily loss color"
+                value={style.playerSearchChartLossColor}
+                onChange={(playerSearchChartLossColor) => setStyle((s) => ({ ...s, playerSearchChartLossColor }))}
+              />
+              <AdvancedColorField
+                label="Player popup total profit line color"
+                value={style.playerSearchChartTotalProfitColor}
+                onChange={(playerSearchChartTotalProfitColor) => setStyle((s) => ({ ...s, playerSearchChartTotalProfitColor }))}
+              />
+            </div>
           </div>
         </SectionCard>
 

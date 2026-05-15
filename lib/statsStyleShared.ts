@@ -42,6 +42,11 @@ export type NormalizedStatsStyle = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  playerSearchPopupBackground: StatsBackgroundStyle;
+  playerSearchAccentColor: string;
+  playerSearchChartProfitColor: string;
+  playerSearchChartLossColor: string;
+  playerSearchChartTotalProfitColor: string;
   scratchBackground: StatsBackgroundStyle;
   scratchContainerBackground: StatsBackgroundStyle;
   scratchElementBackground: StatsBackgroundStyle;
@@ -102,6 +107,11 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   barChartProfitColor: "#16a34a",
   barChartLossColor: "#dc2626",
   barChartDays: 20,
+  playerSearchPopupBackground: defaultBackground("#ffffff"),
+  playerSearchAccentColor: "#ff9fc6",
+  playerSearchChartProfitColor: "#16a34a",
+  playerSearchChartLossColor: "#dc2626",
+  playerSearchChartTotalProfitColor: "#ff9fc6",
   scratchBackground: defaultBackground("#000000"),
   scratchContainerBackground: defaultBackground("#ffffff"),
   scratchElementBackground: defaultBackground("#ffffff"),
@@ -246,6 +256,11 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
   const barChartProfitColor = normalizeHex(input?.barChartProfitColor, DEFAULT_STATS_STYLE.barChartProfitColor);
   const barChartLossColor = normalizeHex(input?.barChartLossColor, DEFAULT_STATS_STYLE.barChartLossColor);
   const barChartDays = normalizeInt(input?.barChartDays, DEFAULT_STATS_STYLE.barChartDays, 1, 365);
+  const playerSearchPopupBackground = normalizeBackgroundStyle(input?.playerSearchPopupBackground, containerBackground);
+  const playerSearchAccentColor = normalizeHex(input?.playerSearchAccentColor, DEFAULT_STATS_STYLE.playerSearchAccentColor);
+  const playerSearchChartProfitColor = normalizeHex(input?.playerSearchChartProfitColor, barChartProfitColor);
+  const playerSearchChartLossColor = normalizeHex(input?.playerSearchChartLossColor, barChartLossColor);
+  const playerSearchChartTotalProfitColor = normalizeHex(input?.playerSearchChartTotalProfitColor, playerSearchAccentColor);
 
   return {
     background,
@@ -259,6 +274,11 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
     barChartProfitColor,
     barChartLossColor,
     barChartDays,
+    playerSearchPopupBackground,
+    playerSearchAccentColor,
+    playerSearchChartProfitColor,
+    playerSearchChartLossColor,
+    playerSearchChartTotalProfitColor,
     scratchBackground: normalizeBackgroundStyle(input?.scratchBackground, background),
     scratchContainerBackground: normalizeBackgroundStyle(input?.scratchContainerBackground, containerBackground),
     scratchElementBackground: normalizeBackgroundStyle(input?.scratchElementBackground, elementBackground),

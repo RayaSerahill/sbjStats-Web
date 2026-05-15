@@ -59,11 +59,12 @@ type PlayerSearchProps = {
   uploaderId: string;
   fontColor: string;
   headerTextColor: string;
-  containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
-  barChartProfitColor: string;
-  barChartLossColor: string;
-  winLineColor: string;
+  popupBackground: StatsBackgroundStyle;
+  searchAccentColor: string;
+  chartProfitColor: string;
+  chartLossColor: string;
+  chartTotalProfitColor: string;
 };
 
 function fmtInt(n: number) {
@@ -80,6 +81,16 @@ function fmtPct(n: number) {
   return `${(Number(n) || 0).toFixed(1)}%`;
 }
 
+function hexToRgba(hex: string, alpha: number) {
+  const raw = hex.replace("#", "").trim();
+  const full = raw.length === 3 ? raw.split("").map((char) => char + char).join("") : raw;
+  const safe = /^[0-9a-fA-F]{6}$/.test(full) ? full : "ff9fc6";
+  const r = parseInt(safe.slice(0, 2), 16);
+  const g = parseInt(safe.slice(2, 4), 16);
+  const b = parseInt(safe.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
@@ -88,20 +99,22 @@ export function PlayerSearch({
   uploaderId,
   fontColor,
   headerTextColor,
-  containerBackground,
   elementBackground,
-  barChartProfitColor,
-  barChartLossColor,
-  winLineColor,
+  popupBackground,
+  searchAccentColor,
+  chartProfitColor,
+  chartLossColor,
+  chartTotalProfitColor,
 }: PlayerSearchProps) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchOption[]>([]);
   const [stats, setStats] = useState<LoadedStats | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
 
-  const containerBackgroundStyle = useMemo(() => getBackgroundStyleCss(containerBackground), [containerBackground]);
   const elementBackgroundStyle = useMemo(() => getBackgroundStyleCss(elementBackground), [elementBackground]);
+  const popupBackgroundStyle = useMemo(() => getBackgroundStyleCss(popupBackground), [popupBackground]);
   const isModalOpen = matches.length > 0 || Boolean(stats);
 
   const chartData = useMemo<ChartData<"bar" | "line", number[], string>>(() => {
@@ -119,8 +132,8 @@ export function PlayerSearch({
           type: "bar" as const,
           label: "Daily profit",
           data: rows.map((row) => row.profit),
-          backgroundColor: rows.map((row) => (row.profit >= 0 ? barChartProfitColor : barChartLossColor)),
-          borderColor: rows.map((row) => (row.profit >= 0 ? barChartProfitColor : barChartLossColor)),
+          backgroundColor: rows.map((row) => (row.profit >= 0 ? chartProfitColor : chartLossColor)),
+          borderColor: rows.map((row) => (row.profit >= 0 ? chartProfitColor : chartLossColor)),
           borderWidth: 1,
           yAxisID: "profit",
           order: 2,
@@ -129,17 +142,17 @@ export function PlayerSearch({
           type: "line" as const,
           label: "Total profit",
           data: accumulatedProfit,
-          borderColor: winLineColor,
-          backgroundColor: winLineColor,
-          pointBackgroundColor: winLineColor,
-          pointBorderColor: winLineColor,
+          borderColor: chartTotalProfitColor,
+          backgroundColor: chartTotalProfitColor,
+          pointBackgroundColor: chartTotalProfitColor,
+          pointBorderColor: chartTotalProfitColor,
           tension: 0.25,
           yAxisID: "totalProfit",
           order: 1,
         },
       ],
     };
-  }, [barChartLossColor, barChartProfitColor, stats?.daily, winLineColor]);
+  }, [chartLossColor, chartProfitColor, chartTotalProfitColor, stats?.daily]);
 
   const chartOptions = useMemo<ChartOptions<"bar" | "line">>(
     () => ({
@@ -238,17 +251,22 @@ export function PlayerSearch({
       <form className="flex flex-col gap-3 sm:flex-row" onSubmit={onSubmit}>
         <label className="sr-only" htmlFor="blackjack-player-search">Search player</label>
         <div className="relative min-w-0 flex-1">
-          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-60" style={{ color: fontColor }} />
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: searchAccentColor }} />
           <input
             id="blackjack-player-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             placeholder="Search player name or tag"
-            className="h-11 w-full rounded-2xl border border-black/10 px-10 text-sm outline-none transition focus:ring-4"
+            className="h-11 w-full rounded-2xl border px-10 text-sm outline-none transition"
             style={{
               ...elementBackgroundStyle,
               color: fontColor,
               caretColor: fontColor,
+              accentColor: searchAccentColor,
+              borderColor: searchFocused ? searchAccentColor : "rgba(0,0,0,0.10)",
+              boxShadow: searchFocused ? `0 0 0 4px ${hexToRgba(searchAccentColor, 0.24)}` : undefined,
             }}
           />
         </div>
@@ -276,7 +294,7 @@ export function PlayerSearch({
             aria-modal="true"
             aria-labelledby="player-search-dialog-title"
             className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-black/10 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)]"
-            style={{ ...containerBackgroundStyle, color: fontColor }}
+            style={{ ...popupBackgroundStyle, color: fontColor }}
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -284,11 +302,6 @@ export function PlayerSearch({
                 <h2 id="player-search-dialog-title" className="truncate text-xl font-semibold" style={{ color: headerTextColor }}>
                   {stats ? stats.player.playerTag : "Choose player"}
                 </h2>
-                {stats ? (
-                  <div className="mt-1 text-sm opacity-75" style={{ color: fontColor }}>
-                    {stats.player.aliases.length ? `Aliases: ${stats.player.aliases.join(", ")}` : `${stats.player.name}@${stats.player.world}`}
-                  </div>
-                ) : null}
               </div>
               <button
                 type="button"

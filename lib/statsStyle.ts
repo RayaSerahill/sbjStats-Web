@@ -32,6 +32,11 @@ export type StatsStyleDoc = {
   barChartProfitColor: string;
   barChartLossColor: string;
   barChartDays: number;
+  playerSearchPopupBackground: StatsBackgroundStyle;
+  playerSearchAccentColor: string;
+  playerSearchChartProfitColor: string;
+  playerSearchChartLossColor: string;
+  playerSearchChartTotalProfitColor: string;
   scratchBackground: StatsBackgroundStyle;
   scratchContainerBackground: StatsBackgroundStyle;
   scratchElementBackground: StatsBackgroundStyle;
@@ -79,6 +84,11 @@ export type StatsStyleInput = Partial<
     | "barChartProfitColor"
     | "barChartLossColor"
     | "barChartDays"
+    | "playerSearchPopupBackground"
+    | "playerSearchAccentColor"
+    | "playerSearchChartProfitColor"
+    | "playerSearchChartLossColor"
+    | "playerSearchChartTotalProfitColor"
     | "scratchBackground"
     | "scratchContainerBackground"
     | "scratchElementBackground"

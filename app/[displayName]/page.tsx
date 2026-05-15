@@ -8,6 +8,7 @@ import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } f
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
+import { PlayerSearch } from "./PlayerSearch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -552,6 +553,17 @@ export default async function DealerStatsPage({
           </p>
 
         </div>
+
+        <PlayerSearch
+          uploaderId={data.uploaderId}
+          fontColor={style.fontColor}
+          headerTextColor={headerTextColor}
+          containerBackground={style.containerBackground}
+          elementBackground={style.elementBackground}
+          barChartProfitColor={style.barChartProfitColor}
+          barChartLossColor={style.barChartLossColor}
+          winLineColor={style.pieChartColors[0] ?? headerTextColor}
+        />
 
         {data.roundsHosted === 0 ? (
           <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...containerBackgroundStyle, color: style.fontColor }}>

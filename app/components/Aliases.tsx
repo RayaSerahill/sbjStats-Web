@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type AliasRow = {
   id: string;
@@ -15,35 +15,52 @@ type AliasDraft = {
   aliasTag: string;
 };
 
+type AliasesProps = {
+  title?: string;
+  description?: string;
+  endpoint?: string;
+  showGlobalToggle?: boolean;
+};
+
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export function Aliases() {
+export function Aliases({
+  title = "Aliases",
+  description = "Connect 2 player tags so they can be treated as the same player later",
+  endpoint = "/api/admin/aliases",
+  showGlobalToggle = false,
+}: AliasesProps) {
   const [primaryTag, setPrimaryTag] = useState("");
   const [aliasTag, setAliasTag] = useState("");
   const [busy, setBusy] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [savingGlobalToggle, setSavingGlobalToggle] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [rows, setRows] = useState<AliasRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, AliasDraft>>({});
+  const [useGlobalAliases, setUseGlobalAliases] = useState(true);
 
   const sorted = useMemo(() => rows.slice().sort((a, b) => (a.primaryTag + a.aliasTag).localeCompare(b.primaryTag + b.aliasTag)), [rows]);
 
-  const refresh = async () => {
-    const res = await fetch("/api/admin/aliases", { cache: "no-store" });
+  const refresh = useCallback(async () => {
+    const res = await fetch(endpoint, { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error ?? "Failed to load aliases");
     const nextRows: AliasRow[] = Array.isArray(data?.aliases) ? (data.aliases as AliasRow[]) : [];
+    if (typeof data?.useGlobalAliases === "boolean") {
+      setUseGlobalAliases(data.useGlobalAliases);
+    }
     setRows(nextRows);
     const nextDrafts: Record<string, AliasDraft> = {};
     nextRows.forEach((row) => {
       nextDrafts[row.id] = { primaryTag: row.primaryTag, aliasTag: row.aliasTag };
     });
     setDrafts(nextDrafts);
-  };
+  }, [endpoint]);
 
   useEffect(() => {
     (async () => {
@@ -56,14 +73,55 @@ export function Aliases() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [refresh]);
 
   return (
     <div className="section section-aliases mt-6 cute-border admin-item-container">
       <div className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold text-zinc-900">Aliases</h2>
-        <p className="text-xs text-zinc-600">Connect 2 player tags so they can be treated as the same player later</p>
+        <h2 className="text-base font-semibold text-zinc-900">{title}</h2>
+        <p className="text-xs text-zinc-600">{description}</p>
       </div>
+
+      {showGlobalToggle ? (
+        <label className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900">
+          <span className="min-w-0">
+            <span className="block font-medium">Use global aliases managed by admins</span>
+            <span className="mt-1 block text-xs text-zinc-600">Global aliases apply first. Aliases saved here override matching global aliases.</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={useGlobalAliases}
+            disabled={savingGlobalToggle}
+            onChange={async (e) => {
+              const nextValue = e.target.checked;
+              const previousValue = useGlobalAliases;
+              setUseGlobalAliases(nextValue);
+              setSavingGlobalToggle(true);
+              setMessage(null);
+
+              try {
+                const res = await fetch(endpoint, {
+                  method: "PATCH",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ useGlobalAliases: nextValue }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data?.error ?? "Failed to update global alias setting");
+                if (typeof data?.useGlobalAliases === "boolean") {
+                  setUseGlobalAliases(data.useGlobalAliases);
+                }
+                setMessage(nextValue ? "Global aliases enabled" : "Global aliases disabled");
+              } catch (error: unknown) {
+                setUseGlobalAliases(previousValue);
+                setMessage(getErrorMessage(error, "Failed to update global alias setting"));
+              } finally {
+                setSavingGlobalToggle(false);
+              }
+            }}
+            className="h-5 w-5 shrink-0 rounded border-zinc-300 text-[#FF9FC6] focus:ring-[#FF9FC6]/35 disabled:cursor-not-allowed disabled:opacity-60"
+          />
+        </label>
+      ) : null}
 
       <form
         className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
@@ -72,7 +130,7 @@ export function Aliases() {
           setMessage(null);
           setBusy(true);
           try {
-            const res = await fetch("/api/admin/aliases", {
+            const res = await fetch(endpoint, {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ primaryTag, aliasTag }),
@@ -191,7 +249,7 @@ export function Aliases() {
                         setMessage(null);
                         setSavingId(r.id);
                         try {
-                          const res = await fetch(`/api/admin/aliases/${r.id}`, {
+                          const res = await fetch(`${endpoint}/${r.id}`, {
                             method: "PATCH",
                             headers: { "content-type": "application/json" },
                             body: JSON.stringify(draft),
@@ -227,7 +285,7 @@ export function Aliases() {
                       setMessage(null);
                       setRemovingId(r.id);
                       try {
-                        const res = await fetch(`/api/admin/aliases/${r.id}`, { method: "DELETE" });
+                        const res = await fetch(`${endpoint}/${r.id}`, { method: "DELETE" });
                         const data = await res.json().catch(() => ({}));
                         if (!res.ok) throw new Error(data?.error ?? "Failed to delete");
                         await refresh();

@@ -171,7 +171,7 @@ async function statsForPlayer(uploaderId: string, player: PlayerDoc, aliasRows: 
   if (matchOr.length === 0) {
     return {
       player: toOption(player, aliasRows, aliases),
-      totals: { hands: 0, wins: 0, betTotal: 0, payoutTotal: 0, profit: 0, winRate: 0 },
+      totals: { rounds: 0, hands: 0, wins: 0, betTotal: 0, payoutTotal: 0, profit: 0, winRate: 0 },
       daily: [],
     };
   }
@@ -180,6 +180,7 @@ async function statsForPlayer(uploaderId: string, player: PlayerDoc, aliasRows: 
   const rows = await games
     .aggregate<{
       day: string;
+      rounds: number;
       hands: number;
       wins: number;
       betTotal: number;
@@ -198,6 +199,7 @@ async function statsForPlayer(uploaderId: string, player: PlayerDoc, aliasRows: 
               date: { $ifNull: ["$createdAt", new Date(0)] },
             },
           },
+          gameIds: { $addToSet: "$_id" },
           hands: { $sum: 1 },
           wins: { $sum: { $cond: [{ $eq: ["$players.result", 1] }, 1, 0] } },
           betTotal: { $sum: { $ifNull: ["$players.bet", 0] } },
@@ -210,12 +212,13 @@ async function statsForPlayer(uploaderId: string, player: PlayerDoc, aliasRows: 
         },
       },
       { $sort: { _id: 1 } },
-      { $project: { _id: 0, day: "$_id", hands: 1, wins: 1, betTotal: 1, payoutTotal: 1, profit: 1 } },
+      { $project: { _id: 0, day: "$_id", rounds: { $size: "$gameIds" }, hands: 1, wins: 1, betTotal: 1, payoutTotal: 1, profit: 1 } },
     ])
     .toArray();
 
   const totals = rows.reduce(
     (acc, row) => {
+      acc.rounds += Number(row.rounds) || 0;
       acc.hands += Number(row.hands) || 0;
       acc.wins += Number(row.wins) || 0;
       acc.betTotal += Number(row.betTotal) || 0;
@@ -223,7 +226,7 @@ async function statsForPlayer(uploaderId: string, player: PlayerDoc, aliasRows: 
       acc.profit += Number(row.profit) || 0;
       return acc;
     },
-    { hands: 0, wins: 0, betTotal: 0, payoutTotal: 0, profit: 0, winRate: 0 }
+    { rounds: 0, hands: 0, wins: 0, betTotal: 0, payoutTotal: 0, profit: 0, winRate: 0 }
   );
   totals.winRate = totals.hands > 0 ? (totals.wins / totals.hands) * 100 : 0;
 

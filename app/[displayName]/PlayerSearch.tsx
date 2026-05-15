@@ -34,6 +34,7 @@ type PlayerStatsResponse = {
   matches?: MatchOption[];
   player?: MatchOption;
   totals?: {
+    rounds: number;
     hands: number;
     wins: number;
     betTotal: number;
@@ -105,6 +106,12 @@ export function PlayerSearch({
 
   const chartData = useMemo<ChartData<"bar" | "line", number[], string>>(() => {
     const rows = stats?.daily ?? [];
+    let runningProfit = 0;
+    const accumulatedProfit = rows.map((row) => {
+      runningProfit += Number(row.profit) || 0;
+      return runningProfit;
+    });
+
     return {
       labels: rows.map((row) => row.day),
       datasets: [
@@ -120,14 +127,14 @@ export function PlayerSearch({
         },
         {
           type: "line" as const,
-          label: "Wins",
-          data: rows.map((row) => row.wins),
+          label: "Total profit",
+          data: accumulatedProfit,
           borderColor: winLineColor,
           backgroundColor: winLineColor,
           pointBackgroundColor: winLineColor,
           pointBorderColor: winLineColor,
           tension: 0.25,
-          yAxisID: "wins",
+          yAxisID: "totalProfit",
           order: 1,
         },
       ],
@@ -163,11 +170,10 @@ export function PlayerSearch({
           ticks: { color: fontColor },
           grid: { color: "rgba(148, 163, 184, 0.18)" },
         },
-        wins: {
+        totalProfit: {
           type: "linear",
           position: "right",
-          beginAtZero: true,
-          ticks: { color: fontColor, precision: 0 },
+          ticks: { color: fontColor },
           grid: { drawOnChartArea: false },
         },
       },
@@ -320,35 +326,30 @@ export function PlayerSearch({
 
             {stats ? (
               <div className="mt-5">
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="rounded-2xl border border-black/10 p-3" style={elementBackgroundStyle}>
                     <div className="text-xs opacity-70">Total bet</div>
                     <div className="mt-1 text-lg font-semibold">{fmtMoney(stats.totals.betTotal)}</div>
                   </div>
                   <div className="rounded-2xl border border-black/10 p-3" style={elementBackgroundStyle}>
-                    <div className="text-xs opacity-70">Total won</div>
-                    <div className="mt-1 text-lg font-semibold">{fmtMoney(stats.totals.payoutTotal)}</div>
+                    <div className="text-xs opacity-70">Total profit</div>
+                    <div className="mt-1 text-lg font-semibold">{fmtMoney(stats.totals.profit, true)}</div>
                   </div>
                   <div className="rounded-2xl border border-black/10 p-3" style={elementBackgroundStyle}>
-                    <div className="text-xs opacity-70">Hands won</div>
+                    <div className="text-xs opacity-70">Hands won %</div>
                     <div className="mt-1 text-lg font-semibold">{fmtPct(stats.totals.winRate)}</div>
                   </div>
-                </div>
-
-                <div className="mt-3 rounded-2xl border border-black/10 p-3" style={elementBackgroundStyle}>
-                  <div className="grid gap-3 text-sm sm:grid-cols-3">
-                    <div>
-                      <span className="opacity-70">Hands</span>
-                      <span className="ml-2 font-medium">{fmtInt(stats.totals.hands)}</span>
-                    </div>
-                    <div>
-                      <span className="opacity-70">Wins</span>
-                      <span className="ml-2 font-medium">{fmtInt(stats.totals.wins)}</span>
-                    </div>
-                    <div>
-                      <span className="opacity-70">Profit</span>
-                      <span className="ml-2 font-medium">{fmtMoney(stats.totals.profit, true)}</span>
-                    </div>
+                  <div className="rounded-2xl border border-black/10 p-3" style={elementBackgroundStyle}>
+                    <div className="text-xs opacity-70">Rounds played</div>
+                    <div className="mt-1 text-lg font-semibold">{fmtInt(stats.totals.rounds)}</div>
+                  </div>
+                  <div className="rounded-2xl border border-black/10 p-3" style={elementBackgroundStyle}>
+                    <div className="text-xs opacity-70">Hands played</div>
+                    <div className="mt-1 text-lg font-semibold">{fmtInt(stats.totals.hands)}</div>
+                  </div>
+                  <div className="rounded-2xl border border-black/10 p-3" style={elementBackgroundStyle}>
+                    <div className="text-xs opacity-70">Wins</div>
+                    <div className="mt-1 text-lg font-semibold">{fmtInt(stats.totals.wins)}</div>
                   </div>
                 </div>
 

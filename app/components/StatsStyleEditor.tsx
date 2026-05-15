@@ -36,6 +36,7 @@ type StatsStyle = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
+  headerTextColor: string;
   fontColor: string;
   fontStyle: StatsFontStyle;
   leaderboardSize: number;
@@ -95,6 +96,7 @@ const defaults: StatsStyle = {
   background: makeBackground("#000000"),
   containerBackground: makeBackground("#ffffff"),
   elementBackground: makeBackground("#ffffff"),
+  headerTextColor: "#000000",
   fontColor: "#000000",
   fontStyle: "sans",
   leaderboardSize: 20,
@@ -169,6 +171,10 @@ const quickColors = [
 function normalizeHex(value: string, fallback: string) {
   const clean = value.trim().toLowerCase();
   return /^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(clean) ? clean : fallback;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 function hexToRgb(hex: string) {
@@ -582,8 +588,8 @@ export function StatsStyleEditor() {
       setLoading(true);
       try {
         await load();
-      } catch (e: any) {
-        setMessage(e?.message ?? "Failed to load stats style");
+      } catch (e: unknown) {
+        setMessage(getErrorMessage(e, "Failed to load stats style"));
       } finally {
         setLoading(false);
       }
@@ -609,8 +615,8 @@ export function StatsStyleEditor() {
       if (!res.ok) throw new Error(data?.error ?? "Failed to save stats style");
       setStyle({ ...defaults, ...(data?.style ?? {}) });
       setMessage("Stats style saved");
-    } catch (e: any) {
-      setMessage(e?.message ?? "Failed to save stats style");
+    } catch (e: unknown) {
+      setMessage(getErrorMessage(e, "Failed to save stats style"));
     } finally {
       setBusy(false);
     }
@@ -630,8 +636,8 @@ export function StatsStyleEditor() {
       if (!res.ok) throw new Error(data?.error ?? "Failed to reset stats style");
       setStyle({ ...defaults, ...(data?.style ?? {}) });
       setMessage("Stats style reset to defaults");
-    } catch (e: any) {
-      setMessage(e?.message ?? "Failed to reset stats style");
+    } catch (e: unknown) {
+      setMessage(getErrorMessage(e, "Failed to reset stats style"));
     } finally {
       setBusy(false);
     }
@@ -735,6 +741,11 @@ export function StatsStyleEditor() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            <AdvancedColorField
+              label="Title/subtitle text color"
+              value={style.headerTextColor}
+              onChange={(headerTextColor) => setStyle((s) => ({ ...s, headerTextColor }))}
+            />
             <AdvancedColorField label="Font color" value={style.fontColor} onChange={(fontColor) => setStyle((s) => ({ ...s, fontColor }))} />
             <SelectField label="Font style" value={style.fontStyle} onChange={(fontStyle) => setStyle((s) => ({ ...s, fontStyle }))} />
             <NumberField label="Leaderboard size" value={style.leaderboardSize} min={1} max={100} onChange={(leaderboardSize) => setStyle((s) => ({ ...s, leaderboardSize }))} />

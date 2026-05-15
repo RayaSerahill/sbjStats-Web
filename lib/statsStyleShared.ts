@@ -34,6 +34,7 @@ export type NormalizedStatsStyle = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
+  headerTextColor: string;
   fontColor: string;
   fontStyle: StatsFontStyle;
   leaderboardSize: number;
@@ -93,6 +94,7 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   background: defaultBackground("#000000"),
   containerBackground: defaultBackground("#ffffff"),
   elementBackground: defaultBackground("#ffffff"),
+  headerTextColor: "#000000",
   fontColor: "#000000",
   fontStyle: "sans",
   leaderboardSize: 20,
@@ -237,6 +239,7 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
   const containerBackground = normalizeBackgroundStyle(input?.containerBackground, DEFAULT_STATS_STYLE.containerBackground);
   const elementBackground = normalizeBackgroundStyle(input?.elementBackground, DEFAULT_STATS_STYLE.elementBackground);
   const fontColor = normalizeHex(input?.fontColor, DEFAULT_STATS_STYLE.fontColor);
+  const headerTextColor = normalizeHex(input?.headerTextColor, fontColor);
   const fontStyle = normalizeFontStyle(input?.fontStyle, DEFAULT_STATS_STYLE.fontStyle);
   const leaderboardSize = normalizeInt(input?.leaderboardSize, DEFAULT_STATS_STYLE.leaderboardSize, 1, 100);
   const pieChartColors = normalizePieChartColors(input?.pieChartColors, DEFAULT_STATS_STYLE.pieChartColors);
@@ -248,6 +251,7 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
     background,
     containerBackground,
     elementBackground,
+    headerTextColor,
     fontColor,
     fontStyle,
     leaderboardSize,

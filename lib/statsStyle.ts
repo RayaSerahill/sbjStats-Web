@@ -24,6 +24,7 @@ export type StatsStyleDoc = {
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
+  headerTextColor: string;
   fontColor: string;
   fontStyle: StatsFontStyle;
   leaderboardSize: number;
@@ -70,6 +71,7 @@ export type StatsStyleInput = Partial<
     | "background"
     | "containerBackground"
     | "elementBackground"
+    | "headerTextColor"
     | "fontColor"
     | "fontStyle"
     | "leaderboardSize"

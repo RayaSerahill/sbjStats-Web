@@ -517,6 +517,7 @@ export default async function DealerStatsPage({
   const pageBackgroundStyle = getBackgroundStyleCss(style.background);
   const containerBackgroundStyle = getBackgroundStyleCss(style.containerBackground);
   const elementBackgroundStyle = getBackgroundStyleCss(style.elementBackground);
+  const headerTextColor = style.headerTextColor;
   const title = data.displayName;
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.fontColor, fontFamily }}>
@@ -537,10 +538,10 @@ export default async function DealerStatsPage({
       </div>
       <div className="mx-auto w-full max-w-5xl rounded-3xl border border-black/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={containerBackgroundStyle}>
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold" style={{ color: style.fontColor }}>{title}</h1>
-          <p className="text-sm" style={{ color: style.fontColor }}>
+          <h1 className="text-2xl font-semibold" style={{ color: headerTextColor }}>{title}</h1>
+          <p className="text-sm" style={{ color: headerTextColor }}>
             Stats for uploader{" "}
-            <span className="font-medium" style={{ color: style.fontColor }}>
+            <span className="font-medium" style={{ color: headerTextColor }}>
               {data.username || data.displayName}
             </span>
             {data.totalPlayers ? (

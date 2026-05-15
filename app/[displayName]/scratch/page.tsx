@@ -6,6 +6,7 @@ import { ScratchCharts } from "./charts";
 import { LeaderboardElement } from "./leaderboard";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
+import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 
 const loadStatsCached = cache(loadStats);
 
@@ -29,6 +30,7 @@ type ScratchPrizeRow = {
 type AliasRow = {
   primaryTag?: string;
   aliasTag?: string;
+  createdBy?: string;
 };
 
 type BlacklistRow = {
@@ -181,6 +183,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   }
 
   const uploaderId = user._id.toHexString();
+  const includeGlobalAliases = usesGlobalAliases(user);
 
   void db.collection("traffic").insertOne({
     userId: user._id,
@@ -217,11 +220,14 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
       .toArray(),
     aliasesTable
       .find(
-        { createdBy: uploaderId },
+        includeGlobalAliases
+          ? { createdBy: { $in: [GLOBAL_ALIASES_CREATED_BY, uploaderId] } }
+          : { createdBy: uploaderId },
         {
           projection: {
             primaryTag: 1,
             aliasTag: 1,
+            createdBy: 1,
           },
         }
       )
@@ -255,7 +261,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
     uploaderId,
     games: games as ScratchGameRow[],
     prizes: prizes as ScratchPrizeRow[],
-    aliases: aliases as AliasRow[],
+    aliases: orderAliasesByPrecedence(aliases as AliasRow[], uploaderId),
     blacklist: blacklist as BlacklistRow[],
     style,
   };
@@ -347,6 +353,14 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
     return empty;
   }
 
+  const aliasToPrimary = new Map<string, string>();
+  for (const alias of result.aliases) {
+    const primary = String(alias.primaryTag ?? "").trim();
+    const aliasName = String(alias.aliasTag ?? "").trim();
+    if (!primary || !aliasName || norm(primary) === norm(aliasName)) continue;
+    aliasToPrimary.set(norm(aliasName), primary);
+  }
+
   const prizeValueByName = new Map<string, number>();
 
   for (const prize of result.prizes) {
@@ -398,7 +412,7 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
   let newTotalWinValue = 0;
 
   for (const game of result.games) {
-    const playerName = String(game.playerName ?? "").trim() || "Unknown";
+    const playerName = resolveAliasName(String(game.playerName ?? "").trim() || "Unknown", aliasToPrimary);
     const playerKey = playerName.toLowerCase();
     const cards = Number(game.totalCards ?? 0);
     const wins = Number(game.wins ?? 0);
@@ -538,6 +552,19 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
     players,
     prizes,
   };
+}
+
+function resolveAliasName(input: string, aliasToPrimary: Map<string, string>) {
+  let current = input.trim();
+  const seen = new Set<string>();
+
+  while (aliasToPrimary.has(norm(current)) && !seen.has(norm(current))) {
+    const key = norm(current);
+    seen.add(key);
+    current = aliasToPrimary.get(key) ?? current;
+  }
+
+  return current;
 }
 
 function toUtcDayKey(unixSeconds: number): string {

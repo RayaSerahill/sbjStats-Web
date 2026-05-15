@@ -7,6 +7,7 @@ import { loadDealerStats } from "@/lib/dealerStats";
 import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } from "@/lib/statsStyle";
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
+import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,6 +61,16 @@ type PlayerAggRow = {
   net: number;
 };
 
+type AliasRow = {
+  primaryTag?: string;
+  aliasTag?: string;
+  createdBy?: string;
+};
+
+type GamePlayersDoc = {
+  players?: { dealer?: boolean; playerTag?: string }[];
+};
+
 export type LoadStatsPlayerRow = {
   playerTag: string;
   name: string;
@@ -80,8 +91,7 @@ export type LoadStatsDebug = {
 type StatsPageStyle = Awaited<ReturnType<typeof getStatsStyleForUploader>>;
 
 export type LoadStatsResult =
-    | { ok: false }
-    | { ok: false; debug: LoadStatsDebug }
+    | { ok: false; debug?: LoadStatsDebug }
     | {
   ok: true;
   displayName: string;
@@ -166,10 +176,10 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
       .limit(2000)
       .toArray();
     user =
-      (fallback as any[]).find((u) => norm(u?.username) === dnNorm) ??
-      (fallback as any[]).find((u) => norm(u?.name) === dnNorm) ??
-      (fallback as any[]).find((u) => norm(u?.email) === dnNorm) ??
-      (fallback as any[]).find((u) => norm(emailLocalPart(u?.email)) === dnNorm) ??
+      fallback.find((u) => norm(u.username) === dnNorm) ??
+      fallback.find((u) => norm(u.name) === dnNorm) ??
+      fallback.find((u) => norm(u.email) === dnNorm) ??
+      fallback.find((u) => norm(emailLocalPart(u.email)) === dnNorm) ??
       null;
   }
 
@@ -185,7 +195,9 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
           db: db.databaseName,
           lookedFor: dn,
           normalized: dnNorm,
-          sampleNames: samples.map((s: any) => s?.name).filter(Boolean),
+          sampleNames: samples
+            .map((s) => s.name)
+            .filter((name): name is string => typeof name === "string" && Boolean(name)),
         },
       };
     }
@@ -193,6 +205,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   }
 
   const uploaderId = user._id.toHexString();
+  const includeGlobalAliases = usesGlobalAliases(user);
 
   await db.collection("traffic").insertOne({
     userId: user._id,
@@ -216,7 +229,12 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
     ),
     games.countDocuments({ uploaderId }),
     aliases
-      .find({ createdBy: uploaderId }, { projection: { primaryTag: 1, aliasTag: 1 } })
+      .find(
+        includeGlobalAliases
+          ? { createdBy: { $in: [GLOBAL_ALIASES_CREATED_BY, uploaderId] } }
+          : { createdBy: uploaderId },
+        { projection: { primaryTag: 1, aliasTag: 1, createdBy: 1 } }
+      )
       .sort({ createdAt: -1 })
       .toArray(),
     games
@@ -242,14 +260,15 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   ]);
 
   const newestHostTag = (() => {
-    const ps: any[] = Array.isArray((newestGame as any)?.players) ? (newestGame as any).players : [];
+    const newestGameDoc = newestGame as GamePlayersDoc | null;
+    const ps = Array.isArray(newestGameDoc?.players) ? newestGameDoc.players : [];
     const d = ps.find((p) => p && p.dealer);
     return typeof d?.playerTag === "string" && d.playerTag.trim() ? d.playerTag.trim() : "";
   })();
 
 
   const aliasToPrimary = new Map<string, string>();
-  for (const r of aliasRows as any[]) {
+  for (const r of orderAliasesByPrecedence(aliasRows as AliasRow[], uploaderId)) {
     const a = typeof r?.aliasTag === "string" ? normalizePlayerTag(r.aliasTag) : "";
     const p = typeof r?.primaryTag === "string" ? normalizePlayerTag(r.primaryTag) : "";
     if (a && p && a !== p) aliasToPrimary.set(a, p);
@@ -468,7 +487,7 @@ export default async function DealerStatsPage({
   const { displayName } = await params;
   const result = await loadStatsCached(displayName);
   if (!result.ok) {
-    const dbg = (result as any).debug;
+    const dbg = result.debug;
     return (
         <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
           <h1 className="text-xl font-semibold text-zinc-900">Stats lookup failed</h1>

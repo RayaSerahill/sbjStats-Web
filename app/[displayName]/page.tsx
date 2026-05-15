@@ -554,18 +554,6 @@ export default async function DealerStatsPage({
 
         </div>
 
-        <PlayerSearch
-          uploaderId={data.uploaderId}
-          fontColor={style.fontColor}
-          headerTextColor={headerTextColor}
-          elementBackground={style.elementBackground}
-          popupBackground={style.playerSearchPopupBackground}
-          searchAccentColor={style.playerSearchAccentColor}
-          chartProfitColor={style.playerSearchChartProfitColor}
-          chartLossColor={style.playerSearchChartLossColor}
-          chartTotalProfitColor={style.playerSearchChartTotalProfitColor}
-        />
-
         {data.roundsHosted === 0 ? (
           <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...containerBackgroundStyle, color: style.fontColor }}>
             No rounds uploaded yet.
@@ -665,6 +653,18 @@ export default async function DealerStatsPage({
                 </ol>
               </div>
             </div>
+
+            <PlayerSearch
+                uploaderId={data.uploaderId}
+                fontColor={style.fontColor}
+                headerTextColor={headerTextColor}
+                elementBackground={style.elementBackground}
+                popupBackground={style.playerSearchPopupBackground}
+                searchAccentColor={style.playerSearchAccentColor}
+                chartProfitColor={style.playerSearchChartProfitColor}
+                chartLossColor={style.playerSearchChartLossColor}
+                chartTotalProfitColor={style.playerSearchChartTotalProfitColor}
+            />
 
             {data.uploaderId ? (
               <Suspense

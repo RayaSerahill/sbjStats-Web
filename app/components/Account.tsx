@@ -43,7 +43,7 @@ export function Account() {
   useEffect(() => {
     void load();
     if (typeof window !== "undefined") {
-      setVisibleUrlPrefix(`${window.location.origin}/stats/`);
+      setVisibleUrlPrefix(`${window.location.origin}/`);
       const params = new URLSearchParams(window.location.search);
       const successParam = params.get("success");
       const errorParam = params.get("error");

@@ -15,6 +15,7 @@ export type UserDoc = {
   apiKeyHash?: string;
   apiKeyPrefix?: string;
   apiKeyCreatedAt?: Date;
+  useGlobalAliases?: boolean;
   deleted?: boolean;
   deletedAt?: Date;
   createdAt: Date;

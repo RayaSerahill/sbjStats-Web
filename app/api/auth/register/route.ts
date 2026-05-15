@@ -100,6 +100,7 @@ export async function POST(req: Request) {
       name: name || undefined,
       username,
       role,
+      useGlobalAliases: true,
       deleted: false,
       createdAt: now,
       updatedAt: now,

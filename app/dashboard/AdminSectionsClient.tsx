@@ -14,6 +14,7 @@ export type AdminSection =
   | "hidden-players"
   | "api-keys"
   | "stats-style"
+  | "global-aliases"
   | "users"
   | "whitelist"
   | null;
@@ -49,6 +50,7 @@ export function AdminSectionsClient({
                                       hiddenPlayers,
                                       apiKeys,
                                       statsStyle,
+                                      globalAliases,
                                       users,
                                       whitelist,
                                       canManageUsers,
@@ -64,6 +66,7 @@ export function AdminSectionsClient({
   hiddenPlayers: React.ReactNode;
   apiKeys: React.ReactNode;
   statsStyle: React.ReactNode;
+  globalAliases?: React.ReactNode;
   users?: React.ReactNode;
   whitelist?: React.ReactNode;
   canManageUsers: boolean;
@@ -114,6 +117,7 @@ export function AdminSectionsClient({
         id: "admin",
         label: "Admin",
         items: [
+          { id: "global-aliases", label: "Global Aliases" },
           { id: "users", label: "Users" },
           { id: "whitelist", label: "Whitelist" },
         ],
@@ -136,6 +140,7 @@ export function AdminSectionsClient({
       games: "blackjack",
       "scratch-games": "scratch",
       "scratch-prizes": "scratch",
+      "global-aliases": "admin",
       users: "admin",
       whitelist: "admin",
     }),
@@ -264,6 +269,12 @@ export function AdminSectionsClient({
             <section id="stats-style" className={["mt-6 scroll-mt-28", activeSection === "stats-style" ? "" : "lg:hidden"].join(" ")}>
               {statsStyle}
             </section>
+
+            {canManageUsers ? (
+              <section id="global-aliases" className={["mt-6 scroll-mt-28", activeSection === "global-aliases" ? "" : "lg:hidden"].join(" ")}>
+                {globalAliases}
+              </section>
+            ) : null}
 
             {canManageUsers ? (
               <section id="users" className={["mt-6 scroll-mt-28", activeSection === "users" ? "" : "lg:hidden"].join(" ")}>

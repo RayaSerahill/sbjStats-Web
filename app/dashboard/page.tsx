@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
 import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/lib/auth";
-import { ensureAuthCollections, getDb, type UserDoc } from "@/lib/db";
+import { ensureAuthCollections, ensureTeamCollections, getDb, type TeamInviteDoc, type UserDoc } from "@/lib/db";
 import { LogoutButton } from "./LogoutButton";
 import { redirect } from "next/navigation";
 import { GameImport } from "../components/GameImport";
@@ -19,9 +19,11 @@ import { Home } from "../components/Home";
 import { Traffic } from "../components/Traffic";
 import { StatsFooterSection } from "../components/StatsFooterSection";
 import { Whitelist } from "../components/Whitelist";
+import { Teams } from "../components/Teams";
 
 export default async function AdminPage() {
   await ensureAuthCollections();
+  await ensureTeamCollections();
 
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
@@ -35,6 +37,9 @@ export default async function AdminPage() {
   const user = await users.findOne({ _id: new ObjectId(auth.id), deleted: { $ne: true } });
   if (!user) redirect("/dashboard/login");
   const canManageUsers = user.role === "owner" || user.role === "admin";
+  const pendingTeamInviteCount = await db
+    .collection<TeamInviteDoc>("team_invites")
+    .countDocuments({ inviteeId: auth.id, status: "pending" });
 
   return (
     <>
@@ -56,6 +61,7 @@ export default async function AdminPage() {
           traffic={<Traffic />}
           gameImport={<GameImport />}
           account={<Account />}
+          teams={<Teams />}
           games={<Games />}
           scratchGames={<ScratchGames />}
           scratchPrizes={<ScratchPrizes />}
@@ -75,6 +81,7 @@ export default async function AdminPage() {
           users={canManageUsers ? <Users /> : null}
           whitelist={canManageUsers ? <Whitelist /> : null}
           canManageUsers={canManageUsers}
+          teamInviteCount={pendingTeamInviteCount}
         />
         <StatsFooterSection />
       </div>

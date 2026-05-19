@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, createContext, useContext } from "react";
+import { useEffect, useMemo, useState, createContext, useContext } from "react";
 
 export type AdminSection =
   | "home"
   | "traffic"
   | "import"
   | "account"
+  | "teams"
   | "games"
   | "scratch-games"
   | "scratch-prizes"
@@ -43,6 +44,7 @@ export function AdminSectionsClient({
                                       traffic,
                                       gameImport,
                                       account,
+                                      teams,
                                       games,
                                       scratchGames,
                                       scratchPrizes,
@@ -54,11 +56,13 @@ export function AdminSectionsClient({
                                       users,
                                       whitelist,
                                       canManageUsers,
+                                      teamInviteCount,
                                     }: {
   home: React.ReactNode;
   traffic: React.ReactNode;
   gameImport: React.ReactNode;
   account: React.ReactNode;
+  teams: React.ReactNode;
   games: React.ReactNode;
   scratchGames: React.ReactNode;
   scratchPrizes: React.ReactNode;
@@ -70,14 +74,26 @@ export function AdminSectionsClient({
   users?: React.ReactNode;
   whitelist?: React.ReactNode;
   canManageUsers: boolean;
+  teamInviteCount?: number;
 }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("home");
+  const [currentTeamInviteCount, setCurrentTeamInviteCount] = useState(teamInviteCount ?? 0);
   const [openGroups, setOpenGroups] = useState<Record<NavGroup, boolean>>({
     general: true,
     blackjack: true,
     scratch: true,
     admin: true,
   });
+
+  useEffect(() => {
+    const onInviteCount = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      const count = typeof detail?.count === "number" ? detail.count : 0;
+      setCurrentTeamInviteCount(count);
+    };
+    window.addEventListener("teams:invite-count", onInviteCount);
+    return () => window.removeEventListener("teams:invite-count", onInviteCount);
+  }, []);
 
   const groups = useMemo<NavCategory[]>(() => {
     const base: NavCategory[] = [
@@ -88,6 +104,7 @@ export function AdminSectionsClient({
           { id: "home", label: "Home" },
           { id: "traffic", label: "Traffic" },
           { id: "account", label: "Account" },
+          { id: "teams", label: currentTeamInviteCount ? `Teams (${currentTeamInviteCount})` : "Teams" },
           { id: "aliases", label: "Aliases" },
           { id: "hidden-players", label: "Hidden Players" },
           { id: "stats-style", label: "Stats Style" },
@@ -125,13 +142,14 @@ export function AdminSectionsClient({
     }
 
     return base;
-  }, [canManageUsers]);
+  }, [canManageUsers, currentTeamInviteCount]);
 
   const sectionToGroup = useMemo<Record<Exclude<AdminSection, null>, NavGroup>>(
     () => ({
       home: "general",
       traffic: "general",
       account: "general",
+      teams: "general",
       aliases: "general",
       "hidden-players": "general",
       "stats-style": "general",
@@ -231,6 +249,10 @@ export function AdminSectionsClient({
 
             <section id="account" className={["mt-6 scroll-mt-28", activeSection === "account" ? "" : "lg:hidden"].join(" ")}>
               {account}
+            </section>
+
+            <section id="teams" className={["mt-6 scroll-mt-28", activeSection === "teams" ? "" : "lg:hidden"].join(" ")}>
+              {teams}
             </section>
 
             <section id="games" className={["mt-6 scroll-mt-28", activeSection === "games" ? "" : "lg:hidden"].join(" ")}>

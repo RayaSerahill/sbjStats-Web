@@ -25,6 +25,7 @@ type NavGroup = "general" | "blackjack" | "scratch" | "admin";
 type NavItem = {
   id: Exclude<AdminSection, null>;
   label: string;
+  badgeCount?: number;
 };
 
 type NavCategory = {
@@ -104,7 +105,7 @@ export function AdminSectionsClient({
           { id: "home", label: "Home" },
           { id: "traffic", label: "Traffic" },
           { id: "account", label: "Account" },
-          { id: "teams", label: currentTeamInviteCount ? `Teams (${currentTeamInviteCount})` : "Teams" },
+          { id: "teams", label: "Teams", badgeCount: currentTeamInviteCount },
           { id: "aliases", label: "Aliases" },
           { id: "hidden-players", label: "Hidden Players" },
           { id: "stats-style", label: "Stats Style" },
@@ -215,12 +216,22 @@ export function AdminSectionsClient({
                               key={it.label}
                               type="button"
                               onClick={() => showSection(it.id)}
+                              aria-label={
+                                it.badgeCount
+                                  ? `${it.label}, ${it.badgeCount} pending invite${it.badgeCount === 1 ? "" : "s"}`
+                                  : it.label
+                              }
                               className={[
-                                "block w-full rounded-2xl px-3 py-2 text-left text-sm font-medium text-zinc-900 transition",
+                                "flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-sm font-medium text-zinc-900 transition",
                                 selected ? "bg-white/80" : "bg-white/55 hover:bg-white/75",
                               ].join(" ")}
                             >
-                              {it.label}
+                              <span>{it.label}</span>
+                              {it.badgeCount ? (
+                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold leading-none text-white shadow-sm">
+                                  {it.badgeCount > 99 ? "99+" : it.badgeCount}
+                                </span>
+                              ) : null}
                             </button>
                           );
                         })}

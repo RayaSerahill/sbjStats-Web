@@ -80,6 +80,7 @@ export function Teams() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [leavingTeam, setLeavingTeam] = useState<TeamMembership | null>(null);
+  const [kickingMember, setKickingMember] = useState<TeamMember | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
@@ -301,6 +302,25 @@ export function Teams() {
       await load();
     } catch (err: unknown) {
       setError(errorMessage(err, "Failed to leave team"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const kickMember = async () => {
+    if (!ownedTeam || !kickingMember) return;
+    setBusy(`kick-${kickingMember.userId}`);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`/api/admin/teams/${ownedTeam.id}/members/${kickingMember.userId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to kick member");
+      setSuccess(`Removed ${kickingMember.name} from ${ownedTeam.name}`);
+      setKickingMember(null);
+      await load();
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to kick member"));
     } finally {
       setBusy(null);
     }
@@ -567,7 +587,19 @@ export function Teams() {
                     <div className="font-medium text-zinc-900">{member.name}</div>
                     <div className="text-xs text-zinc-500">{member.username ? `/${member.username}` : "No public username"}</div>
                   </div>
-                  <div className="text-xs uppercase tracking-wide text-zinc-500">{member.role}</div>
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <div className="text-xs uppercase tracking-wide text-zinc-500">{member.role}</div>
+                    {member.role === "member" ? (
+                      <button
+                        type="button"
+                        onClick={() => setKickingMember(member)}
+                        disabled={busy === `kick-${member.userId}`}
+                        className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                      >
+                        {busy === `kick-${member.userId}` ? "Kicking…" : "Kick"}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
@@ -673,6 +705,36 @@ export function Teams() {
                 className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
               >
                 {busy === `leave-${leavingTeam.id}` ? "Leaving…" : "Leave team"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {kickingMember && ownedTeam ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-zinc-900">Are you sure?</h3>
+            <p className="mt-2 text-sm text-zinc-600">
+              You will kick <span className="font-medium text-zinc-900">{kickingMember.name}</span> from{" "}
+              <span className="font-medium text-zinc-900">{ownedTeam.name}</span>. They will need a new invite to join again.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setKickingMember(null)}
+                disabled={busy === `kick-${kickingMember.userId}`}
+                className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void kickMember()}
+                disabled={busy === `kick-${kickingMember.userId}`}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+              >
+                {busy === `kick-${kickingMember.userId}` ? "Kicking…" : "Kick member"}
               </button>
             </div>
           </div>

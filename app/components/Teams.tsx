@@ -79,6 +79,7 @@ export function Teams() {
   const [state, setState] = useState<TeamsState>(emptyState);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [leavingTeam, setLeavingTeam] = useState<TeamMembership | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
@@ -281,6 +282,25 @@ export function Teams() {
       await load();
     } catch (err: unknown) {
       setError(errorMessage(err, "Failed to update invite"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const leaveTeam = async () => {
+    if (!leavingTeam) return;
+    setBusy(`leave-${leavingTeam.id}`);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`/api/admin/teams/${leavingTeam.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to leave team");
+      setSuccess(`Left ${leavingTeam.name}`);
+      setLeavingTeam(null);
+      await load();
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to leave team"));
     } finally {
       setBusy(null);
     }
@@ -556,7 +576,7 @@ export function Teams() {
       ) : null}
 
       {!loading ? (
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 space-y-4">
           <div className="rounded-2xl border border-zinc-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-zinc-900">Invites</h3>
             {state.invites.length ? (
@@ -605,13 +625,56 @@ export function Teams() {
                         {team.memberCount} dealer{team.memberCount === 1 ? "" : "s"} · {team.role}
                       </div>
                     </div>
-                    <a className="text-xs font-medium text-zinc-600 hover:text-zinc-950" href={team.url}>Open</a>
+                    <div className="flex flex-wrap gap-2 sm:justify-end">
+                      <a className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 transition hover:bg-zinc-50" href={team.url}>Open</a>
+                      {team.role === "member" ? (
+                        <button
+                          type="button"
+                          onClick={() => setLeavingTeam(team)}
+                          disabled={busy === `leave-${team.id}`}
+                          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                        >
+                          {busy === `leave-${team.id}` ? "Leaving…" : "Leave"}
+                        </button>
+                      ) : (
+                        <span className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-500">Owner</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="mt-3 rounded-2xl border border-zinc-200 bg-[#fff7fb] px-4 py-3 text-sm text-zinc-600">You are not in any teams yet.</div>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {leavingTeam ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-zinc-900">Are you sure?</h3>
+            <p className="mt-2 text-sm text-zinc-600">
+              You will leave <span className="font-medium text-zinc-900">{leavingTeam.name}</span>. You will need a new invite to join again.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setLeavingTeam(null)}
+                disabled={busy === `leave-${leavingTeam.id}`}
+                className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void leaveTeam()}
+                disabled={busy === `leave-${leavingTeam.id}`}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+              >
+                {busy === `leave-${leavingTeam.id}` ? "Leaving…" : "Leave team"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

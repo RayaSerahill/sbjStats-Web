@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireAdminRequest } from "@/lib/auth";
-import { ensureTeamCollections, getDb, type TeamDoc } from "@/lib/db";
+import { ensureTeamCollections, getDb, type TeamDoc, type TeamMemberDoc } from "@/lib/db";
 import {
   normalizeEnabledGames,
   normalizeTeamAccentColor,
@@ -70,4 +70,36 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   }
 
   return NextResponse.json({ ok: true, team: serializeTeam(result) });
+}
+
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  await ensureTeamCollections();
+  const gate = await requireAdminRequest(req);
+  if (!gate.ok) return gate.res;
+
+  const { id } = await context.params;
+  if (!ObjectId.isValid(id)) {
+    return NextResponse.json({ error: "Invalid team id" }, { status: 400 });
+  }
+
+  const db = await getDb();
+  const teamId = new ObjectId(id);
+  const teams = db.collection<TeamDoc>("teams");
+  const teamMembers = db.collection<TeamMemberDoc>("team_members");
+
+  const team = await teams.findOne({ _id: teamId }, { projection: { ownerId: 1 } });
+  if (!team?._id) {
+    return NextResponse.json({ error: "Team not found" }, { status: 404 });
+  }
+
+  if (team.ownerId === gate.auth.id) {
+    return NextResponse.json({ error: "Team owners cannot leave their own team" }, { status: 409 });
+  }
+
+  const result = await teamMembers.deleteOne({ teamId, userId: gate.auth.id, role: "member" });
+  if (!result.deletedCount) {
+    return NextResponse.json({ error: "You are not a member of this team" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true });
 }

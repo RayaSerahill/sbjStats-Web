@@ -20,6 +20,7 @@ import { Traffic } from "../components/Traffic";
 import { StatsFooterSection } from "../components/StatsFooterSection";
 import { Whitelist } from "../components/Whitelist";
 import { Teams } from "../components/Teams";
+import { AdminTeamsOverview } from "../components/AdminTeamsOverview";
 
 export default async function AdminPage() {
   await ensureAuthCollections();
@@ -78,6 +79,7 @@ export default async function AdminPage() {
               />
             ) : null
           }
+          adminTeams={canManageUsers ? <AdminTeamsOverview /> : null}
           users={canManageUsers ? <Users /> : null}
           whitelist={canManageUsers ? <Whitelist /> : null}
           canManageUsers={canManageUsers}

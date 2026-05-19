@@ -16,6 +16,7 @@ export type AdminSection =
   | "api-keys"
   | "stats-style"
   | "global-aliases"
+  | "admin-teams"
   | "users"
   | "whitelist"
   | null;
@@ -54,6 +55,7 @@ export function AdminSectionsClient({
                                       apiKeys,
                                       statsStyle,
                                       globalAliases,
+                                      adminTeams,
                                       users,
                                       whitelist,
                                       canManageUsers,
@@ -72,6 +74,7 @@ export function AdminSectionsClient({
   apiKeys: React.ReactNode;
   statsStyle: React.ReactNode;
   globalAliases?: React.ReactNode;
+  adminTeams?: React.ReactNode;
   users?: React.ReactNode;
   whitelist?: React.ReactNode;
   canManageUsers: boolean;
@@ -136,6 +139,7 @@ export function AdminSectionsClient({
         label: "Admin",
         items: [
           { id: "global-aliases", label: "Global Aliases" },
+          { id: "admin-teams", label: "Teams" },
           { id: "users", label: "Users" },
           { id: "whitelist", label: "Whitelist" },
         ],
@@ -160,6 +164,7 @@ export function AdminSectionsClient({
       "scratch-games": "scratch",
       "scratch-prizes": "scratch",
       "global-aliases": "admin",
+      "admin-teams": "admin",
       users: "admin",
       whitelist: "admin",
     }),
@@ -306,6 +311,12 @@ export function AdminSectionsClient({
             {canManageUsers ? (
               <section id="global-aliases" className={["mt-6 scroll-mt-28", activeSection === "global-aliases" ? "" : "lg:hidden"].join(" ")}>
                 {globalAliases}
+              </section>
+            ) : null}
+
+            {canManageUsers ? (
+              <section id="admin-teams" className={["mt-6 scroll-mt-28", activeSection === "admin-teams" ? "" : "lg:hidden"].join(" ")}>
+                {adminTeams}
               </section>
             ) : null}
 

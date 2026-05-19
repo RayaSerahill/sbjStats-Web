@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, createContext, useContext } from "react";
+import { useEffect, useMemo, useState, createContext, useContext } from "react";
 
 export type AdminSection =
   | "home"
   | "traffic"
   | "import"
   | "account"
+  | "teams"
   | "games"
   | "scratch-games"
   | "scratch-prizes"
@@ -15,6 +16,7 @@ export type AdminSection =
   | "api-keys"
   | "stats-style"
   | "global-aliases"
+  | "admin-teams"
   | "users"
   | "whitelist"
   | null;
@@ -24,6 +26,7 @@ type NavGroup = "general" | "blackjack" | "scratch" | "admin";
 type NavItem = {
   id: Exclude<AdminSection, null>;
   label: string;
+  badgeCount?: number;
 };
 
 type NavCategory = {
@@ -43,6 +46,7 @@ export function AdminSectionsClient({
                                       traffic,
                                       gameImport,
                                       account,
+                                      teams,
                                       games,
                                       scratchGames,
                                       scratchPrizes,
@@ -51,14 +55,17 @@ export function AdminSectionsClient({
                                       apiKeys,
                                       statsStyle,
                                       globalAliases,
+                                      adminTeams,
                                       users,
                                       whitelist,
                                       canManageUsers,
+                                      teamInviteCount,
                                     }: {
   home: React.ReactNode;
   traffic: React.ReactNode;
   gameImport: React.ReactNode;
   account: React.ReactNode;
+  teams: React.ReactNode;
   games: React.ReactNode;
   scratchGames: React.ReactNode;
   scratchPrizes: React.ReactNode;
@@ -67,17 +74,30 @@ export function AdminSectionsClient({
   apiKeys: React.ReactNode;
   statsStyle: React.ReactNode;
   globalAliases?: React.ReactNode;
+  adminTeams?: React.ReactNode;
   users?: React.ReactNode;
   whitelist?: React.ReactNode;
   canManageUsers: boolean;
+  teamInviteCount?: number;
 }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("home");
+  const [currentTeamInviteCount, setCurrentTeamInviteCount] = useState(teamInviteCount ?? 0);
   const [openGroups, setOpenGroups] = useState<Record<NavGroup, boolean>>({
     general: true,
     blackjack: true,
     scratch: true,
     admin: true,
   });
+
+  useEffect(() => {
+    const onInviteCount = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      const count = typeof detail?.count === "number" ? detail.count : 0;
+      setCurrentTeamInviteCount(count);
+    };
+    window.addEventListener("teams:invite-count", onInviteCount);
+    return () => window.removeEventListener("teams:invite-count", onInviteCount);
+  }, []);
 
   const groups = useMemo<NavCategory[]>(() => {
     const base: NavCategory[] = [
@@ -88,6 +108,7 @@ export function AdminSectionsClient({
           { id: "home", label: "Home" },
           { id: "traffic", label: "Traffic" },
           { id: "account", label: "Account" },
+          { id: "teams", label: "Teams", badgeCount: currentTeamInviteCount },
           { id: "aliases", label: "Aliases" },
           { id: "hidden-players", label: "Hidden Players" },
           { id: "stats-style", label: "Stats Style" },
@@ -118,6 +139,7 @@ export function AdminSectionsClient({
         label: "Admin",
         items: [
           { id: "global-aliases", label: "Global Aliases" },
+          { id: "admin-teams", label: "Teams" },
           { id: "users", label: "Users" },
           { id: "whitelist", label: "Whitelist" },
         ],
@@ -125,13 +147,14 @@ export function AdminSectionsClient({
     }
 
     return base;
-  }, [canManageUsers]);
+  }, [canManageUsers, currentTeamInviteCount]);
 
   const sectionToGroup = useMemo<Record<Exclude<AdminSection, null>, NavGroup>>(
     () => ({
       home: "general",
       traffic: "general",
       account: "general",
+      teams: "general",
       aliases: "general",
       "hidden-players": "general",
       "stats-style": "general",
@@ -141,6 +164,7 @@ export function AdminSectionsClient({
       "scratch-games": "scratch",
       "scratch-prizes": "scratch",
       "global-aliases": "admin",
+      "admin-teams": "admin",
       users: "admin",
       whitelist: "admin",
     }),
@@ -197,12 +221,22 @@ export function AdminSectionsClient({
                               key={it.label}
                               type="button"
                               onClick={() => showSection(it.id)}
+                              aria-label={
+                                it.badgeCount
+                                  ? `${it.label}, ${it.badgeCount} pending invite${it.badgeCount === 1 ? "" : "s"}`
+                                  : it.label
+                              }
                               className={[
-                                "block w-full rounded-2xl px-3 py-2 text-left text-sm font-medium text-zinc-900 transition",
+                                "flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-sm font-medium text-zinc-900 transition",
                                 selected ? "bg-white/80" : "bg-white/55 hover:bg-white/75",
                               ].join(" ")}
                             >
-                              {it.label}
+                              <span>{it.label}</span>
+                              {it.badgeCount ? (
+                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold leading-none text-white shadow-sm">
+                                  {it.badgeCount > 99 ? "99+" : it.badgeCount}
+                                </span>
+                              ) : null}
                             </button>
                           );
                         })}
@@ -231,6 +265,10 @@ export function AdminSectionsClient({
 
             <section id="account" className={["mt-6 scroll-mt-28", activeSection === "account" ? "" : "lg:hidden"].join(" ")}>
               {account}
+            </section>
+
+            <section id="teams" className={["mt-6 scroll-mt-28", activeSection === "teams" ? "" : "lg:hidden"].join(" ")}>
+              {teams}
             </section>
 
             <section id="games" className={["mt-6 scroll-mt-28", activeSection === "games" ? "" : "lg:hidden"].join(" ")}>
@@ -273,6 +311,12 @@ export function AdminSectionsClient({
             {canManageUsers ? (
               <section id="global-aliases" className={["mt-6 scroll-mt-28", activeSection === "global-aliases" ? "" : "lg:hidden"].join(" ")}>
                 {globalAliases}
+              </section>
+            ) : null}
+
+            {canManageUsers ? (
+              <section id="admin-teams" className={["mt-6 scroll-mt-28", activeSection === "admin-teams" ? "" : "lg:hidden"].join(" ")}>
+                {adminTeams}
               </section>
             ) : null}
 

@@ -118,6 +118,8 @@ export async function PATCH(req: Request) {
     "help",
     "stats",
     "dashboard",
+    "t",
+    "team"
     // Common words to prevent impersonation
   ]
 

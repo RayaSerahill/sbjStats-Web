@@ -81,6 +81,7 @@ export function Teams() {
   const [busy, setBusy] = useState<string | null>(null);
   const [leavingTeam, setLeavingTeam] = useState<TeamMembership | null>(null);
   const [kickingMember, setKickingMember] = useState<TeamMember | null>(null);
+  const [deletingTeam, setDeletingTeam] = useState<OwnedTeam | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
@@ -321,6 +322,25 @@ export function Teams() {
       await load();
     } catch (err: unknown) {
       setError(errorMessage(err, "Failed to kick member"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const deleteOwnedTeam = async () => {
+    if (!deletingTeam) return;
+    setBusy("delete-team");
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`/api/admin/teams/${deletingTeam.id}?action=delete`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to delete team");
+      setSuccess(`${deletingTeam.name} deleted`);
+      setDeletingTeam(null);
+      await load();
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to delete team"));
     } finally {
       setBusy(null);
     }
@@ -604,6 +624,21 @@ export function Teams() {
               ))}
             </div>
           </div>
+
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+            <h3 className="text-sm font-semibold text-red-900">Delete team</h3>
+            <p className="mt-1 text-xs text-red-700">
+              Permanently delete this team, its memberships, and pending invites. Dealer accounts and uploaded games are not deleted.
+            </p>
+            <button
+              type="button"
+              onClick={() => setDeletingTeam(ownedTeam)}
+              disabled={busy === "delete-team"}
+              className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+            >
+              {busy === "delete-team" ? "Deleting…" : "Delete team"}
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -735,6 +770,35 @@ export function Teams() {
                 className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
               >
                 {busy === `kick-${kickingMember.userId}` ? "Kicking…" : "Kick member"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deletingTeam ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-zinc-900">Are you sure?</h3>
+            <p className="mt-2 text-sm text-zinc-600">
+              You will permanently delete <span className="font-medium text-zinc-900">{deletingTeam.name}</span>. Members and pending invites will be removed from the team.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingTeam(null)}
+                disabled={busy === "delete-team"}
+                className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void deleteOwnedTeam()}
+                disabled={busy === "delete-team"}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+              >
+                {busy === "delete-team" ? "Deleting…" : "Delete team"}
               </button>
             </div>
           </div>

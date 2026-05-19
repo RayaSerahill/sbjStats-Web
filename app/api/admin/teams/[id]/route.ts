@@ -93,6 +93,16 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
   }
 
   if (team.ownerId === gate.auth.id) {
+    if (req.nextUrl.searchParams.get("action") === "delete") {
+      await Promise.all([
+        teams.deleteOne({ _id: teamId, ownerId: gate.auth.id }),
+        teamMembers.deleteMany({ teamId }),
+        db.collection("team_invites").deleteMany({ teamId }),
+      ]);
+
+      return NextResponse.json({ ok: true, deleted: true });
+    }
+
     return NextResponse.json({ error: "Team owners cannot leave their own team" }, { status: 409 });
   }
 

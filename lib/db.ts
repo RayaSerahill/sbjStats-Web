@@ -3,6 +3,9 @@ import clientPromise from "./mongodb";
 
 export type UserRole = "owner" | "admin" | "dealer";
 export type WhitelistEntryType = "email" | "discord";
+export type TeamGameKey = "blackjack" | "scratch";
+export type TeamMemberRole = "owner" | "member";
+export type TeamInviteStatus = "pending" | "accepted" | "declined";
 
 export type UserDoc = {
   _id?: ObjectId;
@@ -30,10 +33,40 @@ export type WhitelistEntryDoc = {
   createdAt: Date;
 };
 
+export type TeamDoc = {
+  _id?: ObjectId;
+  name: string;
+  slug: string;
+  ownerId: string;
+  enabledGames: TeamGameKey[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TeamMemberDoc = {
+  _id?: ObjectId;
+  teamId: ObjectId;
+  userId: string;
+  role: TeamMemberRole;
+  joinedAt: Date;
+};
+
+export type TeamInviteDoc = {
+  _id?: ObjectId;
+  teamId: ObjectId;
+  inviterId: string;
+  inviteeId: string;
+  inviteeUsername: string;
+  status: TeamInviteStatus;
+  createdAt: Date;
+  respondedAt?: Date;
+};
+
 const dbName = () => process.env.MONGODB_DB ?? "gamba";
 
 let initPromise: Promise<void> | null = null;
 let gameInitPromise: Promise<void> | null = null;
+let teamInitPromise: Promise<void> | null = null;
 
 export async function getDb(): Promise<Db> {
   const client = await clientPromise;
@@ -195,4 +228,39 @@ export async function ensureGameCollections() {
   }
 
   await gameInitPromise;
+}
+
+export async function ensureTeamCollections() {
+  if (!teamInitPromise) {
+    teamInitPromise = (async () => {
+      const db = await getDb();
+
+      await ensureCollection(db, "teams");
+      await ensureCollection(db, "team_members");
+      await ensureCollection(db, "team_invites");
+
+      const teams = db.collection<TeamDoc>("teams");
+      await teams.createIndex({ slug: 1 }, { unique: true });
+      await teams.createIndex({ ownerId: 1 }, { unique: true });
+      await teams.createIndex({ updatedAt: -1 });
+
+      const teamMembers = db.collection<TeamMemberDoc>("team_members");
+      await teamMembers.createIndex({ teamId: 1, userId: 1 }, { unique: true });
+      await teamMembers.createIndex({ userId: 1, joinedAt: -1 });
+      await teamMembers.createIndex({ teamId: 1, joinedAt: 1 });
+
+      const teamInvites = db.collection<TeamInviteDoc>("team_invites");
+      await teamInvites.createIndex({ inviteeId: 1, status: 1, createdAt: -1 });
+      await teamInvites.createIndex({ teamId: 1, createdAt: -1 });
+      await teamInvites.createIndex(
+        { teamId: 1, inviteeId: 1, status: 1 },
+        {
+          unique: true,
+          partialFilterExpression: { status: "pending" },
+        }
+      );
+    })();
+  }
+
+  await teamInitPromise;
 }

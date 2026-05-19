@@ -6,6 +6,7 @@ export type WhitelistEntryType = "email" | "discord";
 export type TeamGameKey = "blackjack" | "scratch";
 export type TeamMemberRole = "owner" | "member";
 export type TeamInviteStatus = "pending" | "accepted" | "declined";
+export type TeamTheme = "light" | "dark";
 
 export type UserDoc = {
   _id?: ObjectId;
@@ -38,6 +39,8 @@ export type TeamDoc = {
   name: string;
   slug: string;
   description?: string;
+  theme?: TeamTheme;
+  accentColor?: string;
   ownerId: string;
   enabledGames: TeamGameKey[];
   createdAt: Date;

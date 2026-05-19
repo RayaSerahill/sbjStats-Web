@@ -12,7 +12,7 @@ import {
   type TeamMemberDoc,
   type UserDoc,
 } from "@/lib/db";
-import { normalizeEnabledGames, normalizeTeamSlug } from "@/lib/teams";
+import { DEFAULT_TEAM_ACCENT_COLOR, normalizeEnabledGames, normalizeTeamAccentColor, normalizeTeamSlug, normalizeTeamTheme } from "@/lib/teams";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
 
 export const runtime = "nodejs";
@@ -51,6 +51,8 @@ type LoadTeamStatsResult =
         name: string;
         slug: string;
         description: string;
+        theme: string;
+        accentColor: string;
         enabledGames: string[];
       };
       dealerCount: number;
@@ -241,6 +243,8 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
       name: team.name,
       slug: team.slug,
       description: team.description ?? "",
+      theme: normalizeTeamTheme(team.theme),
+      accentColor: normalizeTeamAccentColor(team.accentColor),
       enabledGames,
     },
     dealerCount: members.length,
@@ -275,10 +279,55 @@ export async function generateMetadata({
   return { title: `${result.team.name} | Team Stats` };
 }
 
-function heatmapColor(count: number, max: number) {
-  if (!count || !max) return "#eef2f7";
+function hexToRgb(hex: string) {
+  const color = normalizeTeamAccentColor(hex).replace("#", "");
+  return {
+    r: Number.parseInt(color.slice(0, 2), 16),
+    g: Number.parseInt(color.slice(2, 4), 16),
+    b: Number.parseInt(color.slice(4, 6), 16),
+  };
+}
+
+function colorWithAlpha(hex: string, alpha: number) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function heatmapColor(count: number, max: number, accentColor: string, emptyColor: string) {
+  if (!count || !max) return emptyColor;
   const intensity = 0.18 + (count / max) * 0.82;
-  return `rgba(20, 132, 93, ${intensity.toFixed(2)})`;
+  return colorWithAlpha(accentColor, intensity);
+}
+
+function teamPageTheme(theme: string) {
+  const dark = theme === "dark";
+  return {
+    page: dark ? "min-h-screen bg-[#0d1117] px-4 py-10 text-zinc-100" : "min-h-screen bg-[#f5f7fb] px-4 py-10 text-zinc-950",
+    shell: dark
+      ? "border bg-[#151923] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+      : "border bg-white p-6 shadow-[0_20px_60px_rgba(25,30,45,0.10)]",
+    label: dark ? "text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400" : "text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500",
+    title: dark ? "mt-2 text-3xl font-semibold tracking-normal text-zinc-50" : "mt-2 text-3xl font-semibold tracking-normal text-zinc-950",
+    body: dark ? "mt-2 max-w-2xl text-sm leading-6 text-zinc-300" : "mt-2 max-w-2xl text-sm leading-6 text-zinc-600",
+    chip: dark ? "border px-3 py-1 text-xs font-medium capitalize text-zinc-100" : "border px-3 py-1 text-xs font-medium capitalize text-zinc-700",
+    card: dark ? "border border-zinc-800 bg-[#10151f] p-4" : "border border-zinc-200 bg-white p-4",
+    labelText: dark ? "text-xs font-medium text-zinc-400" : "text-xs font-medium text-zinc-500",
+    metricText: dark ? "mt-2 text-3xl font-semibold text-zinc-50" : "mt-2 text-3xl font-semibold text-zinc-950",
+    muted: dark ? "text-xs text-zinc-400" : "text-xs text-zinc-500",
+    panel: dark ? "border border-zinc-800 bg-[#10151f] p-4" : "border border-zinc-200 bg-white p-4",
+    panelTitle: dark ? "text-base font-semibold text-zinc-50" : "text-base font-semibold text-zinc-950",
+    divider: dark ? "mt-3 divide-y divide-zinc-800 border border-zinc-800" : "mt-3 divide-y divide-zinc-100 border border-zinc-200",
+    dealerName: dark ? "truncate font-medium text-zinc-50" : "truncate font-medium text-zinc-950",
+    dealerMeta: dark ? "mt-1 truncate text-xs text-zinc-400" : "mt-1 truncate text-xs text-zinc-500",
+    dealerButton: dark
+      ? "flex h-9 w-9 shrink-0 items-center justify-center border border-zinc-700 bg-[#151923] text-zinc-100 transition hover:bg-[#1d2533]"
+      : "flex h-9 w-9 shrink-0 items-center justify-center border border-zinc-300 bg-white text-zinc-900 transition hover:bg-zinc-50",
+    emptyText: dark ? "px-3 py-3 text-sm text-zinc-400" : "px-3 py-3 text-sm text-zinc-600",
+    heatmapEmpty: dark ? "#202938" : "#eef2f7",
+    heatmapBorder: dark ? "#10151f" : "#ffffff",
+    hourText: dark ? "text-center text-[10px] text-zinc-500" : "text-center text-[10px] text-zinc-400",
+    dayText: dark ? "pr-2 text-right text-xs font-medium text-zinc-400" : "pr-2 text-right text-xs font-medium text-zinc-500",
+  };
 }
 
 export default async function TeamPage({
@@ -289,22 +338,26 @@ export default async function TeamPage({
   const { team } = await params;
   const result = await loadTeamStatsCached(team);
   if (!result.ok) notFound();
+  const accentColor = result.team.accentColor || DEFAULT_TEAM_ACCENT_COLOR;
+  const pageTheme = teamPageTheme(result.team.theme);
+  const accentSurface = { backgroundColor: colorWithAlpha(accentColor, result.team.theme === "dark" ? 0.16 : 0.1), borderColor: colorWithAlpha(accentColor, 0.45) };
+  const accentChip = { backgroundColor: colorWithAlpha(accentColor, result.team.theme === "dark" ? 0.18 : 0.12), borderColor: colorWithAlpha(accentColor, 0.45) };
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb] px-4 py-10 text-zinc-950">
+    <div className={pageTheme.page}>
       <div className="mx-auto w-full max-w-6xl">
-        <div className="border border-[#FF9FC6] bg-white p-6 shadow-[0_20px_60px_rgba(25,30,45,0.10)]">
+        <div className={pageTheme.shell} style={{ borderColor: accentColor }}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Team</div>
-              <h1 className="mt-2 text-3xl font-semibold tracking-normal text-zinc-950">{result.team.name}</h1>
+              <div className={pageTheme.label}>Team</div>
+              <h1 className={pageTheme.title}>{result.team.name}</h1>
               {result.team.description ? (
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">{result.team.description}</p>
+                <p className={pageTheme.body}>{result.team.description}</p>
               ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               {result.team.enabledGames.map((game) => (
-                <span key={game} className="border border-zinc-200 bg-[#fff7fb] px-3 py-1 text-xs font-medium capitalize text-zinc-700">
+                <span key={game} className={pageTheme.chip} style={accentChip}>
                   {game}
                 </span>
               ))}
@@ -312,39 +365,39 @@ export default async function TeamPage({
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="border border-zinc-200 bg-[#fff7fb] p-4">
-              <div className="text-xs font-medium text-zinc-500">Dealers</div>
-              <div className="mt-2 text-3xl font-semibold text-zinc-950">{fmtInt(result.dealerCount)}</div>
+            <div className="border p-4" style={accentSurface}>
+              <div className={pageTheme.labelText}>Dealers</div>
+              <div className={pageTheme.metricText}>{fmtInt(result.dealerCount)}</div>
             </div>
-            <div className="border border-zinc-200 bg-white p-4">
-              <div className="text-xs font-medium text-zinc-500">Team money</div>
-              <div className="mt-2 text-3xl font-semibold text-zinc-950">{fmtMoney(result.totalMoney)}</div>
-              <div className="mt-2 text-xs text-zinc-500">
+            <div className={pageTheme.card}>
+              <div className={pageTheme.labelText}>Team money</div>
+              <div className={pageTheme.metricText}>{fmtMoney(result.totalMoney)}</div>
+              <div className={`mt-2 ${pageTheme.muted}`}>
                 Blackjack {fmtMoney(result.blackjackMoney)}
                 {result.team.enabledGames.includes("scratch") ? ` · Scratch ${fmtMoney(result.scratchMoney)}` : ""}
               </div>
             </div>
-            <div className="border border-zinc-200 bg-[#f2fbf6] p-4">
-              <div className="text-xs font-medium text-zinc-500">Tracked activity</div>
-              <div className="mt-2 text-3xl font-semibold text-zinc-950">{fmtInt(result.totalActivities)}</div>
-              <div className="mt-2 text-xs text-zinc-500">
+            <div className="border p-4" style={accentSurface}>
+              <div className={pageTheme.labelText}>Tracked activity</div>
+              <div className={pageTheme.metricText}>{fmtInt(result.totalActivities)}</div>
+              <div className={`mt-2 ${pageTheme.muted}`}>
                 {fmtInt(result.blackjackGames)} blackjack · {fmtInt(result.scratchGames)} scratch
               </div>
             </div>
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-            <div className="border border-zinc-200 bg-white p-4">
+            <div className={pageTheme.panel}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-zinc-950">Activity heatmap</h2>
-                  <p className="mt-1 text-xs text-zinc-500">Weekday and hour in UTC.</p>
+                  <h2 className={pageTheme.panelTitle}>Activity heatmap</h2>
+                  <p className={`mt-1 ${pageTheme.muted}`}>Weekday and hour in UTC.</p>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <div className={`flex items-center gap-2 ${pageTheme.muted}`}>
                   <span>Less</span>
-                  <span className="block h-3 w-3 border border-zinc-200" style={{ background: heatmapColor(0, result.maxActivity) }} />
-                  <span className="block h-3 w-3 border border-zinc-200" style={{ background: heatmapColor(Math.ceil(result.maxActivity / 2), result.maxActivity) }} />
-                  <span className="block h-3 w-3 border border-zinc-200" style={{ background: heatmapColor(result.maxActivity, result.maxActivity) }} />
+                  <span className="block h-3 w-3 border" style={{ background: heatmapColor(0, result.maxActivity, accentColor, pageTheme.heatmapEmpty), borderColor: colorWithAlpha(accentColor, 0.35) }} />
+                  <span className="block h-3 w-3 border" style={{ background: heatmapColor(Math.ceil(result.maxActivity / 2), result.maxActivity, accentColor, pageTheme.heatmapEmpty), borderColor: colorWithAlpha(accentColor, 0.35) }} />
+                  <span className="block h-3 w-3 border" style={{ background: heatmapColor(result.maxActivity, result.maxActivity, accentColor, pageTheme.heatmapEmpty), borderColor: colorWithAlpha(accentColor, 0.35) }} />
                   <span>More</span>
                 </div>
               </div>
@@ -354,20 +407,20 @@ export default async function TeamPage({
                   <div className="grid items-center gap-1" style={{ gridTemplateColumns: "48px repeat(24, 22px)" }}>
                     <div />
                     {Array.from({ length: 24 }, (_, hour) => (
-                      <div key={hour} className="text-center text-[10px] text-zinc-400">
+                      <div key={hour} className={pageTheme.hourText}>
                         {hour % 3 === 0 ? hour : ""}
                       </div>
                     ))}
                     {result.heatmap.map((row, day) => (
                       <Fragment key={dayLabels[day]}>
-                        <div key={`${dayLabels[day]}-label`} className="pr-2 text-right text-xs font-medium text-zinc-500">
+                        <div key={`${dayLabels[day]}-label`} className={pageTheme.dayText}>
                           {dayLabels[day]}
                         </div>
                         {row.map((cell) => (
                           <div
                             key={`${cell.day}-${cell.hour}`}
-                            className="h-[22px] w-[22px] border border-white"
-                            style={{ background: heatmapColor(cell.count, result.maxActivity) }}
+                            className="h-[22px] w-[22px] border"
+                            style={{ background: heatmapColor(cell.count, result.maxActivity, accentColor, pageTheme.heatmapEmpty), borderColor: pageTheme.heatmapBorder }}
                             title={`${dayLabels[cell.day]} ${String(cell.hour).padStart(2, "0")}:00 UTC: ${cell.count}`}
                             aria-label={`${dayLabels[cell.day]} ${cell.hour}:00 UTC activity ${cell.count}`}
                           />
@@ -379,15 +432,15 @@ export default async function TeamPage({
               </div>
             </div>
 
-            <div className="border border-zinc-200 bg-white p-4">
-              <h2 className="text-base font-semibold text-zinc-950">Dealers</h2>
-              <div className="mt-3 divide-y divide-zinc-100 border border-zinc-200">
+            <div className={pageTheme.panel}>
+              <h2 className={pageTheme.panelTitle}>Dealers</h2>
+              <div className={pageTheme.divider}>
                 {result.members.length ? (
                   result.members.map((member) => (
                     <div key={`${member.name}-${member.username ?? ""}`} className="flex items-center justify-between gap-3 px-3 py-3 text-sm">
                       <div className="min-w-0">
-                        <div className="truncate font-medium text-zinc-950">{member.name}</div>
-                        <div className="mt-1 truncate text-xs text-zinc-500">{member.username ? `/${member.username}` : "No public username"}</div>
+                        <div className={pageTheme.dealerName}>{member.name}</div>
+                        <div className={pageTheme.dealerMeta}>{member.username ? `/${member.username}` : "No public username"}</div>
                       </div>
                       {member.username ? (
                         <a
@@ -396,7 +449,7 @@ export default async function TeamPage({
                           rel="noopener noreferrer"
                           aria-label={`Open ${member.name} stats in a new tab`}
                           title="Open stats in new tab"
-                          className="flex h-9 w-9 shrink-0 items-center justify-center border border-zinc-300 bg-white text-zinc-900 transition hover:bg-zinc-50"
+                          className={pageTheme.dealerButton}
                         >
                           <ExternalLink aria-hidden="true" size={16} strokeWidth={2} />
                         </a>
@@ -404,7 +457,7 @@ export default async function TeamPage({
                     </div>
                   ))
                 ) : (
-                  <div className="px-3 py-3 text-sm text-zinc-600">No dealers yet.</div>
+                  <div className={pageTheme.emptyText}>No dealers yet.</div>
                 )}
               </div>
             </div>

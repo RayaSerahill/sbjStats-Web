@@ -11,6 +11,7 @@ import {
   type UserDoc,
 } from "@/lib/db";
 import {
+  DEFAULT_TEAM_ACCENT_COLOR,
   displayUserName,
   mongoErrorCode,
   normalizeTeamSlug,
@@ -52,7 +53,7 @@ export async function GET(req: Request) {
 
   const [teamDocs, memberCounts] = await Promise.all([
     uniqueTeamIds.length
-      ? teams.find({ _id: { $in: uniqueTeamIds } }, { projection: { name: 1, slug: 1, description: 1, ownerId: 1, enabledGames: 1, createdAt: 1, updatedAt: 1 } }).toArray()
+      ? teams.find({ _id: { $in: uniqueTeamIds } }, { projection: { name: 1, slug: 1, description: 1, theme: 1, accentColor: 1, ownerId: 1, enabledGames: 1, createdAt: 1, updatedAt: 1 } }).toArray()
       : Promise.resolve([]),
     uniqueTeamIds.length
       ? teamMembers
@@ -171,6 +172,8 @@ export async function POST(req: Request) {
     name,
     slug,
     description: "",
+    theme: "light",
+    accentColor: DEFAULT_TEAM_ACCENT_COLOR,
     ownerId: gate.auth.id,
     enabledGames: ["blackjack"],
     createdAt: now,

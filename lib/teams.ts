@@ -1,7 +1,9 @@
 import type { ObjectId } from "mongodb";
-import type { TeamDoc, TeamGameKey, UserDoc } from "@/lib/db";
+import type { TeamDoc, TeamGameKey, TeamTheme, UserDoc } from "@/lib/db";
 
 const TEAM_SLUG_RE = /^[a-z0-9_-]{3,32}$/;
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+export const DEFAULT_TEAM_ACCENT_COLOR = "#FF9FC6";
 const RESERVED_TEAM_SLUGS = new Set([
   "admin",
   "administrator",
@@ -27,6 +29,11 @@ export const TEAM_GAME_OPTIONS: Array<{ key: TeamGameKey; label: string; descrip
     label: "Scratch",
     description: "Prize value and scratch archive activity.",
   },
+];
+
+export const TEAM_THEME_OPTIONS: Array<{ key: TeamTheme; label: string }> = [
+  { key: "light", label: "Light" },
+  { key: "dark", label: "Dark" },
 ];
 
 export function normalizeTeamSlug(value: string) {
@@ -69,6 +76,22 @@ export function teamDescriptionValidationMessage(value: unknown) {
   return null;
 }
 
+export function normalizeTeamTheme(value: unknown): TeamTheme {
+  return value === "dark" ? "dark" : "light";
+}
+
+export function normalizeTeamAccentColor(value: unknown) {
+  const color = String(value ?? "").trim();
+  return HEX_COLOR_RE.test(color) ? color.toUpperCase() : DEFAULT_TEAM_ACCENT_COLOR;
+}
+
+export function teamAccentColorValidationMessage(value: unknown) {
+  const color = String(value ?? "").trim();
+  if (!color) return "Accent color is required";
+  if (!HEX_COLOR_RE.test(color)) return "Accent color must be a 6-digit hex color";
+  return null;
+}
+
 export function normalizeEnabledGames(value: unknown): TeamGameKey[] {
   const allowed = new Set<TeamGameKey>(TEAM_GAME_OPTIONS.map((option) => option.key));
   const raw = Array.isArray(value) ? value : [];
@@ -82,6 +105,8 @@ export function serializeTeam(team: TeamDoc, memberCount = 0) {
     name: team.name,
     slug: team.slug,
     description: team.description ?? "",
+    theme: normalizeTeamTheme(team.theme),
+    accentColor: normalizeTeamAccentColor(team.accentColor),
     url: `/t/${team.slug}`,
     ownerId: team.ownerId,
     enabledGames: normalizeEnabledGames(team.enabledGames),

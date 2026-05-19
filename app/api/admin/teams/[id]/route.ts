@@ -2,7 +2,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireAdminRequest } from "@/lib/auth";
 import { ensureTeamCollections, getDb, type TeamDoc } from "@/lib/db";
-import { normalizeEnabledGames, normalizeTeamDescription, serializeTeam, teamDescriptionValidationMessage } from "@/lib/teams";
+import {
+  normalizeEnabledGames,
+  normalizeTeamAccentColor,
+  normalizeTeamDescription,
+  normalizeTeamTheme,
+  serializeTeam,
+  teamAccentColorValidationMessage,
+  teamDescriptionValidationMessage,
+} from "@/lib/teams";
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   await ensureTeamCollections();
@@ -14,7 +22,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     return NextResponse.json({ error: "Invalid team id" }, { status: 400 });
   }
 
-  let body: { enabledGames?: unknown; description?: unknown };
+  let body: { enabledGames?: unknown; description?: unknown; theme?: unknown; accentColor?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -31,6 +39,16 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: descriptionError }, { status: 400 });
     }
     set.description = normalizeTeamDescription(body.description);
+  }
+  if ("theme" in body) {
+    set.theme = normalizeTeamTheme(body.theme);
+  }
+  if ("accentColor" in body) {
+    const accentColorError = teamAccentColorValidationMessage(body.accentColor);
+    if (accentColorError) {
+      return NextResponse.json({ error: accentColorError }, { status: 400 });
+    }
+    set.accentColor = normalizeTeamAccentColor(body.accentColor);
   }
   if (!Object.keys(set).length) {
     return NextResponse.json({ error: "No changes submitted" }, { status: 400 });

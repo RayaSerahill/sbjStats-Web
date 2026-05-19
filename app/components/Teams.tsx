@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { TEAM_GAME_OPTIONS, slugFromTeamName } from "@/lib/teams";
-import type { TeamGameKey, TeamMemberRole } from "@/lib/db";
+import { DEFAULT_TEAM_ACCENT_COLOR, TEAM_GAME_OPTIONS, TEAM_THEME_OPTIONS, slugFromTeamName } from "@/lib/teams";
+import type { TeamGameKey, TeamMemberRole, TeamTheme } from "@/lib/db";
 
 type TeamMember = {
   userId: string;
@@ -17,6 +17,8 @@ type OwnedTeam = {
   name: string;
   slug: string;
   description: string;
+  theme: TeamTheme;
+  accentColor: string;
   url: string;
   enabledGames: TeamGameKey[];
   memberCount: number;
@@ -28,6 +30,8 @@ type TeamMembership = {
   name: string;
   slug: string;
   description: string;
+  theme: TeamTheme;
+  accentColor: string;
   url: string;
   role: TeamMemberRole;
   memberCount: number;
@@ -67,6 +71,10 @@ function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
+function isHexColor(value: string) {
+  return /^#[0-9A-Fa-f]{6}$/.test(value);
+}
+
 export function Teams() {
   const [state, setState] = useState<TeamsState>(emptyState);
   const [loading, setLoading] = useState(true);
@@ -80,6 +88,8 @@ export function Teams() {
   const [slugEdited, setSlugEdited] = useState(false);
   const [inviteUsername, setInviteUsername] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [themeDraft, setThemeDraft] = useState<TeamTheme>("light");
+  const [accentColorDraft, setAccentColorDraft] = useState(DEFAULT_TEAM_ACCENT_COLOR);
   const [enabledGamesDraft, setEnabledGamesDraft] = useState<TeamGameKey[]>(["blackjack"]);
 
   const ownedTeam = state.ownedTeam;
@@ -87,6 +97,7 @@ export function Teams() {
     if (!ownedTeam) return "";
     return `${origin || ""}${ownedTeam.url}`;
   }, [origin, ownedTeam]);
+  const colorInputValue = isHexColor(accentColorDraft) ? accentColorDraft : DEFAULT_TEAM_ACCENT_COLOR;
 
   const load = async () => {
     setError(null);
@@ -120,6 +131,8 @@ export function Teams() {
     if (ownedTeam) {
       setEnabledGamesDraft(ownedTeam.enabledGames.length ? ownedTeam.enabledGames : ["blackjack"]);
       setDescriptionDraft(ownedTeam.description ?? "");
+      setThemeDraft(ownedTeam.theme ?? "light");
+      setAccentColorDraft(ownedTeam.accentColor ?? DEFAULT_TEAM_ACCENT_COLOR);
     }
   }, [ownedTeam]);
 
@@ -203,6 +216,28 @@ export function Teams() {
       await load();
     } catch (err: unknown) {
       setError(errorMessage(err, "Failed to save team description"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveAppearance = async () => {
+    if (!ownedTeam) return;
+    setBusy("appearance");
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`/api/admin/teams/${ownedTeam.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme: themeDraft, accentColor: accentColorDraft }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to save team appearance");
+      setSuccess("Team appearance updated");
+      await load();
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to save team appearance"));
     } finally {
       setBusy(null);
     }
@@ -345,6 +380,11 @@ export function Teams() {
                 <a className="mt-1 block break-all text-sm font-medium text-zinc-700 hover:text-zinc-950" href={ownedTeam.url}>
                   {teamUrl}
                 </a>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                  <span className="capitalize">{ownedTeam.theme ?? "light"} theme</span>
+                  <span className="h-3 w-3 rounded-full border border-zinc-300" style={{ backgroundColor: ownedTeam.accentColor ?? DEFAULT_TEAM_ACCENT_COLOR }} />
+                  <span>{ownedTeam.accentColor ?? DEFAULT_TEAM_ACCENT_COLOR}</span>
+                </div>
               </div>
               <div className="rounded-full border border-zinc-200 bg-[#fff7fb] px-3 py-1 text-xs font-medium text-zinc-700">
                 {ownedTeam.memberCount} dealer{ownedTeam.memberCount === 1 ? "" : "s"}
@@ -375,6 +415,66 @@ export function Teams() {
               className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
             >
               {busy === "description" ? "Saving…" : "Save description"}
+            </button>
+          </form>
+
+          <form
+            className="rounded-2xl border border-zinc-200 bg-white p-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveAppearance();
+            }}
+          >
+            <h3 className="text-sm font-semibold text-zinc-900">Theme</h3>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700">Page theme</label>
+                <div className="mt-2 grid grid-cols-2 rounded-2xl border border-zinc-200 bg-[#fff7fb] p-1">
+                  {TEAM_THEME_OPTIONS.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setThemeDraft(option.key)}
+                      className={[
+                        "rounded-xl px-3 py-2 text-sm font-medium transition",
+                        themeDraft === option.key ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-600 hover:text-zinc-950",
+                      ].join(" ")}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-700">Accent color</label>
+                <div className="mt-2 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-[#fff7fb] px-3 py-2">
+                  <input
+                    type="color"
+                    value={colorInputValue}
+                    onChange={(event) => setAccentColorDraft(event.target.value.toUpperCase())}
+                    className="h-9 w-11 cursor-pointer rounded border border-zinc-200 bg-white p-1"
+                    aria-label="Accent color"
+                  />
+                  <input
+                    type="text"
+                    value={accentColorDraft}
+                    onChange={(event) => setAccentColorDraft(event.target.value.toUpperCase())}
+                    className="min-w-0 flex-1 bg-transparent font-mono text-sm text-zinc-900 outline-none"
+                    placeholder={DEFAULT_TEAM_ACCENT_COLOR}
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={busy === "appearance"}
+              className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
+            >
+              {busy === "appearance" ? "Saving…" : "Save theme"}
             </button>
           </form>
 

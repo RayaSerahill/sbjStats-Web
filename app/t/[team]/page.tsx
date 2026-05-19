@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fragment, cache } from "react";
 import { notFound } from "next/navigation";
 import { ObjectId } from "mongodb";
+import { ExternalLink } from "lucide-react";
 import {
   ensureAuthCollections,
   ensureGameCollections,
@@ -389,9 +390,11 @@ export default async function TeamPage({
                           href={`/${member.username}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="shrink-0 border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 transition hover:bg-zinc-50"
+                          aria-label={`Open ${member.name} stats in a new tab`}
+                          title="Open stats in new tab"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center border border-zinc-300 bg-white text-zinc-900 transition hover:bg-zinc-50"
                         >
-                          Open stats
+                          <ExternalLink aria-hidden="true" size={16} strokeWidth={2} />
                         </a>
                       ) : null}
                     </div>

@@ -16,6 +16,7 @@ type OwnedTeam = {
   id: string;
   name: string;
   slug: string;
+  description: string;
   url: string;
   enabledGames: TeamGameKey[];
   memberCount: number;
@@ -26,6 +27,7 @@ type TeamMembership = {
   id: string;
   name: string;
   slug: string;
+  description: string;
   url: string;
   role: TeamMemberRole;
   memberCount: number;
@@ -77,6 +79,7 @@ export function Teams() {
   const [teamSlug, setTeamSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [inviteUsername, setInviteUsername] = useState("");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
   const [enabledGamesDraft, setEnabledGamesDraft] = useState<TeamGameKey[]>(["blackjack"]);
 
   const ownedTeam = state.ownedTeam;
@@ -116,6 +119,7 @@ export function Teams() {
   useEffect(() => {
     if (ownedTeam) {
       setEnabledGamesDraft(ownedTeam.enabledGames.length ? ownedTeam.enabledGames : ["blackjack"]);
+      setDescriptionDraft(ownedTeam.description ?? "");
     }
   }, [ownedTeam]);
 
@@ -177,6 +181,28 @@ export function Teams() {
       await load();
     } catch (err: unknown) {
       setError(errorMessage(err, "Failed to save team games"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveDescription = async () => {
+    if (!ownedTeam) return;
+    setBusy("description");
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`/api/admin/teams/${ownedTeam.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: descriptionDraft }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to save team description");
+      setSuccess("Team description updated");
+      await load();
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to save team description"));
     } finally {
       setBusy(null);
     }
@@ -313,6 +339,9 @@ export function Teams() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900">{ownedTeam.name}</h3>
+                {ownedTeam.description ? (
+                  <p className="mt-1 max-w-xl text-sm text-zinc-600">{ownedTeam.description}</p>
+                ) : null}
                 <a className="mt-1 block break-all text-sm font-medium text-zinc-700 hover:text-zinc-950" href={ownedTeam.url}>
                   {teamUrl}
                 </a>
@@ -322,6 +351,32 @@ export function Teams() {
               </div>
             </div>
           </div>
+
+          <form
+            className="rounded-2xl border border-zinc-200 bg-white p-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveDescription();
+            }}
+          >
+            <h3 className="text-sm font-semibold text-zinc-900">Description</h3>
+            <label className="mt-4 block text-xs font-medium text-zinc-700">Team description</label>
+            <textarea
+              value={descriptionDraft}
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              className="mt-2 min-h-28 w-full resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400"
+              placeholder="Short public description shown on the team page"
+              maxLength={280}
+            />
+            <div className="mt-2 text-xs text-zinc-500">{descriptionDraft.length}/280 characters</div>
+            <button
+              type="submit"
+              disabled={busy === "description"}
+              className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
+            >
+              {busy === "description" ? "Saving…" : "Save description"}
+            </button>
+          </form>
 
           <div className="rounded-2xl border border-zinc-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-zinc-900">Team page games</h3>

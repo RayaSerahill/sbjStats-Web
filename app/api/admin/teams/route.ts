@@ -52,7 +52,7 @@ export async function GET(req: Request) {
 
   const [teamDocs, memberCounts] = await Promise.all([
     uniqueTeamIds.length
-      ? teams.find({ _id: { $in: uniqueTeamIds } }, { projection: { name: 1, slug: 1, ownerId: 1, enabledGames: 1, createdAt: 1, updatedAt: 1 } }).toArray()
+      ? teams.find({ _id: { $in: uniqueTeamIds } }, { projection: { name: 1, slug: 1, description: 1, ownerId: 1, enabledGames: 1, createdAt: 1, updatedAt: 1 } }).toArray()
       : Promise.resolve([]),
     uniqueTeamIds.length
       ? teamMembers
@@ -170,6 +170,7 @@ export async function POST(req: Request) {
   const team: TeamDoc = {
     name,
     slug,
+    description: "",
     ownerId: gate.auth.id,
     enabledGames: ["blackjack"],
     createdAt: now,

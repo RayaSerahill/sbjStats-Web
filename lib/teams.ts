@@ -59,6 +59,16 @@ export function teamSlugValidationMessage(value: string) {
   return null;
 }
 
+export function normalizeTeamDescription(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+export function teamDescriptionValidationMessage(value: unknown) {
+  const description = normalizeTeamDescription(value);
+  if (description.length > 280) return "Description must be 280 characters or less";
+  return null;
+}
+
 export function normalizeEnabledGames(value: unknown): TeamGameKey[] {
   const allowed = new Set<TeamGameKey>(TEAM_GAME_OPTIONS.map((option) => option.key));
   const raw = Array.isArray(value) ? value : [];
@@ -71,6 +81,7 @@ export function serializeTeam(team: TeamDoc, memberCount = 0) {
     id: team._id?.toHexString() ?? "",
     name: team.name,
     slug: team.slug,
+    description: team.description ?? "",
     url: `/t/${team.slug}`,
     ownerId: team.ownerId,
     enabledGames: normalizeEnabledGames(team.enabledGames),

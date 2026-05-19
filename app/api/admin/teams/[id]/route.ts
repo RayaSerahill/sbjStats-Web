@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireAdminRequest } from "@/lib/auth";
 import { ensureTeamCollections, getDb, type TeamDoc } from "@/lib/db";
-import { normalizeEnabledGames, serializeTeam } from "@/lib/teams";
+import { normalizeEnabledGames, normalizeTeamDescription, serializeTeam, teamDescriptionValidationMessage } from "@/lib/teams";
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   await ensureTeamCollections();
@@ -14,26 +14,36 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     return NextResponse.json({ error: "Invalid team id" }, { status: 400 });
   }
 
-  let body: { enabledGames?: unknown };
+  let body: { enabledGames?: unknown; description?: unknown };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const enabledGames = normalizeEnabledGames(body.enabledGames);
+  const set: Partial<TeamDoc> & Record<string, unknown> = {};
+  if ("enabledGames" in body) {
+    set.enabledGames = normalizeEnabledGames(body.enabledGames);
+  }
+  if ("description" in body) {
+    const descriptionError = teamDescriptionValidationMessage(body.description);
+    if (descriptionError) {
+      return NextResponse.json({ error: descriptionError }, { status: 400 });
+    }
+    set.description = normalizeTeamDescription(body.description);
+  }
+  if (!Object.keys(set).length) {
+    return NextResponse.json({ error: "No changes submitted" }, { status: 400 });
+  }
+
   const db = await getDb();
   const teams = db.collection<TeamDoc>("teams");
   const now = new Date();
+  set.updatedAt = now;
 
   const result = await teams.findOneAndUpdate(
     { _id: new ObjectId(id), ownerId: gate.auth.id },
-    {
-      $set: {
-        enabledGames,
-        updatedAt: now,
-      },
-    },
+    { $set: set },
     { returnDocument: "after" }
   );
 

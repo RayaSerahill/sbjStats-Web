@@ -37,6 +37,7 @@ export type TeamDoc = {
   _id?: ObjectId;
   name: string;
   slug: string;
+  description?: string;
   ownerId: string;
   enabledGames: TeamGameKey[];
   createdAt: Date;

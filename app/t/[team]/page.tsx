@@ -50,6 +50,7 @@ type LoadTeamStatsResult =
       team: {
         name: string;
         slug: string;
+        description: string;
         enabledGames: string[];
       };
       dealerCount: number;
@@ -239,6 +240,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
     team: {
       name: team.name,
       slug: team.slug,
+      description: team.description ?? "",
       enabledGames,
     },
     dealerCount: members.length,
@@ -296,7 +298,9 @@ export default async function TeamPage({
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Team</div>
               <h1 className="mt-2 text-3xl font-semibold tracking-normal text-zinc-950">{result.team.name}</h1>
-              <div className="mt-2 text-sm text-zinc-600">/t/{result.team.slug}</div>
+              {result.team.description ? (
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">{result.team.description}</p>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               {result.team.enabledGames.map((game) => (

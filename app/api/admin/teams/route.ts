@@ -172,7 +172,7 @@ export async function POST(req: Request) {
     name,
     slug,
     description: "",
-    theme: "light",
+    theme: "dark",
     accentColor: DEFAULT_TEAM_ACCENT_COLOR,
     ownerId: gate.auth.id,
     enabledGames: ["blackjack"],

@@ -379,9 +379,21 @@ export default async function TeamPage({
               <div className="mt-3 divide-y divide-zinc-100 border border-zinc-200">
                 {result.members.length ? (
                   result.members.map((member) => (
-                    <div key={`${member.name}-${member.username ?? ""}`} className="px-3 py-3 text-sm">
-                      <div className="font-medium text-zinc-950">{member.name}</div>
-                      <div className="mt-1 text-xs text-zinc-500">{member.username ? `/${member.username}` : "No public username"}</div>
+                    <div key={`${member.name}-${member.username ?? ""}`} className="flex items-center justify-between gap-3 px-3 py-3 text-sm">
+                      <div className="min-w-0">
+                        <div className="truncate font-medium text-zinc-950">{member.name}</div>
+                        <div className="mt-1 truncate text-xs text-zinc-500">{member.username ? `/${member.username}` : "No public username"}</div>
+                      </div>
+                      {member.username ? (
+                        <a
+                          href={`/${member.username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 transition hover:bg-zinc-50"
+                        >
+                          Open stats
+                        </a>
+                      ) : null}
                     </div>
                   ))
                 ) : (

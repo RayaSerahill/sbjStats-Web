@@ -13,7 +13,7 @@ export function GameImport() {
         <div className="mt-6 rounded-2xl cute-border admin-item-container">
             <div className="flex flex-col gap-1">
                 <h2 className="text-base font-semibold text-zinc-900">Import a session</h2>
-                <p className="text-xs text-zinc-600">This is not a well supported feature, I recommend you upload your existing games through the sbjStats plugin. This is just a backup in case your sbj data has disappeared from the sbj plugin. This feature has high probability not to work</p>
+                <p className="text-xs text-zinc-600">This is not a well supported feature, I recommend you upload your existing games through the SimpleStats plugin. This is just a backup in case your sbj data has disappeared from the sbj plugin. This feature has high probability not to work</p>
             </div>
 
             <form className="mt-4 space-y-3">

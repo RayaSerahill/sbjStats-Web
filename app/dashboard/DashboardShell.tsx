@@ -244,7 +244,7 @@ export function DashboardShell({
           <div className="sticky top-6 border border-[#FF9FC6] bg-white p-4">
             <div className="mb-5">
               <Link href="/dashboard" className="text-base font-semibold text-zinc-950">
-                sbjStats
+                SimpleStats
               </Link>
               <p className="mt-1 text-xs text-zinc-500">Dashboard</p>
             </div>

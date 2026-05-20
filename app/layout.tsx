@@ -14,21 +14,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "sbjStats - Blackjack host platform",
-  description: "sbjStats is a platform for ffxiv blackjack hosts. It allows hosts to upload their host data and produce publicly available statistics for their community.",
+  title: "SimpleStats - Statistics host platform",
+  description: "SimpleStats is a platform for ffxiv gambling game hosts. It allows hosts to upload their host data and produce publicly available statistics for their community.",
 
   openGraph: {
-    title: "sbjStats - Blackjack host platform",
+    title: "SimpleStats - Statistics host platform",
     description:
-      "sbjStats is a platform for ffxiv blackjack hosts. It allows hosts to upload their host data and produce publicly available statistics for their community.",
+      "SimpleStats is a platform for ffxiv gambling game hosts. It allows hosts to upload their host data and produce publicly available statistics for their community.",
     url: "https://stats.serahill.net/",
     siteName: "Raya Serahill",
     images: [
       {
         url: "https://stats.serahill.net/favicon.ico",
-        width: 400,
-        height: 400,
-        alt: "sbjStats",
+        width: 100,
+        height: 100,
+        alt: "SimpleStats",
       },
     ],
     locale: "en_US",
@@ -37,9 +37,9 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Raya Serahill - Profile",
+    title: "SimpleStats - Statistics host platform",
     description:
-      "sbjStats is a platform for ffxiv blackjack hosts. It allows hosts to upload their host data and produce publicly available statistics for their community.",
+      "SimpleStats is a platform for ffxiv gambling game hosts. It allows hosts to upload their host data and produce publicly available statistics for their community.",
     images: ["https://stats.serahill.net/favicon.ico"],
   },
 
@@ -50,10 +50,11 @@ export const metadata: Metadata = {
 
   keywords: [
     "sbj",
-    "Simeple Blackjack",
+    "Simple Blackjack",
     "stats",
     "sbjStats",
     "Raya Serahill",
+    "SimpleStats"
   ],
 
   other: {

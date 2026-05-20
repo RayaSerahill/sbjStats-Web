@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { ensureAuthCollections, getDb, type UserDoc, type UserRole } from "@/lib/db";
 import { AUTH_COOKIE_NAME, authCookieOptions, signAuthToken } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
-import { DEFAULT_DASHBOARD_ACCENT_COLOR, getAvailableUsername, isValidUsername, normalizeUsername, usernameValidationMessage } from "@/lib/account";
+import {
+  DEFAULT_DASHBOARD_ACCENT_COLOR,
+  DEFAULT_DASHBOARD_THEME,
+  getAvailableUsername,
+  isValidUsername,
+  normalizeUsername,
+  usernameValidationMessage,
+} from "@/lib/account";
 import { findRegistrationWhitelistMatch } from "@/lib/whitelist";
 
 function basicEmailValid(email: string) {
@@ -101,7 +108,7 @@ export async function POST(req: Request) {
       username,
       role,
       useGlobalAliases: true,
-      dashboardTheme: "dark",
+      dashboardTheme: DEFAULT_DASHBOARD_THEME,
       dashboardAccentColor: DEFAULT_DASHBOARD_ACCENT_COLOR,
       deleted: false,
       createdAt: now,

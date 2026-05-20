@@ -13,6 +13,8 @@ export default async function DashboardAppLayout({
       userLabel={session.userLabel}
       canManageUsers={session.canManageUsers}
       teamInviteCount={session.pendingTeamInviteCount}
+      initialTheme={session.dashboardTheme}
+      initialAccentColor={session.dashboardAccentColor}
     >
       {children}
     </DashboardShell>

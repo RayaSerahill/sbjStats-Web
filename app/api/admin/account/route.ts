@@ -3,7 +3,16 @@ import { ObjectId } from "mongodb";
 import { AUTH_COOKIE_NAME, authCookieOptions, requireAdminRequest, signAuthToken } from "@/lib/auth";
 import { ensureAuthCollections, getDb, type UserDoc } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { getAvailableUsername, isValidUsername, normalizeUsername, usernameFromEmail, usernameValidationMessage } from "@/lib/account";
+import {
+  dashboardAccentColorValidationMessage,
+  getAvailableUsername,
+  isValidUsername,
+  normalizeDashboardAccentColor,
+  normalizeDashboardTheme,
+  normalizeUsername,
+  usernameFromEmail,
+  usernameValidationMessage,
+} from "@/lib/account";
 
 function basicEmailValid(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -18,7 +27,7 @@ export async function GET(req: Request) {
   const users = db.collection<UserDoc>("users");
   const user = await users.findOne(
     { _id: new ObjectId(gate.auth.id) },
-    { projection: { email: 1, username: 1, name: 1, discord: 1, deleted: 1 } }
+    { projection: { email: 1, username: 1, name: 1, discord: 1, deleted: 1, dashboardTheme: 1, dashboardAccentColor: 1 } }
   );
 
   if (!user) {
@@ -36,6 +45,8 @@ export async function GET(req: Request) {
       name: user.name ?? null,
       discord: user.discord ?? null,
       deleted: user.deleted === true,
+      dashboardTheme: normalizeDashboardTheme(user.dashboardTheme),
+      dashboardAccentColor: normalizeDashboardAccentColor(user.dashboardAccentColor),
       statsUrl: `/stats/${user.username ?? suggestedUsername}`,
     },
   });
@@ -54,6 +65,8 @@ export async function PATCH(req: Request) {
     newPassword?: string;
     newPasswordConfirm?: string;
     deleteAccount?: boolean;
+    dashboardTheme?: unknown;
+    dashboardAccentColor?: unknown;
   };
 
   try {
@@ -190,6 +203,21 @@ export async function PATCH(req: Request) {
     set.passwordHash = await hashPassword(newPassword);
   }
 
+  if ("dashboardTheme" in body) {
+    if (body.dashboardTheme !== "light" && body.dashboardTheme !== "dark") {
+      return NextResponse.json({ error: "Dashboard theme must be light or dark" }, { status: 400 });
+    }
+    set.dashboardTheme = normalizeDashboardTheme(body.dashboardTheme);
+  }
+
+  if ("dashboardAccentColor" in body) {
+    const accentColorError = dashboardAccentColorValidationMessage(body.dashboardAccentColor);
+    if (accentColorError) {
+      return NextResponse.json({ error: accentColorError }, { status: 400 });
+    }
+    set.dashboardAccentColor = normalizeDashboardAccentColor(body.dashboardAccentColor);
+  }
+
   if (!Object.keys(set).length) {
     return NextResponse.json({ error: "No changes submitted" }, { status: 400 });
   }
@@ -199,6 +227,9 @@ export async function PATCH(req: Request) {
 
   const latestUsername = typeof set.username === "string" ? set.username : user.username ?? usernameFromEmail(updatedEmail);
   const latestName = typeof set.name === "string" ? set.name : user.name ?? null;
+  const latestDashboardTheme = "dashboardTheme" in set ? normalizeDashboardTheme(set.dashboardTheme) : normalizeDashboardTheme(user.dashboardTheme);
+  const latestDashboardAccentColor =
+    "dashboardAccentColor" in set ? normalizeDashboardAccentColor(set.dashboardAccentColor) : normalizeDashboardAccentColor(user.dashboardAccentColor);
   const res = NextResponse.json({
     ok: true,
     account: {
@@ -207,6 +238,8 @@ export async function PATCH(req: Request) {
       name: latestName,
       discord: user.discord ?? null,
       deleted: false,
+      dashboardTheme: latestDashboardTheme,
+      dashboardAccentColor: latestDashboardAccentColor,
       statsUrl: `/stats/${latestUsername}`,
     },
   });

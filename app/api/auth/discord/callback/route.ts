@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { AUTH_COOKIE_NAME, authCookieOptions, signAuthToken, verifyAuthToken } from "@/lib/auth";
+import { DEFAULT_DASHBOARD_ACCENT_COLOR } from "@/lib/account";
 import { ensureAuthCollections, getDb, type UserDoc, type UserRole } from "@/lib/db";
 import { findRegistrationWhitelistMatch } from "@/lib/whitelist";
 
@@ -200,6 +201,8 @@ export async function GET(req: Request) {
         username: undefined,
         discord: discordId,
         role,
+        dashboardTheme: "dark",
+        dashboardAccentColor: DEFAULT_DASHBOARD_ACCENT_COLOR,
         deleted: false,
         createdAt: now,
         updatedAt: now,

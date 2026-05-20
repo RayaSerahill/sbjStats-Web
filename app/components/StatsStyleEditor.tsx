@@ -663,7 +663,7 @@ export function StatsStyleEditor() {
   };
 
   return (
-    <div className="rounded-3xl cute-border admin-item-container">
+    <div className="stats-style-editor rounded-3xl cute-border admin-item-container">
       <div>
         <h2 className="text-lg font-semibold text-zinc-900">Stats style</h2>
         <p className="mt-1 text-sm text-zinc-600">

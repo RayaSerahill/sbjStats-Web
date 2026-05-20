@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ObjectId } from "mongodb";
 import { AUTH_COOKIE_NAME, verifyAuthToken, type JwtUser } from "@/lib/auth";
+import { normalizeDashboardAccentColor, normalizeDashboardTheme } from "@/lib/account";
 import { ensureAuthCollections, ensureTeamCollections, getDb, type TeamInviteDoc, type UserDoc } from "@/lib/db";
 
 export type DashboardSession = {
@@ -10,6 +11,8 @@ export type DashboardSession = {
   userLabel: string;
   canManageUsers: boolean;
   pendingTeamInviteCount: number;
+  dashboardTheme: "light" | "dark";
+  dashboardAccentColor: string;
 };
 
 export async function getDashboardSession(): Promise<DashboardSession> {
@@ -39,6 +42,8 @@ export async function getDashboardSession(): Promise<DashboardSession> {
     userLabel: user.name ?? user.username ?? auth.email,
     canManageUsers,
     pendingTeamInviteCount,
+    dashboardTheme: normalizeDashboardTheme(user.dashboardTheme),
+    dashboardAccentColor: normalizeDashboardAccentColor(user.dashboardAccentColor),
   };
 }
 

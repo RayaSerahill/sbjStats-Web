@@ -7,6 +7,7 @@ import { LeaderboardElement } from "./leaderboard";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
+import { normalizeVisibleScratchDealers, type ScratchSettingsDoc } from "@/lib/scratchSettings";
 
 const loadStatsCached = cache(loadStats);
 
@@ -156,6 +157,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   const users = db.collection<UserDoc>("users");
   const gamesTable = db.collection("scratch_games");
   const prizesTable = db.collection("scratch_prizes");
+  const settingsTable = db.collection<ScratchSettingsDoc>("scratch_settings");
   const aliasesTable = db.collection("aliases");
   const blacklistTable = db.collection("blacklist");
 
@@ -184,6 +186,11 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
 
   const uploaderId = user._id.toHexString();
   const includeGlobalAliases = usesGlobalAliases(user);
+  const settings = await settingsTable.findOne(
+    { uploaderId },
+    { projection: { visibleDealers: 1 } }
+  );
+  const visibleDealers = normalizeVisibleScratchDealers(settings?.visibleDealers);
 
   void db.collection("traffic").insertOne({
     userId: user._id,
@@ -193,7 +200,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   const [games, prizes, aliases, blacklist, style, nameDoc] = await Promise.all([
     gamesTable
       .find(
-        { uploaderId },
+        { uploaderId, dealer: { $in: visibleDealers } },
         {
           projection: {
             _id: 1,

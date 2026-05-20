@@ -124,6 +124,7 @@ const run = async () => {
   );
   await scratchGames.createIndex({ uploaderId: 1, archivedAt: -1 });
   await scratchGames.createIndex({ uploaderId: 1, playerName: 1, archivedAt: -1 });
+  await scratchGames.createIndex({ uploaderId: 1, dealer: 1, archivedAt: -1 }, { sparse: true });
 
   const scratchPrizes = db.collection("scratch_prizes");
   await scratchPrizes.createIndex(
@@ -137,6 +138,9 @@ const run = async () => {
     }
   );
   await scratchPrizes.createIndex({ uploaderId: 1, updatedAt: -1 }, { sparse: true });
+
+  const scratchSettings = db.collection("scratch_settings");
+  await scratchSettings.createIndex({ uploaderId: 1 }, { unique: true });
 
   const teams = db.collection("teams");
   await teams.createIndex({ slug: 1 }, { unique: true });
@@ -162,7 +166,7 @@ const run = async () => {
   const traffic = db.collection("traffic");
   await traffic.createIndex({ userId: 1, at: 1 })
 
-  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, teams, books, traffic)`);
+  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, scratch_settings, teams, books, traffic)`);
 };
 
 run()

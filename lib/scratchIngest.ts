@@ -2,6 +2,7 @@ import type { Db, AnyBulkWriteOperation } from "mongodb";
 
 export type ScratchArchivePayload = {
   archive_id: number;
+  dealer?: string;
   player_name: string;
   archived_at?: number | string;
   preset_name?: string;
@@ -17,6 +18,7 @@ export type ScratchArchivePayload = {
 
 export type ScratchSummaryPayload = {
   player_id: number;
+  dealer?: string;
   player_name: string;
   archived_at?: number | string;
   wins: number;
@@ -25,6 +27,7 @@ export type ScratchSummaryPayload = {
 };
 
 export type NormalizedScratchGame = {
+  dealer?: string;
   playerName: string;
   archivedAt: number;
   totalCards: number;
@@ -34,6 +37,7 @@ export type NormalizedScratchGame = {
 
 export type ScratchGameDoc = {
   uploaderId: string;
+  dealer?: string;
   playerName: string;
   archivedAt: number;
   totalCards: number;
@@ -47,6 +51,7 @@ export function isScratchArchivePayload(value: unknown): value is ScratchArchive
   const v = value as ScratchArchivePayload;
 
   return (
+    (v.dealer === undefined || typeof v.dealer === "string") &&
     typeof v.player_name === "string" &&
     !!v.stats &&
     typeof v.stats === "object" &&
@@ -62,6 +67,7 @@ export function isScratchSummaryPayload(value: unknown): value is ScratchSummary
   const v = value as ScratchSummaryPayload;
 
   return (
+    (v.dealer === undefined || typeof v.dealer === "string") &&
     typeof v.player_name === "string" &&
     typeof v.total_cards === "number" &&
     typeof v.wins === "number" &&
@@ -97,9 +103,16 @@ function normalizePrizesWon(value: unknown): string[] {
   return value.map((item) => String(item)).filter((item) => item.trim().length > 0);
 }
 
+function normalizeDealer(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const dealer = value.trim();
+  return dealer || undefined;
+}
+
 export function normalizeScratchPayload(value: ScratchArchivePayload | ScratchSummaryPayload): NormalizedScratchGame {
   if (isScratchArchivePayload(value)) {
     return {
+      dealer: normalizeDealer(value.dealer),
       playerName: value.player_name,
       archivedAt: normalizeArchivedAt(value.archived_at),
       totalCards: Math.trunc(value.stats.total_cards),
@@ -109,6 +122,7 @@ export function normalizeScratchPayload(value: ScratchArchivePayload | ScratchSu
   }
 
   return {
+    dealer: normalizeDealer(value.dealer),
     playerName: value.player_name,
     archivedAt: normalizeArchivedAt(value.archived_at),
     totalCards: Math.trunc(value.total_cards),
@@ -126,6 +140,7 @@ export async function ingestScratchGames(opts: {
 
   const docs = opts.games.map((game) => ({
     uploaderId: opts.uploaderId,
+    dealer: game.dealer,
     playerName: game.playerName,
     archivedAt: game.archivedAt,
     totalCards: game.totalCards,
@@ -149,6 +164,7 @@ export async function ingestScratchGames(opts: {
           totalCards: doc.totalCards,
           wins: doc.wins,
           prizesWon: doc.prizesWon,
+          ...(doc.dealer ? { dealer: doc.dealer } : {}),
         },
         $setOnInsert: {
           uploaderId: doc.uploaderId,

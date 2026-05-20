@@ -13,6 +13,7 @@ export const DASHBOARD_THEME_OPTIONS: Array<{ key: DashboardTheme; label: string
 ];
 
 export function normalizeDashboardTheme(value: unknown): DashboardTheme {
+  if (value === "dark") return "dark";
   if (value === "mixed") return "mixed";
   return value === "light" ? "light" : DEFAULT_DASHBOARD_THEME;
 }

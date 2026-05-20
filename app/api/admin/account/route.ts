@@ -204,8 +204,8 @@ export async function PATCH(req: Request) {
   }
 
   if ("dashboardTheme" in body) {
-    if (body.dashboardTheme !== "light" && body.dashboardTheme !== "dark") {
-      return NextResponse.json({ error: "Dashboard theme must be light or dark" }, { status: 400 });
+    if (body.dashboardTheme !== "light" && body.dashboardTheme !== "dark" && body.dashboardTheme !== "mixed") {
+      return NextResponse.json({ error: "Dashboard theme must be light, dark, or mixed" }, { status: 400 });
     }
     set.dashboardTheme = normalizeDashboardTheme(body.dashboardTheme);
   }

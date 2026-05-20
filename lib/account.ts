@@ -8,10 +8,12 @@ export const DEFAULT_DASHBOARD_ACCENT_COLOR = "#FF9FC6";
 
 export const DASHBOARD_THEME_OPTIONS: Array<{ key: DashboardTheme; label: string }> = [
   { key: "dark", label: "Dark" },
+  { key: "mixed", label: "Mixed" },
   { key: "light", label: "Light" },
 ];
 
 export function normalizeDashboardTheme(value: unknown): DashboardTheme {
+  if (value === "mixed") return "mixed";
   return value === "light" ? "light" : DEFAULT_DASHBOARD_THEME;
 }
 

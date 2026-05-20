@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ObjectId } from "mongodb";
 import { AUTH_COOKIE_NAME, verifyAuthToken, type JwtUser } from "@/lib/auth";
 import { normalizeDashboardAccentColor, normalizeDashboardTheme } from "@/lib/account";
-import { ensureAuthCollections, ensureTeamCollections, getDb, type TeamInviteDoc, type UserDoc } from "@/lib/db";
+import { ensureAuthCollections, ensureTeamCollections, getDb, type DashboardTheme, type TeamInviteDoc, type UserDoc } from "@/lib/db";
 
 export type DashboardSession = {
   auth: JwtUser;
@@ -11,7 +11,7 @@ export type DashboardSession = {
   userLabel: string;
   canManageUsers: boolean;
   pendingTeamInviteCount: number;
-  dashboardTheme: "light" | "dark";
+  dashboardTheme: DashboardTheme;
   dashboardAccentColor: string;
 };
 

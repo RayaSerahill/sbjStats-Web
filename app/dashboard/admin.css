@@ -79,6 +79,19 @@ input {
   --dashboard-link-hover: #ffffff;
 }
 
+.dashboard-theme-mixed {
+  --dashboard-bg: #18181b;
+  --dashboard-surface: #ffffff;
+  --dashboard-surface-muted: #f7f8fb;
+  --dashboard-input-bg: #ffffff;
+  --dashboard-text: #3f3f46;
+  --dashboard-strong: #18181b;
+  --dashboard-muted: #71717a;
+  --dashboard-soft-border: #e4e4e7;
+  --dashboard-link-bg: rgba(255, 255, 255, 0.72);
+  --dashboard-link-hover: #ffffff;
+}
+
 .dashboard-panel,
 .dashboard-shell-root .cute-border {
   border: 1px solid var(--dashboard-accent);

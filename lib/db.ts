@@ -7,7 +7,7 @@ export type TeamGameKey = "blackjack" | "scratch";
 export type TeamMemberRole = "owner" | "member";
 export type TeamInviteStatus = "pending" | "accepted" | "declined";
 export type TeamTheme = "light" | "dark";
-export type DashboardTheme = "light" | "dark";
+export type DashboardTheme = "light" | "dark" | "mixed";
 
 export type UserDoc = {
   _id?: ObjectId;

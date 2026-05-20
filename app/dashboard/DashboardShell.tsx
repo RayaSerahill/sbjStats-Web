@@ -71,6 +71,7 @@ const legacyHashToPath: Record<string, string> = {
 
 const themeIcons: Record<DashboardTheme, LucideIcon> = {
   dark: Moon,
+  mixed: Palette,
   light: Sun,
 };
 

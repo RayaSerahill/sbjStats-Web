@@ -1,4 +1,5 @@
 import type { Db, AnyBulkWriteOperation } from "mongodb";
+import { normalizeScratchPrizeName, parseFormattedGilPrizeValue } from "@/lib/scratchPrizes";
 
 export type ScratchArchivePayload = {
   archive_id: number;
@@ -43,6 +44,14 @@ export type ScratchGameDoc = {
   totalCards: number;
   wins: number;
   prizesWon: string[];
+};
+
+type ScratchPrizeDoc = {
+  uploaderId: string;
+  prize: string;
+  value?: number | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 export function isScratchArchivePayload(value: unknown): value is ScratchArchivePayload {
@@ -182,5 +191,78 @@ export async function ingestScratchGames(opts: {
     ok: true as const,
     inserted: result.upsertedCount,
     updated: result.matchedCount,
+  };
+}
+
+export async function upsertFormattedGilScratchPrizeValues(opts: {
+  db: Db;
+  uploaderId: string;
+  games: NormalizedScratchGame[];
+}) {
+  const inferredValues = new Map<string, number>();
+
+  for (const game of opts.games) {
+    for (const rawPrize of game.prizesWon) {
+      const prize = normalizeScratchPrizeName(rawPrize);
+      if (!prize) continue;
+
+      const value = parseFormattedGilPrizeValue(prize);
+      if (value === null) continue;
+
+      inferredValues.set(prize, value);
+    }
+  }
+
+  if (inferredValues.size === 0) {
+    return { ok: true as const, inserted: 0, updated: 0 };
+  }
+
+  const scratchPrizes = opts.db.collection<ScratchPrizeDoc>("scratch_prizes");
+  const now = new Date();
+  const entries = Array.from(inferredValues.entries());
+
+  const fillMissingOps: AnyBulkWriteOperation<ScratchPrizeDoc>[] = entries.map(([prize, value]) => ({
+    updateOne: {
+      filter: {
+        uploaderId: opts.uploaderId,
+        prize,
+        $or: [{ value: null }, { value: { $exists: false } }],
+      },
+      update: {
+        $set: {
+          value,
+          updatedAt: now,
+        },
+      },
+    },
+  }));
+
+  const fillMissingResult = await scratchPrizes.bulkWrite(fillMissingOps, { ordered: false });
+
+  const insertMissingOps: AnyBulkWriteOperation<ScratchPrizeDoc>[] = entries.map(([prize, value]) => ({
+    updateOne: {
+      filter: {
+        uploaderId: opts.uploaderId,
+        prize,
+      },
+      update: {
+        $setOnInsert: {
+          uploaderId: opts.uploaderId,
+          prize,
+          value,
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+      upsert: true,
+    },
+  }));
+
+  const insertMissingResult = await scratchPrizes.bulkWrite(insertMissingOps, { ordered: false });
+
+  return {
+    ok: true as const,
+    inserted: insertMissingResult.upsertedCount,
+    updated: fillMissingResult.modifiedCount,
   };
 }

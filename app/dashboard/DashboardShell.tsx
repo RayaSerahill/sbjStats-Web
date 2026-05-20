@@ -15,6 +15,7 @@ import {
   Key,
   Moon,
   Palette,
+  Settings,
   ShieldCheck,
   Sun,
   Tags,
@@ -59,6 +60,7 @@ const legacyHashToPath: Record<string, string> = {
   games: "/dashboard/blackjack/games",
   "scratch-games": "/dashboard/scratch/games",
   "scratch-prizes": "/dashboard/scratch/prizes",
+  "scratch-settings": "/dashboard/scratch/settings",
   aliases: "/dashboard/aliases",
   "hidden-players": "/dashboard/hidden-players",
   "api-keys": "/dashboard/api-keys",
@@ -125,6 +127,7 @@ function buildNavGroups(canManageUsers: boolean, teamInviteCount: number): NavGr
       items: [
         { id: "scratch-games", href: "/dashboard/scratch/games", label: "Games", icon: Ticket },
         { id: "scratch-prizes", href: "/dashboard/scratch/prizes", label: "Prizes", icon: Gift },
+        { id: "scratch-settings", href: "/dashboard/scratch/settings", label: "Settings", icon: Settings },
       ],
     },
   ];

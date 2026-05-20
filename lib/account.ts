@@ -3,7 +3,7 @@ import type { DashboardTheme, UserDoc } from "@/lib/db";
 
 const USERNAME_RE = /^[a-z0-9_-]{3,32}$/;
 const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
-export const DEFAULT_DASHBOARD_THEME: DashboardTheme = "dark";
+export const DEFAULT_DASHBOARD_THEME: DashboardTheme = "mixed";
 export const DEFAULT_DASHBOARD_ACCENT_COLOR = "#FF9FC6";
 
 export const DASHBOARD_THEME_OPTIONS: Array<{ key: DashboardTheme; label: string }> = [

@@ -1,8 +1,6 @@
-"use client";
-import { useAdminNav } from "../dashboard/AdminSectionsClient";
+import Link from "next/link";
 
 export function Home() {
-  const navigate = useAdminNav();
   return (
     <div className="rounded-3xl cute-border admin-item-container">
       <div>
@@ -30,13 +28,13 @@ export function Home() {
                 Install the sbjStats plugin from the repository, and open it up in the plugin list
               </li>
               <li>
-                Navigate to the <span className={"internal-link"} onClick={() => navigate("api-keys")}>API Keys</span> tab on this dashboard, and generate a new API key
+                Navigate to the <Link href="/dashboard/api-keys" className="internal-link">API Keys</Link> tab on this dashboard, and generate a new API key
               </li>
               <li>
                 Paste the generated API key in the plugin, and enable automatic upload!
               </li>
               <li>
-                If you have existing games you want to upload, you can click the "Upload existing stats" button in the plugin, which will upload all games that are not yet uploaded to the dashboard!
+                If you have existing games you want to upload, you can click the &quot;Upload existing stats&quot; button in the plugin, which will upload all games that are not yet uploaded to the dashboard!
               </li>
             </ol>
           </div>

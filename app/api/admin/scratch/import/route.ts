@@ -6,6 +6,7 @@ import {
   isScratchSummaryPayload,
   normalizeScratchPayload,
   ingestScratchGames,
+  upsertFormattedGilScratchPrizeValues,
 } from "@/lib/scratchIngest";
 
 export async function POST(req: Request) {
@@ -37,11 +38,17 @@ export async function POST(req: Request) {
     uploaderId: gate.auth.id,
     games: normalizedGames,
   });
+  const autoValues = await upsertFormattedGilScratchPrizeValues({
+    db,
+    uploaderId: gate.auth.id,
+    games: normalizedGames,
+  });
 
   return NextResponse.json({
     ok: true,
     inserted: result.inserted,
     updated: result.updated,
+    autoValuedPrizes: autoValues.inserted + autoValues.updated,
     count: normalizedGames.length,
   });
 }

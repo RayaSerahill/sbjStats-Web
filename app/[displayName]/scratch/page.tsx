@@ -8,6 +8,7 @@ import { StatsPageNav } from "@/app/components/StatsPageNav";
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 import { normalizeVisibleScratchDealers, type ScratchSettingsDoc } from "@/lib/scratchSettings";
+import { scratchPrizeValue } from "@/lib/scratchPrizes";
 
 const loadStatsCached = cache(loadStats);
 
@@ -25,7 +26,7 @@ type ScratchGameRow = {
 type ScratchPrizeRow = {
   _id: unknown;
   prize?: string;
-  value?: number;
+  value?: number | null;
 };
 
 type AliasRow = {
@@ -373,7 +374,7 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
   for (const prize of result.prizes) {
     const name = String(prize.prize ?? "").trim();
     if (!name) continue;
-    prizeValueByName.set(name, Number(prize.value ?? 0));
+    prizeValueByName.set(name, scratchPrizeValue(name, prize.value));
   }
 
   const totalPrizeCounts = new Map<string, number>();
@@ -432,7 +433,7 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
       const prizeName = String(rawPrize ?? "").trim();
       if (!prizeName) continue;
 
-      const configuredPrizeValue = Number(prizeValueByName.get(prizeName) ?? 0);
+      const configuredPrizeValue = prizeValueByName.get(prizeName) ?? scratchPrizeValue(prizeName, undefined);
       gameWinValue += configuredPrizeValue;
 
       totalPrizeCounts.set(prizeName, (totalPrizeCounts.get(prizeName) ?? 0) + 1);
@@ -497,7 +498,7 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
   const prizes: GamesStatsPrize[] = Array.from(allPrizeNames)
     .map((name) => {
       const count = totalPrizeCounts.get(name) ?? 0;
-      const prizeValue = prizeValueByName.get(name) ?? 0;
+      const prizeValue = prizeValueByName.get(name) ?? scratchPrizeValue(name, undefined);
 
       return {
         name,
@@ -520,7 +521,7 @@ export function calculateGames(result: LoadStatsResult): GamesStats {
       totalWinValue: player.totalWinValue,
       prizes: Array.from(player.prizeCounts.entries())
         .map(([name, count]) => {
-          const prizeValue = prizeValueByName.get(name) ?? 0;
+          const prizeValue = prizeValueByName.get(name) ?? scratchPrizeValue(name, undefined);
 
           return {
             name,

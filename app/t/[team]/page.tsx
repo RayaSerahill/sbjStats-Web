@@ -14,6 +14,7 @@ import {
 } from "@/lib/db";
 import { DEFAULT_TEAM_ACCENT_COLOR, normalizeEnabledGames, normalizeTeamAccentColor, normalizeTeamSlug, normalizeTeamTheme } from "@/lib/teams";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
+import { scratchPrizeValue } from "@/lib/scratchPrizes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -215,7 +216,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
       const prizeName = String(prize.prize ?? "").trim();
       if (!uploaderId || !prizeName) continue;
       const values = prizeValueByUploader.get(uploaderId) ?? new Map<string, number>();
-      values.set(prizeName, Number(prize.value) || 0);
+      values.set(prizeName, scratchPrizeValue(prizeName, prize.value));
       prizeValueByUploader.set(uploaderId, values);
     }
 
@@ -227,7 +228,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
       for (const rawPrize of prizesWon) {
         const prizeName = String(rawPrize ?? "").trim();
         if (!prizeName) continue;
-        scratchMoney += values?.get(prizeName) ?? 0;
+        scratchMoney += values?.get(prizeName) ?? scratchPrizeValue(prizeName, undefined);
       }
     }
 

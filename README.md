@@ -1,4 +1,4 @@
-# 🌙 sbjStats - Blackjack Dealer Stats
+# 🌙 SimpleStats - Blackjack Dealer Stats
 *A platform which allows users to upload their game data and display them publicly*
 
 ---

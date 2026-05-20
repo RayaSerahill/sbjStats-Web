@@ -1,8 +1,6 @@
-"use client";
-import { useAdminNav } from "../dashboard/AdminSectionsClient";
+import Link from "next/link";
 
 export function Home() {
-  const navigate = useAdminNav();
   return (
     <div className="rounded-3xl cute-border admin-item-container">
       <div>
@@ -19,7 +17,7 @@ export function Home() {
         </p>
         <div className="mt-4 space-y-3">
           <div>
-            <h3 className="text-sm font-semibold text-zinc-900">sbjStats Plugin</h3>
+            <h3 className="text-sm font-semibold text-zinc-900">SimpleStats Plugin</h3>
             <p className={"mt-2"}>
             </p>
             <ol className="mt-2 list-inside list-decimal">
@@ -27,16 +25,16 @@ export function Home() {
                 Add a new custom repository in the experimental tab of dalamud with the following URL: <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm text-zinc-800">https://serahill.net/plugins.json</code>
               </li>
               <li>
-                Install the sbjStats plugin from the repository, and open it up in the plugin list
+                Install the SimpleStats plugin from the repository, and open it up in the plugin list
               </li>
               <li>
-                Navigate to the <span className={"internal-link"} onClick={() => navigate("api-keys")}>API Keys</span> tab on this dashboard, and generate a new API key
+                Navigate to the <Link href="/dashboard/api-keys" className="internal-link">API Keys</Link> tab on this dashboard, and generate a new API key
               </li>
               <li>
                 Paste the generated API key in the plugin, and enable automatic upload!
               </li>
               <li>
-                If you have existing games you want to upload, you can click the "Upload existing stats" button in the plugin, which will upload all games that are not yet uploaded to the dashboard!
+                If you have existing games you want to upload, you can click the &quot;Upload existing stats&quot; button in the plugin, which will upload all games that are not yet uploaded to the dashboard!
               </li>
             </ol>
           </div>

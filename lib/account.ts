@@ -1,7 +1,33 @@
-import type { Db, ObjectId } from "mongodb";
-import type { UserDoc } from "@/lib/db";
+import type { Db, Filter, ObjectId } from "mongodb";
+import type { DashboardTheme, UserDoc } from "@/lib/db";
 
 const USERNAME_RE = /^[a-z0-9_-]{3,32}$/;
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+export const DEFAULT_DASHBOARD_THEME: DashboardTheme = "dark";
+export const DEFAULT_DASHBOARD_ACCENT_COLOR = "#FF9FC6";
+
+export const DASHBOARD_THEME_OPTIONS: Array<{ key: DashboardTheme; label: string }> = [
+  { key: "dark", label: "Dark" },
+  { key: "mixed", label: "Mixed" },
+  { key: "light", label: "Light" },
+];
+
+export function normalizeDashboardTheme(value: unknown): DashboardTheme {
+  if (value === "mixed") return "mixed";
+  return value === "light" ? "light" : DEFAULT_DASHBOARD_THEME;
+}
+
+export function normalizeDashboardAccentColor(value: unknown) {
+  const color = String(value ?? "").trim();
+  return HEX_COLOR_RE.test(color) ? color.toUpperCase() : DEFAULT_DASHBOARD_ACCENT_COLOR;
+}
+
+export function dashboardAccentColorValidationMessage(value: unknown) {
+  const color = String(value ?? "").trim();
+  if (!color) return "Accent color is required";
+  if (!HEX_COLOR_RE.test(color)) return "Accent color must be a 6-digit hex color";
+  return null;
+}
 
 export function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
@@ -32,12 +58,8 @@ export async function getAvailableUsername(db: Db, desired: string, excludeUserI
   const base = baseRaw.slice(0, 32);
 
   const isFree = async (candidate: string) => {
-    const existing = await users.findOne(
-      excludeUserId
-        ? { username: candidate, _id: { $ne: excludeUserId } as any }
-        : { username: candidate },
-      { projection: { _id: 1 } }
-    );
+    const query: Filter<UserDoc> = excludeUserId ? { username: candidate, _id: { $ne: excludeUserId } } : { username: candidate };
+    const existing = await users.findOne(query, { projection: { _id: 1 } });
     return !existing;
   };
 

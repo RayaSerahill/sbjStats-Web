@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminRequest } from "@/lib/auth";
 import { ensureGameCollections, getDb } from "@/lib/db";
+import { normalizeScratchPrizeName, parseFormattedGilPrizeValue } from "@/lib/scratchPrizes";
 
 type ScratchPrizeDoc = {
   uploaderId: string;
@@ -15,10 +16,6 @@ type ScratchGameDoc = {
   prizesWon?: string[];
 };
 
-function normalizePrizeString(value: unknown) {
-  const s = String(value ?? "").trim();
-  return s;
-}
 
 export async function GET(req: Request) {
   await ensureGameCollections();
@@ -49,14 +46,14 @@ export async function GET(req: Request) {
 
   const counts = new Map<string, number>();
   for (const row of uniqueFromGames) {
-    const prize = normalizePrizeString(row?._id);
+    const prize = normalizeScratchPrizeName(row?._id);
     if (!prize) continue;
     counts.set(prize, Number(row.count) || 0);
   }
 
   const values = new Map<string, { value: number | null; updatedAt: string | null }>();
   for (const row of saved) {
-    const prize = normalizePrizeString(row?.prize);
+    const prize = normalizeScratchPrizeName(row?.prize);
     if (!prize) continue;
     const val = typeof row.value === "number" && Number.isFinite(row.value) ? row.value : null;
     const updatedAt = row.updatedAt instanceof Date ? row.updatedAt.toISOString() : row.updatedAt ? new Date(row.updatedAt).toISOString() : null;
@@ -69,10 +66,11 @@ export async function GET(req: Request) {
     .sort((a, b) => a.localeCompare(b))
     .map((prize) => {
       const info = values.get(prize);
+      const inferredValue = parseFormattedGilPrizeValue(prize);
       return {
         prize,
         count: counts.get(prize) ?? 0,
-        value: info ? info.value : null,
+        value: info?.value ?? inferredValue,
         updatedAt: info ? info.updatedAt : null,
       };
     });
@@ -80,15 +78,17 @@ export async function GET(req: Request) {
   return NextResponse.json({ ok: true, prizes });
 }
 
-function parseUpdates(body: any): Array<{ prize: string; value: number | null }> {
-  const updates = Array.isArray(body?.updates) ? body.updates : body ? [body] : [];
+function parseUpdates(body: unknown): Array<{ prize: string; value: number | null }> {
+  const input = body && typeof body === "object" ? (body as { updates?: unknown }) : null;
+  const updates = Array.isArray(input?.updates) ? input.updates : body ? [body] : [];
 
   return updates
-    .map((row: any) => {
-      const prize = normalizePrizeString(row?.prize);
+    .map((row) => {
+      const update = row && typeof row === "object" ? (row as { prize?: unknown; value?: unknown }) : null;
+      const prize = normalizeScratchPrizeName(update?.prize);
       if (!prize) return null;
 
-      const rawVal = row?.value;
+      const rawVal = update?.value;
       if (rawVal === null || rawVal === undefined || rawVal === "") {
         return { prize, value: null };
       }
@@ -105,7 +105,7 @@ export async function PUT(req: Request) {
   const gate = await requireAdminRequest(req);
   if (!gate.ok) return gate.res;
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {

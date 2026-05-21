@@ -228,7 +228,8 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
       for (const rawPrize of prizesWon) {
         const prizeName = String(rawPrize ?? "").trim();
         if (!prizeName) continue;
-        scratchMoney += values?.get(prizeName) ?? scratchPrizeValue(prizeName, undefined);
+        const prizeValue = values?.get(prizeName) ?? scratchPrizeValue(prizeName, undefined);
+        scratchMoney -= Math.abs(prizeValue);
       }
     }
 
@@ -371,7 +372,7 @@ export default async function TeamPage({
               <div className={pageTheme.metricText}>{fmtInt(result.dealerCount)}</div>
             </div>
             <div className={pageTheme.card}>
-              <div className={pageTheme.labelText}>Team money</div>
+              <div className={pageTheme.labelText}>Team profit</div>
               <div className={pageTheme.metricText}>{fmtMoney(result.totalMoney)}</div>
               <div className={`mt-2 ${pageTheme.muted}`}>
                 Blackjack {fmtMoney(result.blackjackMoney)}

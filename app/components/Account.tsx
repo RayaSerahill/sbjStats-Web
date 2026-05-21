@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
+import {
+  normalizePublicStatsRootGame,
+  PUBLIC_STATS_GAME_OPTIONS,
+  publicStatsGamePath,
+  type PublicStatsGame,
+} from "@/lib/publicStatsRoutes";
 
 type AccountState = {
   email: string;
@@ -10,6 +16,7 @@ type AccountState = {
   statsUrl: string;
   name: string | null;
   discord: string | null;
+  publicStatsRootGame: PublicStatsGame;
   deleted?: boolean;
 };
 
@@ -19,7 +26,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export function Account() {
   const [account, setAccount] = useState<AccountState | null>(null);
-  const [busy, setBusy] = useState<null | "displayName" | "username" | "email" | "password" | "delete" | "discord">(null);
+  const [busy, setBusy] = useState<null | "displayName" | "username" | "rootGame" | "email" | "password" | "delete" | "discord">(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -29,7 +36,8 @@ export function Account() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
-  const [visibleUrlPrefix, setVisibleUrlPrefix] = useState("/stats/");
+  const [rootGame, setRootGame] = useState<PublicStatsGame>("blackjack");
+  const [visibleUrlPrefix, setVisibleUrlPrefix] = useState("/");
 
   const load = async () => {
     try {
@@ -40,6 +48,7 @@ export function Account() {
       setDisplayName(data.account.name ?? "");
       setUsername(data.account.username ?? data.account.suggestedUsername ?? "");
       setEmail(data.account.email ?? "");
+      setRootGame(normalizePublicStatsRootGame(data.account.publicStatsRootGame));
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to load account"));
     }
@@ -102,6 +111,29 @@ export function Account() {
       setSuccess("Username updated");
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to update username"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveRootGame = async () => {
+    setBusy("rootGame");
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch("/api/admin/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicStatsRootGame: rootGame }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to update stats root game");
+      const nextRootGame = normalizePublicStatsRootGame(data.account.publicStatsRootGame);
+      setAccount((prev) => prev ? { ...prev, ...data.account, publicStatsRootGame: nextRootGame } : prev);
+      setRootGame(nextRootGame);
+      setSuccess("Stats main game updated");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update stats root game"));
     } finally {
       setBusy(null);
     }
@@ -181,6 +213,11 @@ export function Account() {
     }
   };
 
+  const publicName = username || account?.username || account?.suggestedUsername || "username";
+  const normalizedRootGame = normalizePublicStatsRootGame(rootGame);
+  const visibleUrlBase = visibleUrlPrefix.endsWith("/") ? visibleUrlPrefix.slice(0, -1) : visibleUrlPrefix;
+  const publicGameUrl = (game: PublicStatsGame) => `${visibleUrlBase}${publicStatsGamePath(publicName, game, normalizedRootGame)}`;
+
   return (
     <div className="rounded-3xl cute-border admin-item-container">
       <DashboardPageHeader
@@ -232,6 +269,63 @@ export function Account() {
             className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
           >
             {busy === "displayName" ? "Saving…" : "Save display name"}
+          </button>
+        </form>
+
+        <form
+          className="rounded-2xl border border-zinc-200 bg-white p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveRootGame();
+          }}
+        >
+          <h3 className="text-sm font-semibold text-zinc-900">Game shown on main page</h3>
+          <p className="mt-1 text-xs text-zinc-500">Choose which game opens from your base public URL.</p>
+
+          <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Stats root game">
+            {PUBLIC_STATS_GAME_OPTIONS.map((option) => {
+              const active = normalizedRootGame === option.key;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setRootGame(option.key)}
+                  disabled={busy === "rootGame" || busy === "delete" || busy === "discord"}
+                  className={[
+                    "rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-60",
+                    active
+                      ? "border-zinc-900 bg-zinc-900 text-white"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-zinc-200 bg-[#fff7fb] px-3 py-3 text-xs text-zinc-700">
+            {PUBLIC_STATS_GAME_OPTIONS.map((option, index) => (
+              <div
+                key={option.key}
+                className={[
+                  "flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between",
+                  index > 0 ? "mt-2" : "",
+                ].join(" ")}
+              >
+                <span className="font-medium text-zinc-900">{option.key}</span>
+                <span className="break-all font-mono">{publicGameUrl(option.key)}</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy === "rootGame" || busy === "delete" || busy === "discord"}
+            className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
+          >
+            {busy === "rootGame" ? "Saving…" : "Save main game"}
           </button>
         </form>
 

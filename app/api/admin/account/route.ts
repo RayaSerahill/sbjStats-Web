@@ -13,6 +13,11 @@ import {
   usernameFromEmail,
   usernameValidationMessage,
 } from "@/lib/account";
+import {
+  normalizePublicStatsRootGame,
+  publicStatsGamePath,
+  publicStatsRootGameValidationMessage,
+} from "@/lib/publicStatsRoutes";
 
 function basicEmailValid(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -27,7 +32,7 @@ export async function GET(req: Request) {
   const users = db.collection<UserDoc>("users");
   const user = await users.findOne(
     { _id: new ObjectId(gate.auth.id) },
-    { projection: { email: 1, username: 1, name: 1, discord: 1, deleted: 1, dashboardTheme: 1, dashboardAccentColor: 1 } }
+    { projection: { email: 1, username: 1, name: 1, discord: 1, deleted: 1, publicStatsRootGame: 1, dashboardTheme: 1, dashboardAccentColor: 1 } }
   );
 
   if (!user) {
@@ -35,6 +40,7 @@ export async function GET(req: Request) {
   }
 
   const suggestedUsername = user.username || usernameFromEmail(user.email);
+  const publicStatsRootGame = normalizePublicStatsRootGame(user.publicStatsRootGame);
 
   return NextResponse.json({
     ok: true,
@@ -45,9 +51,10 @@ export async function GET(req: Request) {
       name: user.name ?? null,
       discord: user.discord ?? null,
       deleted: user.deleted === true,
+      publicStatsRootGame,
       dashboardTheme: normalizeDashboardTheme(user.dashboardTheme),
       dashboardAccentColor: normalizeDashboardAccentColor(user.dashboardAccentColor),
-      statsUrl: `/stats/${user.username ?? suggestedUsername}`,
+      statsUrl: publicStatsGamePath(user.username ?? suggestedUsername, publicStatsRootGame, publicStatsRootGame),
     },
   });
 }
@@ -65,6 +72,7 @@ export async function PATCH(req: Request) {
     newPassword?: string;
     newPasswordConfirm?: string;
     deleteAccount?: boolean;
+    publicStatsRootGame?: unknown;
     dashboardTheme?: unknown;
     dashboardAccentColor?: unknown;
   };
@@ -218,6 +226,14 @@ export async function PATCH(req: Request) {
     set.dashboardAccentColor = normalizeDashboardAccentColor(body.dashboardAccentColor);
   }
 
+  if ("publicStatsRootGame" in body) {
+    const rootGameError = publicStatsRootGameValidationMessage(body.publicStatsRootGame);
+    if (rootGameError) {
+      return NextResponse.json({ error: rootGameError }, { status: 400 });
+    }
+    set.publicStatsRootGame = normalizePublicStatsRootGame(body.publicStatsRootGame);
+  }
+
   if (!Object.keys(set).length) {
     return NextResponse.json({ error: "No changes submitted" }, { status: 400 });
   }
@@ -230,6 +246,8 @@ export async function PATCH(req: Request) {
   const latestDashboardTheme = "dashboardTheme" in set ? normalizeDashboardTheme(set.dashboardTheme) : normalizeDashboardTheme(user.dashboardTheme);
   const latestDashboardAccentColor =
     "dashboardAccentColor" in set ? normalizeDashboardAccentColor(set.dashboardAccentColor) : normalizeDashboardAccentColor(user.dashboardAccentColor);
+  const latestPublicStatsRootGame =
+    "publicStatsRootGame" in set ? normalizePublicStatsRootGame(set.publicStatsRootGame) : normalizePublicStatsRootGame(user.publicStatsRootGame);
   const res = NextResponse.json({
     ok: true,
     account: {
@@ -238,9 +256,10 @@ export async function PATCH(req: Request) {
       name: latestName,
       discord: user.discord ?? null,
       deleted: false,
+      publicStatsRootGame: latestPublicStatsRootGame,
       dashboardTheme: latestDashboardTheme,
       dashboardAccentColor: latestDashboardAccentColor,
-      statsUrl: `/stats/${latestUsername}`,
+      statsUrl: publicStatsGamePath(latestUsername, latestPublicStatsRootGame, latestPublicStatsRootGame),
     },
   });
 

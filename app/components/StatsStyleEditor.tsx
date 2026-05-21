@@ -740,7 +740,7 @@ export function StatsStyleEditor() {
           />
         </SectionCard>
         <SectionCard
-          title="Dealer page · /[displayName]"
+          title="Blackjack page"
           description="These settings style the main blackjack stats page, including dealer charts and player leaderboards."
         >
           <div className="grid gap-4">
@@ -807,7 +807,7 @@ export function StatsStyleEditor() {
         </SectionCard>
 
         <SectionCard
-          title="Scratch page · /[displayName]/scratch"
+          title="Scratch page"
           description="These settings style the scratch page separately, with its own surfaces, fonts, leaderboard size, and chart palette."
         >
           <div className="grid gap-4">

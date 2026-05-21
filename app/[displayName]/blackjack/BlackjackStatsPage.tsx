@@ -1,0 +1,637 @@
+import type { Metadata } from "next";
+import { Suspense, cache } from "react";
+import { ensureAuthCollections, ensureGameCollections, getDb, type UserDoc } from "@/lib/db";
+import { playerTagToParts } from "@/lib/gameIngest";
+import { DealerStats } from "../DealerStats";
+import { loadDealerStats } from "@/lib/dealerStats";
+import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } from "@/lib/statsStyle";
+import {StatsFooterSection} from "@/app/components/StatsFooterSection";
+import { StatsPageNav } from "@/app/components/StatsPageNav";
+import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
+import { PlayerSearch } from "../PlayerSearch";
+import { findPublicStatsUser } from "@/lib/publicStatsUser";
+import { normalizePublicStatsRootGame, type PublicStatsGame } from "@/lib/publicStatsRoutes";
+
+function norm(input: unknown) {
+  const s = typeof input === "string" ? input : input == null ? "" : String(input);
+  return s.normalize("NFKC").trim().toLowerCase();
+}
+
+function normalizePlayerTag(input: string) {
+  return playerTagToParts(input ?? "").playerTag;
+}
+
+function resolveCanonical(tag: string, aliasToPrimary: Map<string, string>) {
+  let cur = normalizePlayerTag(tag);
+  const seen = new Set<string>();
+  while (aliasToPrimary.has(cur) && !seen.has(cur)) {
+    seen.add(cur);
+    cur = normalizePlayerTag(aliasToPrimary.get(cur) ?? cur);
+  }
+  return cur;
+}
+
+function fmtInt(n: number) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+}
+
+function fmtMoney(n: number) {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "+";
+  return `${sign}${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(abs)}`;
+}
+
+type PlayerAggRow = {
+  playerTag: string;
+  name: string;
+  world: string;
+  games: number;
+  betTotal: number;
+  payoutTotal: number;
+  net: number;
+};
+
+type AliasRow = {
+  primaryTag?: string;
+  aliasTag?: string;
+  createdBy?: string;
+};
+
+type GamePlayersDoc = {
+  players?: { dealer?: boolean; playerTag?: string }[];
+};
+
+export type LoadStatsPlayerRow = {
+  playerTag: string;
+  name: string;
+  world: string;
+  games: number;
+  betTotal: number;
+  payoutTotal: number;
+  net: number;
+};
+
+export type LoadStatsDebug = {
+  db: string;
+  lookedFor: string;
+  normalized: string;
+  sampleNames: string[];
+};
+
+type StatsPageStyle = Awaited<ReturnType<typeof getStatsStyleForUploader>>;
+
+export type LoadStatsResult =
+    | { ok: false; debug?: LoadStatsDebug }
+    | {
+  ok: true;
+  displayName: string;
+  username: string;
+  uploaderId: string;
+  newestHostTag: string;
+  roundsHosted: number;
+  totalNet: number;
+  dealerNet: number;
+  totalBet: number;
+  totalPayout: number;
+  playerNet: number;
+  topWinners: LoadStatsPlayerRow[];
+  topLosers: LoadStatsPlayerRow[];
+  topActive: LoadStatsPlayerRow[];
+  totalPlayers: number;
+  publicStatsRootGame: PublicStatsGame;
+  style: StatsPageStyle;
+};
+
+
+async function loadStats(displayName: string): Promise<LoadStatsResult> {
+  await ensureAuthCollections();
+  await ensureGameCollections();
+
+  const db = await getDb();
+  const users = db.collection<UserDoc>("users");
+  const games = db.collection("games");
+  const aliases = db.collection("aliases");
+  const blacklist = db.collection("blacklist");
+
+  const { user, displayName: dn, normalizedDisplayName: dnNorm } = await findPublicStatsUser(db, displayName);
+  if (!dn) return { ok: false as const };
+
+  if (!user?._id) {
+    if (process.env.NODE_ENV !== "production") {
+      const samples = await users
+        .find({ deleted: { $ne: true } }, { projection: { name: 1 } })
+        .limit(25)
+        .toArray();
+      return {
+        ok: false as const,
+        debug: {
+          db: db.databaseName,
+          lookedFor: dn,
+          normalized: dnNorm,
+          sampleNames: samples
+            .map((s) => s.name)
+            .filter((name): name is string => typeof name === "string" && Boolean(name)),
+        },
+      };
+    }
+    return { ok: false as const };
+  }
+
+  const uploaderId = user._id.toHexString();
+  const includeGlobalAliases = usesGlobalAliases(user);
+
+  await db.collection("traffic").insertOne({
+    userId: user._id,
+    at: new Date()
+  });
+
+  const [
+    newestGame,
+    roundsHosted,
+    aliasRows,
+    row,
+    blacklistDocs,
+    style,
+  ] = await Promise.all([
+    games.findOne(
+      { uploaderId },
+      {
+        sort: { createdAt: -1 },
+        projection: { createdAt: 1, players: 1 },
+      }
+    ),
+    games.countDocuments({ uploaderId }),
+    aliases
+      .find(
+        includeGlobalAliases
+          ? { createdBy: { $in: [GLOBAL_ALIASES_CREATED_BY, uploaderId] } }
+          : { createdBy: uploaderId },
+        { projection: { primaryTag: 1, aliasTag: 1, createdBy: 1 } }
+      )
+      .sort({ createdAt: -1 })
+      .toArray(),
+    games
+      .aggregate<{
+        totalProfit: number;
+        totalBet: number;
+        totalPayout: number;
+      }>([
+        { $match: { uploaderId } },
+        {
+          $group: {
+            _id: null,
+            totalProfit: { $sum: { $ifNull: ["$profit", 0] } },
+            totalBet: { $sum: { $ifNull: ["$collected", 0] } },
+            totalPayout: { $sum: { $ifNull: ["$paidOut", 0] } },
+          },
+        },
+        { $project: { _id: 0, totalProfit: 1, totalBet: 1, totalPayout: 1 } },
+      ])
+      .next(),
+    blacklist.find<{ playerTag: string; createdBy: string }>({ createdBy: uploaderId }).project({ playerTag: 1 }).toArray(),
+    getStatsStyleForUploader(uploaderId, db),
+  ]);
+
+  const newestHostTag = (() => {
+    const newestGameDoc = newestGame as GamePlayersDoc | null;
+    const ps = Array.isArray(newestGameDoc?.players) ? newestGameDoc.players : [];
+    const d = ps.find((p) => p && p.dealer);
+    return typeof d?.playerTag === "string" && d.playerTag.trim() ? d.playerTag.trim() : "";
+  })();
+
+
+  const aliasToPrimary = new Map<string, string>();
+  for (const r of orderAliasesByPrecedence(aliasRows as AliasRow[], uploaderId)) {
+    const a = typeof r?.aliasTag === "string" ? normalizePlayerTag(r.aliasTag) : "";
+    const p = typeof r?.primaryTag === "string" ? normalizePlayerTag(r.primaryTag) : "";
+    if (a && p && a !== p) aliasToPrimary.set(a, p);
+  }
+
+  const playerRows = (await games
+    .aggregate<PlayerAggRow>([
+      { $match: { uploaderId } },
+      { $project: { players: 1 } },
+      { $unwind: "$players" },
+      { $match: { "players.dealer": { $ne: true } } },
+      {
+        $group: {
+          _id: { playerTag: "$players.playerTag", gameId: "$_id" },
+          name: { $first: "$players.name" },
+          world: { $first: "$players.world" },
+          betTotal: { $sum: { $ifNull: ["$players.bet", 0] } },
+          payoutTotal: { $sum: { $ifNull: ["$players.payout", 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          playerTag: "$_id.playerTag",
+          name: 1,
+          world: 1,
+          games: 1,
+          betTotal: 1,
+          payoutTotal: 1,
+          net: { $subtract: ["$payoutTotal", "$betTotal"] },
+        },
+      },
+      {
+        $group: {
+          _id: "$playerTag",
+          name: { $first: "$name" },
+          world: { $first: "$world" },
+          games: { $sum: 1 },
+          betTotal: { $sum: "$betTotal" },
+          payoutTotal: { $sum: "$payoutTotal" },
+          net: { $sum: "$net" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          playerTag: "$_id",
+          name: 1,
+          world: 1,
+          games: 1,
+          betTotal: 1,
+          payoutTotal: 1,
+          net: 1,
+        },
+      },
+    ])
+    .toArray()) as PlayerAggRow[];
+
+  const byCanonical = new Map<
+    string,
+    {
+      playerTag: string;
+      name: string;
+      world: string;
+      games: number;
+      betTotal: number;
+      payoutTotal: number;
+      net: number;
+    }
+  >();
+
+  for (const r of playerRows) {
+    const rawTag = typeof r?.playerTag === "string" ? normalizePlayerTag(r.playerTag) : "";
+    if (!rawTag) continue;
+    const canon = resolveCanonical(rawTag, aliasToPrimary);
+    const prev = byCanonical.get(canon);
+
+    const parts = playerTagToParts(canon);
+    const baseName = parts.name || prev?.name || r.name || canon;
+    const baseWorld = parts.world || prev?.world || r.world || "unknown";
+
+    if (!prev) {
+      byCanonical.set(canon, {
+        playerTag: canon,
+        name: baseName,
+        world: baseWorld,
+        games: Number(r.games) || 0,
+        betTotal: Number(r.betTotal) || 0,
+        payoutTotal: Number(r.payoutTotal) || 0,
+        net: Number(r.net) || 0,
+      });
+    } else {
+      prev.name = baseName;
+      prev.world = baseWorld;
+      prev.games += Number(r.games) || 0;
+      prev.betTotal += Number(r.betTotal) || 0;
+      prev.payoutTotal += Number(r.payoutTotal) || 0;
+      prev.net = prev.payoutTotal - prev.betTotal;
+    }
+  }
+
+  const totals = row ?? { totalProfit: 0, totalBet: 0, totalPayout: 0 };
+
+  const mergedPlayers = Array.from(byCanonical.values());
+  const totalBet = totals.totalBet;
+  const totalPayout = totals.totalPayout;
+  const playerNet = totalPayout - totalBet;
+  const dealerNet = totals.totalProfit;
+
+  const blacklistedTagsForUploader = new Set(blacklistDocs.map((b) => norm(b.playerTag)));
+  const styleCount = style.leaderboardSize;
+
+
+  const topWinners = mergedPlayers
+      .filter((p) => p.net > 0 && !blacklistedTagsForUploader.has(norm(p.playerTag ?? "")))
+      .sort((a, b) => b.net - a.net)
+      .slice(0, styleCount);
+
+  const topLosers = mergedPlayers
+      .filter((p) => p.net < 0 && !blacklistedTagsForUploader.has(norm(p.playerTag ?? "")))
+    .sort((a, b) => a.net - b.net)
+    .slice(0, styleCount);
+
+  const topActive = mergedPlayers
+    .filter(p => !blacklistedTagsForUploader.has(norm(p.playerTag ?? "")))
+    .slice()
+    .sort((a, b) => b.games - a.games || b.betTotal - a.betTotal)
+    .slice(0, styleCount);
+
+  const totalNet = mergedPlayers.reduce(
+      (sum, p) => sum + ((Number(p.payoutTotal) || 0) - (Number(p.betTotal) || 0)),
+      0,
+  );
+
+
+  return {
+    ok: true as const,
+    displayName: user.name ?? user.username ?? displayName,
+    username: user.username ?? "",
+    uploaderId,
+    newestHostTag,
+    roundsHosted,
+    totalNet,
+    dealerNet,
+    totalBet,
+    totalPayout,
+    playerNet,
+    topWinners,
+    topLosers,
+    topActive,
+    totalPlayers: mergedPlayers.length,
+    publicStatsRootGame: normalizePublicStatsRootGame(user.publicStatsRootGame),
+    style,
+  };
+
+}
+
+const loadStatsCached = cache(loadStats);
+
+
+export async function generateBlackjackMetadata({
+                                         params,
+                                       }: {
+  params: Promise<{ displayName: string }>;
+}): Promise<Metadata> {
+  const { displayName } = await params;
+  await ensureAuthCollections();
+  const db = await getDb();
+  const { user } = await findPublicStatsUser(db, displayName);
+  if (!user?._id) return { title: "Stats" };
+
+  return { title: `${user.name ?? user.username ?? displayName} | Stats` };
+}
+
+async function DealerStatsSection({
+  uploaderId,
+  pieChartColors,
+  barChartProfitColor,
+  barChartLossColor,
+  barChartDays,
+  fontColor,
+  containerBackground,
+  elementBackground,
+}: {
+  uploaderId: string;
+  pieChartColors: string[];
+  barChartProfitColor: string;
+  barChartLossColor: string;
+  barChartDays: number;
+  fontColor: string;
+  containerBackground: StatsPageStyle["containerBackground"];
+  elementBackground: StatsPageStyle["elementBackground"];
+}) {
+  const dealerData = await loadDealerStats(uploaderId, barChartDays);
+
+  return (
+    <DealerStats
+      rows={dealerData.rows}
+      daily={dealerData.daily}
+      pieChartColors={pieChartColors}
+      barChartProfitColor={barChartProfitColor}
+      barChartLossColor={barChartLossColor}
+      barChartDays={barChartDays}
+      fontColor={fontColor}
+      containerBackground={containerBackground}
+      elementBackground={elementBackground}
+    />
+  );
+}
+
+export async function BlackjackStatsPage({
+                                           params,
+                                         }: {
+  params: Promise<{ displayName: string }>;
+}) {
+  const { displayName } = await params;
+  const result = await loadStatsCached(displayName);
+  if (!result.ok) {
+    const dbg = result.debug;
+    return (
+        <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h1 className="text-xl font-semibold text-zinc-900">Stats lookup failed</h1>
+          <p className="mt-2 text-sm text-zinc-700">
+            Could not find a user for{" "}
+            <span className="font-medium text-zinc-900">{String(displayName)}</span>.
+          </p>
+
+          {dbg ? (
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-800">
+                <div><span className="font-semibold">DB:</span> {String(dbg.db)}</div>
+                <div className="mt-2"><span className="font-semibold">Sample user names:</span></div>
+                <div className="mt-1">{String(dbg.sampleNames ?? [])}</div>
+              </div>
+          ) : (
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-800">
+                No debug payload was provided by <code>loadStats()</code>.
+              </div>
+          )}
+        </div>
+    );
+  }
+
+  const data = result;
+  const style = data.style;
+  const fontFamily = getStatsFontFamily(style.fontStyle);
+  const pageBackgroundStyle = getBackgroundStyleCss(style.background);
+  const containerBackgroundStyle = getBackgroundStyleCss(style.containerBackground);
+  const elementBackgroundStyle = getBackgroundStyleCss(style.elementBackground);
+  const headerTextColor = style.headerTextColor;
+  const title = data.displayName;
+  return (
+    <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.fontColor, fontFamily }}>
+      <div className="mx-auto w-full max-w-5xl">
+        <StatsPageNav
+          username={data.username || data.displayName}
+          rootGame={data.publicStatsRootGame}
+          showBlackjack={style.publicNavShowBlackjack}
+          showScratch={style.publicNavShowScratch}
+          background={style.publicNavBackground}
+          borderRadius={style.publicNavBorderRadius}
+          fontColor={style.publicNavFontColor}
+          fontSize={style.publicNavFontSize}
+          fontStyle={style.publicNavFontStyle}
+          inactive={style.publicNavInactive}
+          hover={style.publicNavHover}
+          active={style.publicNavActive}
+        />
+      </div>
+      <div className="mx-auto w-full max-w-5xl rounded-3xl border border-black/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={containerBackgroundStyle}>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold" style={{ color: headerTextColor }}>{title}</h1>
+          <p className="text-sm" style={{ color: headerTextColor }}>
+            Stats for uploader{" "}
+            <span className="font-medium" style={{ color: headerTextColor }}>
+              {data.username || data.displayName}
+            </span>
+            {data.totalPlayers ? (
+                <>
+                  {" "}• {fmtInt(data.totalPlayers)} players
+                </>
+            ) : null}
+          </p>
+
+        </div>
+
+        {data.roundsHosted === 0 ? (
+          <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...containerBackgroundStyle, color: style.fontColor }}>
+            No rounds uploaded yet.
+          </div>
+        ) : (
+          <>
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Rounds hosted</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtInt(data.roundsHosted)}</div>
+              </div>
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Profit / loss (dealer)</div>
+                <div className="mt-2 text-2xl font-semibold" style={{ color: style.fontColor }}>{fmtMoney(data.dealerNet)}</div>
+                <div className="mt-1 text-xs opacity-70" style={{ color: style.fontColor }}>Players net: {fmtMoney(data.playerNet)}</div>
+              </div>
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="text-xs font-medium opacity-70" style={{ color: style.fontColor }}>Volume</div>
+                <div className="mt-2 text-sm" style={{ color: style.fontColor }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <span style={{ color: style.fontColor, opacity: 0.75 }}>Total bet</span>
+                    <span className="font-medium" style={{ color: style.fontColor }}>{fmtInt(data.totalBet)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <span style={{ color: style.fontColor, opacity: 0.75 }}>Total payout</span>
+                    <span className="font-medium" style={{ color: style.fontColor }}>{fmtInt(data.totalPayout)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold" style={{ color: style.fontColor }}>Top {style.leaderboardSize} winners</h2>
+                  <span className="text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>by net</span>
+                </div>
+                <ol className="mt-3 space-y-2 text-sm" style={{ color: style.fontColor }}>
+                  {data.topWinners.length ? (
+                      data.topWinners.map((p, idx) => (
+                          <li key={p.name} className="flex items-center justify-between gap-3">
+                        <span className="truncate" style={{ color: style.fontColor }}>
+                          <span className="mr-2 text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>#{idx + 1}</span>
+                          <span className="font-medium" style={{ color: style.fontColor }}>{p.playerTag}</span>
+                        </span>
+                            <span className="shrink-0 font-medium" style={{ color: style.fontColor }}>{fmtMoney(p.net)}</span>
+                          </li>
+                      ))
+                  ) : (
+                      <li style={{ color: style.fontColor, opacity: 0.75 }}>No winners yet.</li>
+                  )}
+                </ol>
+              </div>
+
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold" style={{ color: style.fontColor }}>Top {style.leaderboardSize} losers</h2>
+                  <span className="text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>by net</span>
+                </div>
+                <ol className="mt-3 space-y-2 text-sm" style={{ color: style.fontColor }}>
+                  {data.topLosers.length ? (
+                      data.topLosers.map((p, idx) => (
+                          <li key={p.name} className="flex items-center justify-between gap-3">
+                        <span className="truncate" style={{ color: style.fontColor }}>
+                          <span className="mr-2 text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>#{idx + 1}</span>
+                          <span className="font-medium" style={{ color: style.fontColor }}>{p.playerTag}</span>
+                        </span>
+                            <span className="shrink-0 font-medium" style={{ color: style.fontColor }}>{fmtMoney(p.net)}</span>
+                          </li>
+                      ))
+                  ) : (
+                      <li style={{ color: style.fontColor, opacity: 0.75 }}>No losers yet.</li>
+                  )}
+                </ol>
+              </div>
+
+              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold" style={{ color: style.fontColor }}>Top {style.leaderboardSize} most active</h2>
+                  <span className="text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>by games</span>
+                </div>
+                <ol className="mt-3 space-y-2 text-sm" style={{ color: style.fontColor }}>
+                  {data.topActive.length ? (
+                      data.topActive.map((p, idx) => (
+                          <li key={p.name} className="flex items-center justify-between gap-3">
+                        <span className="truncate" style={{ color: style.fontColor }}>
+                          <span className="mr-2 text-xs" style={{ color: style.fontColor, opacity: 0.7 }}>#{idx + 1}</span>
+                          <span className="font-medium" style={{ color: style.fontColor }}>{p.playerTag}</span>
+                        </span>
+                            <span className="shrink-0 font-medium" style={{ color: style.fontColor }}>{fmtInt(p.games)}</span>
+                          </li>
+                      ))
+                  ) : (
+                      <li style={{ color: style.fontColor, opacity: 0.75 }}>No players yet.</li>
+                  )}
+                </ol>
+              </div>
+            </div>
+
+            <PlayerSearch
+                uploaderId={data.uploaderId}
+                fontColor={style.fontColor}
+                headerTextColor={headerTextColor}
+                elementBackground={style.elementBackground}
+                popupBackground={style.playerSearchPopupBackground}
+                searchAccentColor={style.playerSearchAccentColor}
+                chartProfitColor={style.playerSearchChartProfitColor}
+                chartLossColor={style.playerSearchChartLossColor}
+                chartTotalProfitColor={style.playerSearchChartTotalProfitColor}
+            />
+
+            {data.uploaderId ? (
+              <Suspense
+                fallback={(
+                  <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
+                    Loading dealer stats…
+                  </div>
+                )}
+              >
+                <DealerStatsSection
+                  uploaderId={data.uploaderId}
+                  pieChartColors={style.pieChartColors}
+                  barChartProfitColor={style.barChartProfitColor}
+                  barChartLossColor={style.barChartLossColor}
+                  barChartDays={style.barChartDays}
+                  fontColor={style.fontColor}
+                  containerBackground={style.containerBackground}
+                  elementBackground={style.elementBackground}
+                />
+              </Suspense>
+            ) : (
+                <div className="mt-6 rounded-2xl border border-black/10 p-4 text-sm" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
+                  Could not resolve uploader ID for this display name.
+                </div>
+            )}
+
+
+            <div className="mt-6 rounded-2xl border border-black/10 p-4 text-xs shadow-[0_0_0_1px_rgba(0,0,0,0.04)]" style={{ ...elementBackgroundStyle, color: style.fontColor }}>
+              Stats are usually updated after each hosting session.
+            </div>
+          </>
+        )}
+      </div>
+      <StatsFooterSection />
+    </div>
+  );
+}

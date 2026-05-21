@@ -10,6 +10,7 @@ import {
   normalizeUsername,
   usernameValidationMessage,
 } from "@/lib/account";
+import { DEFAULT_PUBLIC_STATS_ROOT_GAME } from "@/lib/publicStatsRoutes";
 import { findRegistrationWhitelistMatch } from "@/lib/whitelist";
 
 function basicEmailValid(email: string) {
@@ -108,6 +109,7 @@ export async function POST(req: Request) {
       username,
       role,
       useGlobalAliases: true,
+      publicStatsRootGame: DEFAULT_PUBLIC_STATS_ROOT_GAME,
       dashboardTheme: DEFAULT_DASHBOARD_THEME,
       dashboardAccentColor: DEFAULT_DASHBOARD_ACCENT_COLOR,
       deleted: false,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type ScratchGameRow = {
   id: string;
@@ -32,6 +33,10 @@ function fmtDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 function TrashIcon() {
@@ -82,9 +87,9 @@ export function ScratchGames() {
       setGames(Array.isArray(data.games) ? data.games : []);
       setPage(typeof data.page === "number" ? data.page : nextPage);
       setHasMore(Boolean(data.hasMore));
-    } catch (err: any) {
+    } catch (err: unknown) {
       setGames([]);
-      setMessage(err?.message ?? "Failed to load scratch games");
+      setMessage(getErrorMessage(err, "Failed to load scratch games"));
     } finally {
       setLoading(false);
     }
@@ -133,8 +138,8 @@ export function ScratchGames() {
       setConfirming(null);
       setMessage("Scratch game deleted permanently");
       await load(page);
-    } catch (err: any) {
-      setMessage(err?.message ?? "Failed to delete scratch game");
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Failed to delete scratch game"));
     } finally {
       setBusyId(null);
     }
@@ -142,15 +147,14 @@ export function ScratchGames() {
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900">Scratch Games</h2>
-          <p className="mt-1 text-sm text-zinc-600">Lists scratch archives 20 at a time. You can filter between two dates. Deleting a record does not affect any other stats.</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>
-      </div>
+      <DashboardPageHeader
+        title="Scratch Games"
+        description="Lists scratch archives 20 at a time. You can filter between two dates. Deleting a record does not affect any other stats."
+        action={<div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>}
+      />
 
-      <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+      <div className="mt-6 space-y-6">
+      <DashboardSection title="Filters">
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <label className="block">
             <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-600">From</span>
@@ -199,11 +203,12 @@ export function ScratchGames() {
             {appliedTo ? ` to ${fmtDate(appliedTo)}` : ""}
           </p>
         ) : null}
-      </div>
+      </DashboardSection>
 
       {message ? <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">{message}</div> : null}
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+      <DashboardSection title="Scratch archives" bodyClassName="p-0">
+      <div className="overflow-hidden bg-white">
         <div className="grid grid-cols-[1.25fr_1.25fr_.7fr_.7fr_.7fr_auto] gap-3 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700">
           <div>DateTime</div>
           <div>Player</div>
@@ -247,7 +252,7 @@ export function ScratchGames() {
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-4 py-3">
         <button
           type="button"
           onClick={() => void load(page - 1)}
@@ -267,6 +272,8 @@ export function ScratchGames() {
         >
           Next
         </button>
+      </div>
+      </DashboardSection>
       </div>
 
       {confirming ? (

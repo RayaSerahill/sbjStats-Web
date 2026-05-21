@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type GameRow = {
     id: string;
@@ -31,6 +32,10 @@ function fmtDate(value: string) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleString();
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
 }
 
 function TrashIcon() {
@@ -81,9 +86,9 @@ export function Games() {
             setGames(Array.isArray(data.games) ? data.games : []);
             setPage(typeof data.page === "number" ? data.page : nextPage);
             setHasMore(Boolean(data.hasMore));
-        } catch (err: any) {
+        } catch (err: unknown) {
             setGames([]);
-            setMessage(err?.message ?? "Failed to load games");
+            setMessage(getErrorMessage(err, "Failed to load games"));
         } finally {
             setLoading(false);
         }
@@ -132,8 +137,8 @@ export function Games() {
             setConfirming(null);
             setMessage("Game deleted permanently");
             await load(page);
-        } catch (err: any) {
-            setMessage(err?.message ?? "Failed to delete game");
+        } catch (err: unknown) {
+            setMessage(getErrorMessage(err, "Failed to delete game"));
         } finally {
             setBusyId(null);
         }
@@ -141,15 +146,16 @@ export function Games() {
 
     return (
         <div className="rounded-3xl cute-border admin-item-container">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h2 className="text-lg font-semibold text-zinc-900">Games</h2>
-                    <p className="mt-1 text-sm text-zinc-600">Lists your imported games 20 at a time. You can filter between two dates. Deleting a game updates related stats.</p>
-                </div>
+            <DashboardPageHeader
+                title="Games"
+                description="Lists your imported games 20 at a time. You can filter between two dates. Deleting a game updates related stats."
+                action={
                 <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>
-            </div>
+                }
+            />
 
-            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+            <div className="mt-6 space-y-6">
+            <DashboardSection title="Filters">
                 <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
                     <label className="block">
                         <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-600">From</span>
@@ -198,11 +204,12 @@ export function Games() {
                         {appliedTo ? ` to ${fmtDate(appliedTo)}` : ""}
                     </p>
                 ) : null}
-            </div>
+            </DashboardSection>
 
             {message ? <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">{message}</div> : null}
 
-            <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+            <DashboardSection title="Imported games" bodyClassName="p-0">
+            <div className="overflow-hidden bg-white">
                 <div className="grid grid-cols-[1.6fr_.8fr_.8fr_.8fr_auto] gap-3 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700">
                     <div>DateTime</div>
                     <div className="text-right">profit</div>
@@ -244,7 +251,7 @@ export function Games() {
                 )}
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-4 py-3">
                 <button
                     type="button"
                     onClick={() => void load(page - 1)}
@@ -264,6 +271,8 @@ export function Games() {
                 >
                     Next
                 </button>
+            </div>
+            </DashboardSection>
             </div>
 
             {confirming ? (

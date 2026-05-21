@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type AccountState = {
   email: string;
@@ -11,6 +12,10 @@ type AccountState = {
   discord: string | null;
   deleted?: boolean;
 };
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export function Account() {
   const [account, setAccount] = useState<AccountState | null>(null);
@@ -35,8 +40,8 @@ export function Account() {
       setDisplayName(data.account.name ?? "");
       setUsername(data.account.username ?? data.account.suggestedUsername ?? "");
       setEmail(data.account.email ?? "");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to load account");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to load account"));
     }
   };
 
@@ -73,8 +78,8 @@ export function Account() {
       setAccount((prev) => prev ? { ...prev, ...data.account } : prev);
       setDisplayName(data.account.name ?? displayName);
       setSuccess("Display name updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update display name");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update display name"));
     } finally {
       setBusy(null);
     }
@@ -95,8 +100,8 @@ export function Account() {
       setAccount((prev) => prev ? { ...prev, ...data.account, suggestedUsername: data.account.username } : prev);
       setUsername(data.account.username ?? username);
       setSuccess("Username updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update username");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update username"));
     } finally {
       setBusy(null);
     }
@@ -117,8 +122,8 @@ export function Account() {
       setAccount((prev) => prev ? { ...prev, ...data.account } : prev);
       setEmail(data.account.email ?? email);
       setSuccess("Email updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update email");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update email"));
     } finally {
       setBusy(null);
     }
@@ -140,8 +145,8 @@ export function Account() {
       setNewPassword("");
       setNewPasswordConfirm("");
       setSuccess("Password updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update password");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update password"));
     } finally {
       setBusy(null);
     }
@@ -170,20 +175,18 @@ export function Account() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? "Failed to delete account");
       window.location.href = "/dashboard/login";
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to delete account");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to delete account"));
       setBusy(null);
     }
   };
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">
-      <div>
-        <h2 className="text-lg font-semibold text-zinc-900">Account</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Update the title shown on your stats page, the public stats URL, email address, password, and connected Discord account.
-        </p>
-      </div>
+      <DashboardPageHeader
+        title="Account"
+        description="Update the title shown on your stats page, the public stats URL, email address, password, and connected Discord account."
+      />
 
       {account?.deleted ? (
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -199,7 +202,9 @@ export function Account() {
         <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{success}</div>
       ) : null}
 
-      <div className="mt-4 grid account-container">
+      <div className="mt-6 space-y-6">
+      <DashboardSection title="Profile and sign-in" bodyClassName="p-4">
+      <div className="grid account-container gap-4">
         <form
           className="rounded-2xl border border-zinc-200 bg-white p-4"
           onSubmit={(e) => {
@@ -374,10 +379,10 @@ export function Account() {
           )}
         </div>
       </div>
+      </DashboardSection>
 
-      <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4">
-        <h3 className="text-sm font-semibold text-red-900">Delete account</h3>
-        <p className="mt-1 text-xs text-red-700">
+      <DashboardSection title="Delete account" className="border-red-200" bodyClassName="bg-red-50 p-4">
+        <p className="text-xs text-red-700">
           Delete your account! Note, this is a permanent operation. Your stats page will no longer be accessible, and you will need to register a new account to use the admin dashboard again.
         </p>
         <button
@@ -388,6 +393,7 @@ export function Account() {
         >
           {busy === "delete" ? "Deleting…" : "Delete account"}
         </button>
+      </DashboardSection>
       </div>
     </div>
   );

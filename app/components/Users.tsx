@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type UserRole = "owner" | "admin" | "dealer";
 
@@ -28,6 +29,10 @@ function fmtDate(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 const emptyEditor = {
@@ -69,9 +74,9 @@ export function Users() {
       setUsers(Array.isArray(data.users) ? data.users : []);
       setPage(typeof data.page === "number" ? data.page : nextPage);
       setHasMore(Boolean(data.hasMore));
-    } catch (err: any) {
+    } catch (err: unknown) {
       setUsers([]);
-      setMessage(err?.message ?? "Failed to load users");
+      setMessage(getErrorMessage(err, "Failed to load users"));
     } finally {
       setLoading(false);
     }
@@ -126,8 +131,8 @@ export function Users() {
       setUsers((prev) => prev.map((row) => (row.id === editingId ? data.user : row)));
       setMessage("User updated");
       closeEditor();
-    } catch (err: any) {
-      setMessage(err?.message ?? "Failed to update user");
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Failed to update user"));
     } finally {
       setBusyId(null);
     }
@@ -144,8 +149,8 @@ export function Users() {
       setUsers((prev) => prev.map((row) => (row.id === user.id ? { ...row, deleted: true } : row)));
       setMessage("User deleted");
       await load(page);
-    } catch (err: any) {
-      setMessage(err?.message ?? "Failed to delete user");
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Failed to delete user"));
     } finally {
       setBusyId(null);
     }
@@ -153,15 +158,14 @@ export function Users() {
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900">Users</h2>
-          <p className="mt-1 text-sm text-zinc-600">List of all users and functions to edit their information or delete them, only visible to admins. </p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>
-      </div>
+      <DashboardPageHeader
+        title="Users"
+        description="List of all users and functions to edit their information or delete them, only visible to admins."
+        action={<div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>}
+      />
 
-      <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+      <div className="mt-6 space-y-6">
+      <DashboardSection title="Search">
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <label className="block">
             <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-600">Search by name or email</span>
@@ -200,11 +204,12 @@ export function Users() {
             </button>
           </div>
         </div>
-      </div>
+      </DashboardSection>
 
       {message ? <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">{message}</div> : null}
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+      <DashboardSection title="User accounts" bodyClassName="p-0">
+      <div className="overflow-hidden bg-white">
         <div className="grid grid-cols-[1.3fr_.7fr_.8fr_1fr_auto] gap-3 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700">
           <div>Email</div>
           <div>Role</div>
@@ -286,14 +291,16 @@ export function Users() {
             ))}
           </div>
         ) : (
-          <div className="px-3 py-4 text-sm text-zinc-600">No users matched your search.</div>
+        <div className="px-3 py-4 text-sm text-zinc-600">No users matched your search.</div>
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-4 py-3">
         <button type="button" onClick={() => void load(page - 1)} disabled={loading || page <= 1} className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
         <div className="text-xs text-zinc-500">Page {page}</div>
         <button type="button" onClick={() => void load(page + 1)} disabled={loading || !hasMore} className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+      </div>
+      </DashboardSection>
       </div>
 
       {confirming ? (

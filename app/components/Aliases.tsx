@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type AliasRow = {
   id: string;
@@ -76,55 +77,56 @@ export function Aliases({
   }, [refresh]);
 
   return (
-    <div className="section section-aliases mt-6 cute-border admin-item-container">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold text-zinc-900">{title}</h2>
-        <p className="text-xs text-zinc-600">{description}</p>
-      </div>
+    <div className="section section-aliases cute-border admin-item-container">
+      <DashboardPageHeader title={title} description={description} />
 
+      <div className="mt-6 space-y-6">
       {showGlobalToggle ? (
-        <label className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900">
-          <span className="min-w-0">
-            <span className="block font-medium">Use global aliases managed by admins</span>
-            <span className="mt-1 block text-xs text-zinc-600">Global aliases apply first. Aliases saved here override matching global aliases.</span>
-          </span>
-          <input
-            type="checkbox"
-            checked={useGlobalAliases}
-            disabled={savingGlobalToggle}
-            onChange={async (e) => {
-              const nextValue = e.target.checked;
-              const previousValue = useGlobalAliases;
-              setUseGlobalAliases(nextValue);
-              setSavingGlobalToggle(true);
-              setMessage(null);
+        <DashboardSection title="Global aliases">
+          <label className="flex items-center justify-between gap-4 text-sm text-zinc-900">
+            <span className="min-w-0">
+              <span className="block font-medium">Use global aliases managed by admins</span>
+              <span className="mt-1 block text-xs text-zinc-600">Global aliases apply first. Aliases saved here override matching global aliases.</span>
+            </span>
+            <input
+              type="checkbox"
+              checked={useGlobalAliases}
+              disabled={savingGlobalToggle}
+              onChange={async (e) => {
+                const nextValue = e.target.checked;
+                const previousValue = useGlobalAliases;
+                setUseGlobalAliases(nextValue);
+                setSavingGlobalToggle(true);
+                setMessage(null);
 
-              try {
-                const res = await fetch(endpoint, {
-                  method: "PATCH",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ useGlobalAliases: nextValue }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data?.error ?? "Failed to update global alias setting");
-                if (typeof data?.useGlobalAliases === "boolean") {
-                  setUseGlobalAliases(data.useGlobalAliases);
+                try {
+                  const res = await fetch(endpoint, {
+                    method: "PATCH",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ useGlobalAliases: nextValue }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) throw new Error(data?.error ?? "Failed to update global alias setting");
+                  if (typeof data?.useGlobalAliases === "boolean") {
+                    setUseGlobalAliases(data.useGlobalAliases);
+                  }
+                  setMessage(nextValue ? "Global aliases enabled" : "Global aliases disabled");
+                } catch (error: unknown) {
+                  setUseGlobalAliases(previousValue);
+                  setMessage(getErrorMessage(error, "Failed to update global alias setting"));
+                } finally {
+                  setSavingGlobalToggle(false);
                 }
-                setMessage(nextValue ? "Global aliases enabled" : "Global aliases disabled");
-              } catch (error: unknown) {
-                setUseGlobalAliases(previousValue);
-                setMessage(getErrorMessage(error, "Failed to update global alias setting"));
-              } finally {
-                setSavingGlobalToggle(false);
-              }
-            }}
-            className="h-5 w-5 shrink-0 rounded border-zinc-300 text-[#FF9FC6] focus:ring-[#FF9FC6]/35 disabled:cursor-not-allowed disabled:opacity-60"
-          />
-        </label>
+              }}
+              className="h-5 w-5 shrink-0 rounded border-zinc-300 text-[#FF9FC6] focus:ring-[#FF9FC6]/35 disabled:cursor-not-allowed disabled:opacity-60"
+            />
+          </label>
+        </DashboardSection>
       ) : null}
 
+      <DashboardSection title="Add alias">
       <form
-        className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+        className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
         onSubmit={async (e) => {
           e.preventDefault();
           setMessage(null);
@@ -177,12 +179,14 @@ export function Aliases({
           {busy ? "Saving…" : "Add alias"}
         </button>
       </form>
+      </DashboardSection>
 
       {message ? <p className="mt-3 text-xs text-zinc-700">{message}</p> : null}
 
-      <div className="mt-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-zinc-900">Existing aliases</h3>
+      <DashboardSection
+        title="Existing aliases"
+        bodyClassName="p-0"
+        action={
           <button
             type="button"
             onClick={async () => {
@@ -200,9 +204,10 @@ export function Aliases({
           >
             Refresh
           </button>
-        </div>
+        }
+      >
 
-        <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+        <div className="overflow-hidden bg-white">
           <div className="grid grid-cols-[1fr_1fr_auto] gap-0 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700">
             <div>Primary</div>
             <div>Alias</div>
@@ -308,6 +313,7 @@ export function Aliases({
             <div className="px-3 py-3 text-xs text-zinc-600">No aliases yet.</div>
           )}
         </div>
+      </DashboardSection>
       </div>
     </div>
   );

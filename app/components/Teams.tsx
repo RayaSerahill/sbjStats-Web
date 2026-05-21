@@ -1,8 +1,9 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_TEAM_ACCENT_COLOR, TEAM_GAME_OPTIONS, TEAM_THEME_OPTIONS, slugFromTeamName } from "@/lib/teams";
 import type { TeamGameKey, TeamMemberRole, TeamTheme } from "@/lib/db";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type TeamMember = {
   userId: string;
@@ -73,40 +74,6 @@ function errorMessage(error: unknown, fallback: string) {
 
 function isHexColor(value: string) {
   return /^#[0-9A-Fa-f]{6}$/.test(value);
-}
-
-type SectionPanelProps = {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  bodyClassName?: string;
-};
-
-function SectionPanel({
-  eyebrow,
-  title,
-  description,
-  action,
-  children,
-  className = "",
-  bodyClassName = "p-4",
-}: SectionPanelProps) {
-  return (
-    <section className={["overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm", className].filter(Boolean).join(" ")}>
-      <div className="flex flex-col gap-2 border-b border-zinc-200 bg-zinc-50 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          {eyebrow ? <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{eyebrow}</div> : null}
-          <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
-          {description ? <p className="mt-1 text-sm text-zinc-600">{description}</p> : null}
-        </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
-      </div>
-      <div className={bodyClassName}>{children}</div>
-    </section>
-  );
 }
 
 export function Teams() {
@@ -382,17 +349,15 @@ export function Teams() {
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">
-      <div className="flex flex-col gap-2 border-b border-zinc-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900">Teams</h2>
-          <p className="mt-1 text-sm text-zinc-600">Create one team, invite dealers, and manage what appears on the public team page.</p>
-        </div>
-        {state.pendingInviteCount ? (
+      <DashboardPageHeader
+        title="Teams"
+        description="Create one team, invite dealers, and manage what appears on the public team page."
+        action={state.pendingInviteCount ? (
           <div className="rounded-full border border-[#FF9FC6]/50 bg-[#fff7fb] px-3 py-1 text-xs font-medium text-zinc-900">
             {state.pendingInviteCount} invite{state.pendingInviteCount === 1 ? "" : "s"}
           </div>
         ) : null}
-      </div>
+      />
 
       {error ? (
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
@@ -408,7 +373,7 @@ export function Teams() {
 
       <div className="mt-6 space-y-6">
         {!loading && !ownedTeam ? (
-          <SectionPanel eyebrow="Owner" title="Create a team">
+          <DashboardSection eyebrow="Owner" title="Create a team">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -460,11 +425,11 @@ export function Teams() {
                 {busy === "create" ? "Creating…" : "Create team"}
               </button>
             </form>
-          </SectionPanel>
+          </DashboardSection>
         ) : null}
 
         {ownedTeam ? (
-          <SectionPanel
+          <DashboardSection
             eyebrow="Owner"
             title="Manage your team"
             action={
@@ -685,11 +650,11 @@ export function Teams() {
                 {busy === "delete-team" ? "Deleting…" : "Delete team"}
               </button>
             </div>
-          </SectionPanel>
+          </DashboardSection>
         ) : null}
 
         {!loading ? (
-          <SectionPanel
+          <DashboardSection
             eyebrow="Invites"
             title="Pending team invites"
             action={
@@ -732,11 +697,11 @@ export function Teams() {
             ) : (
               <div className="rounded-2xl border border-zinc-200 bg-[#fff7fb] px-4 py-3 text-sm text-zinc-600">No pending invites.</div>
             )}
-          </SectionPanel>
+          </DashboardSection>
         ) : null}
 
         {!loading ? (
-          <SectionPanel eyebrow="Member" title="Teams you belong to">
+          <DashboardSection eyebrow="Member" title="Teams you belong to">
             {state.teams.length ? (
               <div className="divide-y divide-zinc-100 rounded-2xl border border-zinc-200">
                 {state.teams.map((team) => (
@@ -768,7 +733,7 @@ export function Teams() {
             ) : (
               <div className="rounded-2xl border border-zinc-200 bg-[#fff7fb] px-4 py-3 text-sm text-zinc-600">You are not in any teams yet.</div>
             )}
-          </SectionPanel>
+          </DashboardSection>
         ) : null}
       </div>
 

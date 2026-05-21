@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { TeamGameKey, TeamMemberRole, TeamTheme } from "@/lib/db";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type AdminTeamMember = {
   userId: string;
@@ -108,17 +109,17 @@ export function AdminTeamsOverview() {
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900">Teams</h2>
-          <p className="mt-1 text-sm text-zinc-600">Admin overview of every team, owner, public URL, settings, members, and pending invites.</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>
-      </div>
+      <DashboardPageHeader
+        title="Teams"
+        description="Admin overview of every team, owner, public URL, settings, members, and pending invites."
+        action={<div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">{title}</div>}
+      />
 
       {message ? <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">{message}</div> : null}
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+      <div className="mt-6 space-y-6">
+      <DashboardSection title="Team directory" bodyClassName="p-0">
+      <div className="overflow-hidden bg-white">
         <div className="grid grid-cols-[1.1fr_1fr_1fr_auto] gap-3 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700">
           <div>Name</div>
           <div>URL</div>
@@ -255,6 +256,8 @@ export function AdminTeamsOverview() {
         ) : (
           <div className="px-3 py-4 text-sm text-zinc-600">No teams found.</div>
         )}
+      </div>
+      </DashboardSection>
       </div>
     </div>
   );

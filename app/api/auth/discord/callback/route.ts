@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { AUTH_COOKIE_NAME, authCookieOptions, signAuthToken, verifyAuthToken } from "@/lib/auth";
 import { DEFAULT_DASHBOARD_ACCENT_COLOR, DEFAULT_DASHBOARD_THEME } from "@/lib/account";
 import { ensureAuthCollections, getDb, type UserDoc, type UserRole } from "@/lib/db";
+import { DEFAULT_PUBLIC_STATS_ROOT_GAME } from "@/lib/publicStatsRoutes";
 import { findRegistrationWhitelistMatch } from "@/lib/whitelist";
 
 const STATE_COOKIE = "discord_oauth_state";
@@ -201,6 +202,7 @@ export async function GET(req: Request) {
         username: undefined,
         discord: discordId,
         role,
+        publicStatsRootGame: DEFAULT_PUBLIC_STATS_ROOT_GAME,
         dashboardTheme: DEFAULT_DASHBOARD_THEME,
         dashboardAccentColor: DEFAULT_DASHBOARD_ACCENT_COLOR,
         deleted: false,

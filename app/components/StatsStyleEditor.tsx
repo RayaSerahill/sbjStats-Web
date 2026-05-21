@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { DashboardPageHeader } from "@/app/components/DashboardSection";
 
 type StatsFontStyle = "sans" | "serif" | "mono" | "old-london";
 type StatsBackgroundMode = "color" | "image" | "gradient";
@@ -447,7 +448,7 @@ function SectionCard({
 }) {
   return (
     <div className="rounded-3xl border border-zinc-200 bg-zinc-50/80 p-5">
-      <div>
+      <div className="border-b border-zinc-200 pb-4">
         <h3 className="text-base font-semibold text-zinc-900">{title}</h3>
         <p className="mt-1 text-sm text-zinc-600">{description}</p>
       </div>
@@ -664,12 +665,10 @@ export function StatsStyleEditor() {
 
   return (
     <div className="stats-style-editor rounded-3xl cute-border admin-item-container">
-      <div>
-        <h2 className="text-lg font-semibold text-zinc-900">Stats style</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Customize the public stats pages with separate style groups for the main dealer page and the scratch page.
-        </p>
-      </div>
+      <DashboardPageHeader
+        title="Stats style"
+        description="Customize the public stats pages with separate style groups for the main dealer page and the scratch page."
+      />
 
       {loading ? <div className="mt-4 text-sm text-zinc-700">Loading…</div> : null}
 
@@ -741,7 +740,7 @@ export function StatsStyleEditor() {
           />
         </SectionCard>
         <SectionCard
-          title="Dealer page · /[displayName]"
+          title="Blackjack page"
           description="These settings style the main blackjack stats page, including dealer charts and player leaderboards."
         >
           <div className="grid gap-4">
@@ -808,7 +807,7 @@ export function StatsStyleEditor() {
         </SectionCard>
 
         <SectionCard
-          title="Scratch page · /[displayName]/scratch"
+          title="Scratch page"
           description="These settings style the scratch page separately, with its own surfaces, fonts, leaderboard size, and chart palette."
         >
           <div className="grid gap-4">

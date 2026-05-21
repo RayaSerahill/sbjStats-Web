@@ -42,6 +42,7 @@ type ScratchPrizeRow = {
 type ScratchGameRow = {
   uploaderId?: string;
   prizesWon?: string[];
+  totalCards?: number;
 };
 
 type LoadTeamStatsResult =
@@ -61,7 +62,7 @@ type LoadTeamStatsResult =
       blackjackMoney: number;
       scratchMoney: number;
       blackjackGames: number;
-      scratchGames: number;
+      scratchCards: number;
       totalActivities: number;
       members: Array<{
         name: string;
@@ -155,7 +156,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
   let blackjackMoney = 0;
   let blackjackGames = 0;
   let scratchMoney = 0;
-  let scratchGameCount = 0;
+  let scratchCardCount = 0;
 
   if (memberIds.length && enabledGames.includes("blackjack")) {
     const [blackjackTotals, blackjackActivity] = await Promise.all([
@@ -193,22 +194,24 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
   if (memberIds.length && enabledGames.includes("scratch")) {
     const [prizeRows, scratchRows, scratchActivity] = await Promise.all([
       scratchPrizes.find({ uploaderId: { $in: memberIds } }, { projection: { uploaderId: 1, prize: 1, value: 1 } }).toArray(),
-      scratchGames.find({ uploaderId: { $in: memberIds } }, { projection: { uploaderId: 1, prizesWon: 1 } }).toArray(),
+      scratchGames.find({ uploaderId: { $in: memberIds } }, { projection: { uploaderId: 1, prizesWon: 1, totalCards: 1 } }).toArray(),
       scratchGames
         .aggregate<ActivityAggRow>([
           { $match: { uploaderId: { $in: memberIds }, archivedAt: { $type: "number", $gte: heatmapSinceUnix } } },
           {
             $project: {
               archivedDate: { $toDate: { $multiply: ["$archivedAt", 1000] } },
+              totalCards: { $ifNull: ["$totalCards", 0] },
             },
           },
           {
             $project: {
               hour: { $hour: { date: "$archivedDate", timezone: "UTC" } },
               day: { $dayOfWeek: { date: "$archivedDate", timezone: "UTC" } },
+              totalCards: 1,
             },
           },
-          { $group: { _id: { day: "$day", hour: "$hour" }, count: { $sum: 1 } } },
+          { $group: { _id: { day: "$day", hour: "$hour" }, count: { $sum: "$totalCards" } } },
         ])
         .toArray(),
     ]);
@@ -227,7 +230,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
       const uploaderId = String(game.uploaderId ?? "");
       const values = prizeValueByUploader.get(uploaderId);
       const prizesWon = Array.isArray(game.prizesWon) ? game.prizesWon : [];
-      scratchGameCount += 1;
+      scratchCardCount += Math.max(0, Math.trunc(Number(game.totalCards) || 0));
       for (const rawPrize of prizesWon) {
         const prizeName = String(rawPrize ?? "").trim();
         if (!prizeName) continue;
@@ -240,7 +243,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
   }
 
   const maxActivity = Math.max(0, ...heatmap.flat().map((cell) => cell.count));
-  const totalActivities = blackjackGames + scratchGameCount;
+  const totalActivities = blackjackGames + scratchCardCount;
 
   return {
     ok: true,
@@ -257,7 +260,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
     blackjackMoney,
     scratchMoney,
     blackjackGames,
-    scratchGames: scratchGameCount,
+    scratchCards: scratchCardCount,
     totalActivities,
     members: members.map((member) => {
       const user = userById.get(member.userId);
@@ -386,7 +389,7 @@ export default async function TeamPage({
               <div className={pageTheme.labelText}>Tracked activity</div>
               <div className={pageTheme.metricText}>{fmtInt(result.totalActivities)}</div>
               <div className={`mt-2 ${pageTheme.muted}`}>
-                {fmtInt(result.blackjackGames)} blackjack · {fmtInt(result.scratchGames)} scratch
+                {fmtInt(result.blackjackGames)} blackjack · {fmtInt(result.scratchCards)} scratch cards
               </div>
             </div>
           </div>

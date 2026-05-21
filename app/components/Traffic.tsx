@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 import {
     Chart as ChartJS,
@@ -22,6 +23,11 @@ ChartJS.register(
   Legend
 );
 
+type TrafficRow = {
+    _id: string;
+    count: number;
+};
+
 const options = {
     responsive: true,
     plugins: {
@@ -40,34 +46,33 @@ const options = {
 };
 
 export function Traffic() {
-    const [data, setData] = useState([]);
+    const [data, setData] = useState<TrafficRow[]>([]);
 
     useEffect(() => {
         fetch("/api/admin/traffic")
           .then(r => r.json())
-          .then(setData);
+          .then((rows: unknown) => setData(Array.isArray(rows) ? rows as TrafficRow[] : []));
     }, []);
 
     const chartData = {
-        labels: data.map((d:any) => d._id),
+        labels: data.map((d) => d._id),
         datasets: [
             {
                 label: "Visits",
-                data: data.map((d:any) => d.count)
+                data: data.map((d) => d.count)
             }
         ]
     };
 
     return (
       <div className="rounded-3xl cute-border admin-item-container">
-          <p className={"mt-1 text-sm text-zinc-600"}>
-              Amount of traffic on your stats website :3
-          </p>
-          <br />
-          <h3 className={"text-sm font-semibold text-zinc-900"}>
-              Traffic
-          </h3>
-          <Line data={chartData} options={options} />
+          <DashboardPageHeader title="Traffic" description="Amount of traffic on your stats website :3" />
+
+          <div className="mt-6 space-y-6">
+              <DashboardSection title="Visits over time">
+                  <Line data={chartData} options={options} />
+              </DashboardSection>
+          </div>
       </div>
     );
 }

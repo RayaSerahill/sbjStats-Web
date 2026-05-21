@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
+import {
+  normalizePublicStatsRootGame,
+  PUBLIC_STATS_GAME_OPTIONS,
+  publicStatsGamePath,
+  type PublicStatsGame,
+} from "@/lib/publicStatsRoutes";
 
 type AccountState = {
   email: string;
@@ -9,12 +16,17 @@ type AccountState = {
   statsUrl: string;
   name: string | null;
   discord: string | null;
+  publicStatsRootGame: PublicStatsGame;
   deleted?: boolean;
 };
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function Account() {
   const [account, setAccount] = useState<AccountState | null>(null);
-  const [busy, setBusy] = useState<null | "displayName" | "username" | "email" | "password" | "delete" | "discord">(null);
+  const [busy, setBusy] = useState<null | "displayName" | "username" | "rootGame" | "email" | "password" | "delete" | "discord">(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -24,7 +36,8 @@ export function Account() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
-  const [visibleUrlPrefix, setVisibleUrlPrefix] = useState("/stats/");
+  const [rootGame, setRootGame] = useState<PublicStatsGame>("blackjack");
+  const [visibleUrlPrefix, setVisibleUrlPrefix] = useState("/");
 
   const load = async () => {
     try {
@@ -35,8 +48,9 @@ export function Account() {
       setDisplayName(data.account.name ?? "");
       setUsername(data.account.username ?? data.account.suggestedUsername ?? "");
       setEmail(data.account.email ?? "");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to load account");
+      setRootGame(normalizePublicStatsRootGame(data.account.publicStatsRootGame));
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to load account"));
     }
   };
 
@@ -73,8 +87,8 @@ export function Account() {
       setAccount((prev) => prev ? { ...prev, ...data.account } : prev);
       setDisplayName(data.account.name ?? displayName);
       setSuccess("Display name updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update display name");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update display name"));
     } finally {
       setBusy(null);
     }
@@ -95,8 +109,31 @@ export function Account() {
       setAccount((prev) => prev ? { ...prev, ...data.account, suggestedUsername: data.account.username } : prev);
       setUsername(data.account.username ?? username);
       setSuccess("Username updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update username");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update username"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveRootGame = async () => {
+    setBusy("rootGame");
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch("/api/admin/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicStatsRootGame: rootGame }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "Failed to update stats root game");
+      const nextRootGame = normalizePublicStatsRootGame(data.account.publicStatsRootGame);
+      setAccount((prev) => prev ? { ...prev, ...data.account, publicStatsRootGame: nextRootGame } : prev);
+      setRootGame(nextRootGame);
+      setSuccess("Stats main game updated");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update stats root game"));
     } finally {
       setBusy(null);
     }
@@ -117,8 +154,8 @@ export function Account() {
       setAccount((prev) => prev ? { ...prev, ...data.account } : prev);
       setEmail(data.account.email ?? email);
       setSuccess("Email updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update email");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update email"));
     } finally {
       setBusy(null);
     }
@@ -140,8 +177,8 @@ export function Account() {
       setNewPassword("");
       setNewPasswordConfirm("");
       setSuccess("Password updated");
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to update password");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to update password"));
     } finally {
       setBusy(null);
     }
@@ -170,20 +207,23 @@ export function Account() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? "Failed to delete account");
       window.location.href = "/dashboard/login";
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to delete account");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to delete account"));
       setBusy(null);
     }
   };
 
+  const publicName = username || account?.username || account?.suggestedUsername || "username";
+  const normalizedRootGame = normalizePublicStatsRootGame(rootGame);
+  const visibleUrlBase = visibleUrlPrefix.endsWith("/") ? visibleUrlPrefix.slice(0, -1) : visibleUrlPrefix;
+  const publicGameUrl = (game: PublicStatsGame) => `${visibleUrlBase}${publicStatsGamePath(publicName, game, normalizedRootGame)}`;
+
   return (
     <div className="rounded-3xl cute-border admin-item-container">
-      <div>
-        <h2 className="text-lg font-semibold text-zinc-900">Account</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Update the title shown on your stats page, the public stats URL, email address, password, and connected Discord account.
-        </p>
-      </div>
+      <DashboardPageHeader
+        title="Account"
+        description="Update the title shown on your stats page, the public stats URL, email address, password, and connected Discord account."
+      />
 
       {account?.deleted ? (
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -199,7 +239,9 @@ export function Account() {
         <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{success}</div>
       ) : null}
 
-      <div className="mt-4 grid account-container">
+      <div className="mt-6 space-y-6">
+      <DashboardSection title="Profile and sign-in" bodyClassName="p-4">
+      <div className="grid account-container gap-4">
         <form
           className="rounded-2xl border border-zinc-200 bg-white p-4"
           onSubmit={(e) => {
@@ -227,6 +269,63 @@ export function Account() {
             className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
           >
             {busy === "displayName" ? "Saving…" : "Save display name"}
+          </button>
+        </form>
+
+        <form
+          className="rounded-2xl border border-zinc-200 bg-white p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveRootGame();
+          }}
+        >
+          <h3 className="text-sm font-semibold text-zinc-900">Game shown on main page</h3>
+          <p className="mt-1 text-xs text-zinc-500">Choose which game opens from your base public URL.</p>
+
+          <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Stats root game">
+            {PUBLIC_STATS_GAME_OPTIONS.map((option) => {
+              const active = normalizedRootGame === option.key;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setRootGame(option.key)}
+                  disabled={busy === "rootGame" || busy === "delete" || busy === "discord"}
+                  className={[
+                    "rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-60",
+                    active
+                      ? "border-zinc-900 bg-zinc-900 text-white"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-zinc-200 bg-[#fff7fb] px-3 py-3 text-xs text-zinc-700">
+            {PUBLIC_STATS_GAME_OPTIONS.map((option, index) => (
+              <div
+                key={option.key}
+                className={[
+                  "flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between",
+                  index > 0 ? "mt-2" : "",
+                ].join(" ")}
+              >
+                <span className="font-medium text-zinc-900">{option.key}</span>
+                <span className="break-all font-mono">{publicGameUrl(option.key)}</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy === "rootGame" || busy === "delete" || busy === "discord"}
+            className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
+          >
+            {busy === "rootGame" ? "Saving…" : "Save main game"}
           </button>
         </form>
 
@@ -374,10 +473,10 @@ export function Account() {
           )}
         </div>
       </div>
+      </DashboardSection>
 
-      <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4">
-        <h3 className="text-sm font-semibold text-red-900">Delete account</h3>
-        <p className="mt-1 text-xs text-red-700">
+      <DashboardSection title="Delete account" className="border-red-200" bodyClassName="bg-red-50 p-4">
+        <p className="text-xs text-red-700">
           Delete your account! Note, this is a permanent operation. Your stats page will no longer be accessible, and you will need to register a new account to use the admin dashboard again.
         </p>
         <button
@@ -388,6 +487,7 @@ export function Account() {
         >
           {busy === "delete" ? "Deleting…" : "Delete account"}
         </button>
+      </DashboardSection>
       </div>
     </div>
   );

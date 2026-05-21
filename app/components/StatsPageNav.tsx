@@ -10,9 +10,15 @@ import {
   type StatsFontStyle,
   type StatsNavItemStyle,
 } from "@/lib/statsStyleShared";
+import {
+  normalizePublicStatsRootGame,
+  publicStatsGamePath,
+  type PublicStatsGame,
+} from "@/lib/publicStatsRoutes";
 
 type StatsPageNavProps = {
   username: string;
+  rootGame: PublicStatsGame;
   showBlackjack: boolean;
   showScratch: boolean;
   background: StatsBackgroundStyle;
@@ -35,6 +41,7 @@ type NavLink = {
 
 export function StatsPageNav({
   username,
+  rootGame,
   showBlackjack,
   showScratch,
   background,
@@ -48,6 +55,13 @@ export function StatsPageNav({
 }: StatsPageNavProps) {
   const pathname = usePathname();
   const [hovered, setHovered] = useState<NavKey | null>(null);
+  const normalizedRootGame = normalizePublicStatsRootGame(rootGame);
+  const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
+  const lastPathSegment = pathSegments.at(-1);
+  const activeKey: NavKey =
+    pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch")
+      ? lastPathSegment
+      : normalizedRootGame;
 
   const containerStyle = useMemo(
     () => ({
@@ -64,17 +78,17 @@ export function StatsPageNav({
     showBlackjack
       ? {
           key: "blackjack" as const,
-          href: `/${encodeURIComponent(username)}`,
+          href: publicStatsGamePath(username, "blackjack", normalizedRootGame),
           label: "Blackjack",
-          isActive: !pathname?.endsWith("/scratch"),
+          isActive: activeKey === "blackjack",
         }
       : null,
     showScratch
       ? {
           key: "scratch" as const,
-          href: `/${encodeURIComponent(username)}/scratch`,
+          href: publicStatsGamePath(username, "scratch", normalizedRootGame),
           label: "Scratch",
-          isActive: Boolean(pathname?.endsWith("/scratch")),
+          isActive: activeKey === "scratch",
         }
       : null,
   ].filter((link): link is NavLink => link !== null);

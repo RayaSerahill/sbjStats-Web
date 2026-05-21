@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 
 type ApiKeyState = {
   prefix: string;
   createdAt: string | null;
 } | null;
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export function ApiKeys() {
   const [apiKey, setApiKey] = useState<ApiKeyState>(null);
@@ -21,8 +26,8 @@ export function ApiKeys() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? "Failed to load API key");
       setApiKey(data.apiKey ?? null);
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to load API key");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to load API key"));
     }
   };
 
@@ -40,8 +45,8 @@ export function ApiKeys() {
       if (!res.ok) throw new Error(data?.error ?? "Failed to generate API key");
       setFreshKey(data.apiKey ?? null);
       setApiKey({ prefix: data.prefix, createdAt: data.createdAt ?? null });
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to generate API key");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to generate API key"));
     } finally {
       setBusy(false);
     }
@@ -57,8 +62,8 @@ export function ApiKeys() {
       if (!res.ok) throw new Error(data?.error ?? "Failed to delete API key");
       setFreshKey(null);
       setApiKey(null);
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to delete API key");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to delete API key"));
     } finally {
       setBusy(false);
     }
@@ -66,23 +71,19 @@ export function ApiKeys() {
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900">API Key</h2>
-          <p className="mt-1 text-sm text-zinc-600">
-            Generate one personal key for automatic uploads, or other stuff if you are so inclined. Regenerating immediately invalidates the old one.
-          </p>
-        </div>
-      </div>
+      <DashboardPageHeader
+        title="API Key"
+        description="Generate one personal key for automatic uploads, or other stuff if you are so inclined. Regenerating immediately invalidates the old one."
+      />
 
-      <div className="mt-4 rounded-2xl border border-[#FF9FC6]/30 bg-[#fff7fb] p-4 text-sm text-zinc-700">
-        <div className="font-medium text-zinc-900">Accepted auth headers</div>
-        <div className="mt-2 font-mono text-xs text-zinc-700">Authorization: Bearer YOUR_API_KEY</div>
-        <div className="mt-1 font-mono text-xs text-zinc-700">x-api-key: YOUR_API_KEY</div>
-      </div>
+      <div className="mt-6 space-y-6">
+        <DashboardSection title="Accepted auth headers">
+          <div className="font-mono text-xs text-zinc-700">Authorization: Bearer YOUR_API_KEY</div>
+          <div className="mt-1 font-mono text-xs text-zinc-700">x-api-key: YOUR_API_KEY</div>
+        </DashboardSection>
 
-      <div className="mt-4 space-y-3">
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+        <DashboardSection title="Current key">
+          <div className="rounded-2xl border border-zinc-200 bg-[#fff7fb] px-4 py-3 text-sm text-zinc-700">
           {apiKey ? (
             <>
               <div>
@@ -95,10 +96,10 @@ export function ApiKeys() {
           ) : (
             <div>No API key generated yet.</div>
           )}
-        </div>
+          </div>
 
-        {freshKey ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {freshKey ? (
+          <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
             <div className="font-medium">New API key</div>
             <div className="mt-2 break-all rounded-xl border border-emerald-200 bg-white px-3 py-2 font-mono text-xs text-zinc-900">
               {freshKey}
@@ -118,31 +119,32 @@ export function ApiKeys() {
               {copied ? "Copied" : "Copy key"}
             </button>
           </div>
-        ) : null}
+          ) : null}
 
-        {error ? (
+          {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
-        ) : null}
-      </div>
+          ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => void createOrRegenerate()}
-          disabled={busy}
-          className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
-        >
-          {busy ? "Working…" : apiKey ? "Regenerate key" : "Generate key"}
-        </button>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => void createOrRegenerate()}
+              disabled={busy}
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60"
+            >
+              {busy ? "Working…" : apiKey ? "Regenerate key" : "Generate key"}
+            </button>
 
-        <button
-          type="button"
-          onClick={() => void remove()}
-          disabled={busy || !apiKey}
-          className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
-        >
-          Delete key
-        </button>
+            <button
+              type="button"
+              onClick={() => void remove()}
+              disabled={busy || !apiKey}
+              className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
+            >
+              Delete key
+            </button>
+          </div>
+        </DashboardSection>
       </div>
     </div>
   );

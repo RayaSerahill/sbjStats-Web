@@ -1,5 +1,6 @@
 import type { Db, ObjectId } from "mongodb";
 import clientPromise from "./mongodb";
+import type { PublicStatsGame } from "./publicStatsRoutes";
 
 export type UserRole = "owner" | "admin" | "dealer";
 export type WhitelistEntryType = "email" | "discord";
@@ -21,6 +22,7 @@ export type UserDoc = {
   apiKeyPrefix?: string;
   apiKeyCreatedAt?: Date;
   useGlobalAliases?: boolean;
+  publicStatsRootGame?: PublicStatsGame;
   dashboardTheme?: DashboardTheme;
   dashboardAccentColor?: string;
   deleted?: boolean;

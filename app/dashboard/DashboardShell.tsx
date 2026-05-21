@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  Activity,
   ChartLine,
   Check,
   ChevronDown,
@@ -104,7 +103,6 @@ function buildNavGroups(canManageUsers: boolean, teamInviteCount: number): NavGr
       label: "General",
       items: [
         { id: "home", href: "/dashboard", label: "Home", icon: HomeIcon },
-        { id: "traffic", href: "/dashboard/traffic", label: "Traffic", icon: Activity },
         { id: "account", href: "/dashboard/account", label: "Account", icon: User },
         { id: "teams", href: "/dashboard/teams", label: "Teams", icon: Users, badgeCount: teamInviteCount },
         { id: "aliases", href: "/dashboard/aliases", label: "Aliases", icon: Tags },

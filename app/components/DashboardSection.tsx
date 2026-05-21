@@ -8,7 +8,10 @@ type DashboardPageHeaderProps = {
 
 export function DashboardPageHeader({ title, description, action }: DashboardPageHeaderProps) {
   return (
-    <div className="flex flex-col gap-2 border-b border-zinc-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <div
+      className="flex flex-col gap-2 border-b pb-5 sm:flex-row sm:items-start sm:justify-between"
+      style={{ borderColor: "var(--dashboard-accent-ring, #ff9fc6)" }}
+    >
       <div>
         <h2 className="text-lg font-semibold text-zinc-900">{title}</h2>
         {description ? <p className="mt-1 text-sm text-zinc-600">{description}</p> : null}
@@ -39,9 +42,19 @@ export function DashboardSection({
 }: DashboardSectionProps) {
   return (
     <section className={["overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm", className].filter(Boolean).join(" ")}>
-      <div className="flex flex-col gap-2 border-b border-zinc-200 bg-zinc-50 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+      <div
+        className="flex flex-col gap-2 border-b px-4 py-3 sm:flex-row sm:items-start sm:justify-between"
+        style={{
+          backgroundColor: "var(--dashboard-accent-soft, #fff7fb)",
+          borderColor: "var(--dashboard-accent-ring, #ff9fc6)",
+        }}
+      >
         <div>
-          {eyebrow ? <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{eyebrow}</div> : null}
+          {eyebrow ? (
+            <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--dashboard-accent, #ff9fc6)" }}>
+              {eyebrow}
+            </div>
+          ) : null}
           <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
           {description ? <p className="mt-1 text-sm text-zinc-600">{description}</p> : null}
         </div>

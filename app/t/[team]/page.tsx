@@ -137,6 +137,9 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
   const memberIds = members.map((member) => member.userId);
   const enabledGames = normalizeEnabledGames(team.enabledGames);
   const heatmap = emptyHeatmap();
+  const heatmapSince = new Date();
+  heatmapSince.setUTCMonth(heatmapSince.getUTCMonth() - 3);
+  const heatmapSinceUnix = Math.floor(heatmapSince.getTime() / 1000);
 
   const userObjectIds = memberIds.filter(ObjectId.isValid).map((id) => new ObjectId(id));
   const memberUsers = userObjectIds.length
@@ -170,7 +173,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
         .next(),
       games
         .aggregate<ActivityAggRow>([
-          { $match: { uploaderId: { $in: memberIds }, createdAt: { $type: "date" } } },
+          { $match: { uploaderId: { $in: memberIds }, createdAt: { $type: "date", $gte: heatmapSince } } },
           {
             $project: {
               hour: { $hour: { date: "$createdAt", timezone: "UTC" } },
@@ -193,7 +196,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
       scratchGames.find({ uploaderId: { $in: memberIds } }, { projection: { uploaderId: 1, prizesWon: 1 } }).toArray(),
       scratchGames
         .aggregate<ActivityAggRow>([
-          { $match: { uploaderId: { $in: memberIds }, archivedAt: { $type: "number" } } },
+          { $match: { uploaderId: { $in: memberIds }, archivedAt: { $type: "number", $gte: heatmapSinceUnix } } },
           {
             $project: {
               archivedDate: { $toDate: { $multiply: ["$archivedAt", 1000] } },
@@ -237,7 +240,7 @@ async function loadTeamStats(slugParam: string): Promise<LoadTeamStatsResult> {
   }
 
   const maxActivity = Math.max(0, ...heatmap.flat().map((cell) => cell.count));
-  const totalActivities = heatmap.flat().reduce((sum, cell) => sum + cell.count, 0);
+  const totalActivities = blackjackGames + scratchGameCount;
 
   return {
     ok: true,
@@ -393,7 +396,7 @@ export default async function TeamPage({
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 className={pageTheme.panelTitle}>Activity heatmap</h2>
-                  <p className={`mt-1 ${pageTheme.muted}`}>Weekday and hour in UTC.</p>
+                  <p className={`mt-1 ${pageTheme.muted}`}>Last 3 months by weekday and hour in UTC.</p>
                 </div>
                 <div className={`flex items-center gap-2 ${pageTheme.muted}`}>
                   <span>Less</span>

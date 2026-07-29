@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Share2 } from "lucide-react";
 import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
 import {
+  DEFAULT_PUBLIC_STATS_ORIGIN,
   normalizePublicStatsRootGame,
+  normalizePublicStatsOrigin,
+  PUBLIC_STATS_DOMAIN_OPTIONS,
   PUBLIC_STATS_GAME_OPTIONS,
   publicStatsGamePath,
   type PublicStatsGame,
@@ -37,7 +41,7 @@ export function Account() {
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [rootGame, setRootGame] = useState<PublicStatsGame>("blackjack");
-  const [visibleUrlPrefix, setVisibleUrlPrefix] = useState("/");
+  const [statsOrigin, setStatsOrigin] = useState<string>(DEFAULT_PUBLIC_STATS_ORIGIN);
 
   const load = async () => {
     try {
@@ -57,7 +61,7 @@ export function Account() {
   useEffect(() => {
     void load();
     if (typeof window !== "undefined") {
-      setVisibleUrlPrefix(`${window.location.origin}/`);
+      setStatsOrigin(normalizePublicStatsOrigin(window.location.origin));
       const params = new URLSearchParams(window.location.search);
       const successParam = params.get("success");
       const errorParam = params.get("error");
@@ -215,8 +219,31 @@ export function Account() {
 
   const publicName = username || account?.username || account?.suggestedUsername || "username";
   const normalizedRootGame = normalizePublicStatsRootGame(rootGame);
-  const visibleUrlBase = visibleUrlPrefix.endsWith("/") ? visibleUrlPrefix.slice(0, -1) : visibleUrlPrefix;
-  const publicGameUrl = (game: PublicStatsGame) => `${visibleUrlBase}${publicStatsGamePath(publicName, game, normalizedRootGame)}`;
+  const publicGameUrl = (game: PublicStatsGame) => `${statsOrigin}${publicStatsGamePath(publicName, game, normalizedRootGame)}`;
+
+  const sharePublicUrl = async (game: PublicStatsGame) => {
+    const url = publicGameUrl(game);
+    const label = PUBLIC_STATS_GAME_OPTIONS.find((option) => option.key === game)?.label ?? game;
+    setError(null);
+    setSuccess(null);
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: `${label} stats`, url });
+        setSuccess(`${label} stats link shared`);
+        return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setSuccess(`${label} stats URL copied`);
+    } catch {
+      setError(`Copy this URL: ${url}`);
+    }
+  };
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">
@@ -282,6 +309,32 @@ export function Account() {
           <h3 className="text-sm font-semibold text-zinc-900">Game shown on main page</h3>
           <p className="mt-1 text-xs text-zinc-500">Choose which game opens from your base public URL.</p>
 
+          <div className="mt-4">
+            <div className="text-xs font-medium text-zinc-700">Share domain</div>
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Public stats domain">
+              {PUBLIC_STATS_DOMAIN_OPTIONS.map((option) => {
+                const active = statsOrigin === option.origin;
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setStatsOrigin(option.origin)}
+                    className={[
+                      "rounded-xl border px-3 py-2 text-sm font-medium transition",
+                      active
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+                    ].join(" ")}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-zinc-500">Both stats.serahill.net and stats.gamba.pro open the same public stats pages.</p>
+          </div>
+
           <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Stats root game">
             {PUBLIC_STATS_GAME_OPTIONS.map((option) => {
               const active = normalizedRootGame === option.key;
@@ -310,12 +363,23 @@ export function Account() {
               <div
                 key={option.key}
                 className={[
-                  "flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between",
+                  "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between",
                   index > 0 ? "mt-2" : "",
                 ].join(" ")}
               >
-                <span className="font-medium text-zinc-900">{option.key}</span>
-                <span className="break-all font-mono">{publicGameUrl(option.key)}</span>
+                <div className="min-w-0">
+                  <div className="font-medium text-zinc-900">{option.label}</div>
+                  <div className="break-all font-mono">{publicGameUrl(option.key)}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void sharePublicUrl(option.key)}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-900 transition hover:border-zinc-400 hover:bg-zinc-50"
+                  aria-label={`Share ${option.label} stats URL`}
+                >
+                  <Share2 aria-hidden="true" size={14} />
+                  Share
+                </button>
               </div>
             ))}
           </div>
@@ -337,11 +401,11 @@ export function Account() {
           }}
         >
           <h3 className="text-sm font-semibold text-zinc-900">Stats URL</h3>
-          <p className="mt-1 text-xs text-zinc-500">This controls the URL of your stats page.</p>
+          <p className="mt-1 text-xs text-zinc-500">This controls the path of your stats page. Use the selected share domain above when sharing it.</p>
 
           <label className="mt-4 block text-xs font-medium text-zinc-700">Public URL</label>
           <div className="mt-2 flex flex-col rounded-2xl border border-zinc-200 bg-[#fff7fb] px-3 py-3 text-sm text-zinc-900 sm:flex-row sm:items-center sm:gap-1">
-            <span className="shrink-0 text-zinc-500">{visibleUrlPrefix}</span>
+            <span className="shrink-0 text-zinc-500">{statsOrigin}/</span>
             <input
               type="text"
               value={username}

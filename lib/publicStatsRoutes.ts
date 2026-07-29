@@ -7,8 +7,19 @@ export const PUBLIC_STATS_GAME_OPTIONS: Array<{ key: PublicStatsGame; label: str
   { key: "scratch", label: "Scratch" },
 ];
 
+export const PUBLIC_STATS_DOMAIN_OPTIONS = [
+  { key: "serahill", label: "stats.serahill.net", origin: "https://stats.serahill.net" },
+  { key: "gamba", label: "stats.gamba.pro", origin: "https://stats.gamba.pro" },
+] as const;
+
+export const DEFAULT_PUBLIC_STATS_ORIGIN = PUBLIC_STATS_DOMAIN_OPTIONS[0].origin;
+
 export function isPublicStatsGame(value: unknown): value is PublicStatsGame {
   return value === "blackjack" || value === "scratch";
+}
+
+export function normalizePublicStatsOrigin(value: unknown) {
+  return PUBLIC_STATS_DOMAIN_OPTIONS.find((option) => option.origin === value)?.origin ?? DEFAULT_PUBLIC_STATS_ORIGIN;
 }
 
 export function normalizePublicStatsRootGame(value: unknown): PublicStatsGame {

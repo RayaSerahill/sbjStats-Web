@@ -17,6 +17,9 @@ type AviatorGameRow = {
   totalPayouts?: number;
   totalAdjustments?: number;
   dealerProfit?: number;
+  playerWins?: number;
+  playerLosses?: number;
+  cashouts?: number;
 };
 
 export async function GET(req: Request) {
@@ -73,6 +76,9 @@ export async function GET(req: Request) {
         totalPayouts: 1,
         totalAdjustments: 1,
         dealerProfit: 1,
+        playerWins: 1,
+        playerLosses: 1,
+        cashouts: 1,
       },
     })
     .sort({ archivedAt: -1, _id: -1 })
@@ -103,6 +109,9 @@ export async function GET(req: Request) {
       totalPayouts: Number(game.totalPayouts) || 0,
       totalAdjustments: Number(game.totalAdjustments) || 0,
       dealerProfit: Number(game.dealerProfit) || 0,
+      playerWins: Number(game.playerWins) || 0,
+      playerLosses: Number(game.playerLosses) || 0,
+      cashouts: Number(game.cashouts) || 0,
     })),
   });
 }

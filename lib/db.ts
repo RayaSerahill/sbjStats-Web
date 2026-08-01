@@ -144,8 +144,6 @@ export async function ensureGameCollections() {
       await ensureCollection(db, "aviator_games");
       await ensureCollection(db, "aviator_stats");
       await ensureCollection(db, "aviator_players");
-      await ensureCollection(db, "aviator_stats_player");
-      await ensureCollection(db, "aviator_stats_dealer");
 
       const players = db.collection("players");
       await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -303,35 +301,8 @@ export async function ensureGameCollections() {
       );
       await aviatorPlayers.createIndex({ uploaderId: 1, updatedAt: -1 });
       await aviatorPlayers.createIndex({ uploaderId: 1, name: 1 });
-
-      const aviatorStatsPlayer = db.collection("aviator_stats_player");
-      await aviatorStatsPlayer.createIndex(
-        { uploaderId: 1, playerId: 1 },
-        {
-          unique: true,
-          partialFilterExpression: {
-            uploaderId: { $exists: true },
-            playerId: { $exists: true },
-          },
-        }
-      );
-      await aviatorStatsPlayer.createIndex({ uploaderId: 1, updatedAt: -1 });
-      await aviatorStatsPlayer.createIndex({ uploaderId: 1, rounds: -1 });
-      await aviatorStatsPlayer.createIndex({ uploaderId: 1, net: -1 });
-
-      const aviatorStatsDealer = db.collection("aviator_stats_dealer");
-      await aviatorStatsDealer.createIndex(
-        { uploaderId: 1, dealerKey: 1 },
-        {
-          unique: true,
-          partialFilterExpression: {
-            uploaderId: { $exists: true },
-            dealerKey: { $exists: true },
-          },
-        }
-      );
-      await aviatorStatsDealer.createIndex({ uploaderId: 1, updatedAt: -1 });
-      await aviatorStatsDealer.createIndex({ uploaderId: 1, roundsHosted: -1 });
+      await aviatorPlayers.createIndex({ uploaderId: 1, rounds: -1 });
+      await aviatorPlayers.createIndex({ uploaderId: 1, net: -1 });
     })();
   }
 

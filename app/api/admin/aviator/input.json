@@ -1,0 +1,78 @@
+Live game upload example: (api/admin/aviator/import)
+
+{
+  "upload_type": "live_round",
+  "source": "SimpleAviator",
+  "archived_at": 1785607200,
+  "dealer": "Asuna Yuuki",
+  "round": {
+  "game_id": "a1b2c3d4e5f6",
+  "round_number": 12,
+  "crash_point": 3.45,
+  "players": [
+    {
+      "player_id": "p_9f2a",
+      "name": "Asuna Yuuki",
+      "slot": 0,
+      "bet": 10000,
+      "cashout_multiplier": 2.5,
+      "win": 25000,
+      "net": 15000,
+      "won": true
+    }
+  ]
+  }
+}
+
+Arcive uploads example:
+{
+  "upload_type": "archive",
+  "source": "SimpleAviator",
+  "archived_at": 1785607200,
+  "dealer": "Asuna Yuuki",
+  "stats": {
+    "dealer_character": "Asuna Yuuki",
+    "dealer_homeworld": "Gilgamesh",
+    "total_games": 10,
+    "total_rounds": 214,
+    "total_players": 45,
+    "total_bets_taken": 5000000,
+    "total_payouts": 4850000,
+    "house_profit": 150000,
+    "games": []
+  },
+  "archive": [
+    {
+      "game_id": "a1b2c3d4e5f6",
+      "theme": "default",
+      "created_at": "2026-07-18T21:04:11.500Z",
+      "final_status": "completed",
+      "total_rounds": 20,
+      "total_players": 5,
+      "total_bets": 500000,
+      "total_payouts": 480000,
+      "dealer_profit": 20000
+    }
+  ],
+  "game_archives": [
+    {
+      "game_id": "a1b2c3d4e5f6",
+      "theme": "default",
+      "created_at": "2026-07-18T21:04:11.500Z",
+      "final_status": "completed",
+      "dealer_name": "Asuna Yuuki",
+      "dealer_homeworld": "Gilgamesh",
+      "totals": {
+      "rounds": 20,
+      "players": 5,
+      "total_bets": 500000,
+      "total_payouts": 480000,
+      "total_adjustments": 0,
+      "dealer_profit": 20000
+    },
+      "players": [],
+      "rounds": [],
+      "adjustments": []
+    }
+  ]
+}

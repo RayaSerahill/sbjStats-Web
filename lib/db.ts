@@ -140,6 +140,12 @@ export async function ensureGameCollections() {
       await ensureCollection(db, "scratch_games");
       await ensureCollection(db, "scratch_prizes");
       await ensureCollection(db, "scratch_settings");
+      await ensureCollection(db, "aviator_rounds");
+      await ensureCollection(db, "aviator_games");
+      await ensureCollection(db, "aviator_stats");
+      await ensureCollection(db, "aviator_players");
+      await ensureCollection(db, "aviator_stats_player");
+      await ensureCollection(db, "aviator_stats_dealer");
 
       const players = db.collection("players");
       await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -238,6 +244,94 @@ export async function ensureGameCollections() {
 
       const scratchSettings = db.collection("scratch_settings");
       await scratchSettings.createIndex({ uploaderId: 1 }, { unique: true });
+
+      const aviatorRounds = db.collection("aviator_rounds");
+      await aviatorRounds.createIndex(
+        { uploaderId: 1, gameId: 1, roundNumber: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            gameId: { $exists: true },
+            roundNumber: { $exists: true },
+          },
+        }
+      );
+      await aviatorRounds.createIndex({ uploaderId: 1, archivedAt: -1 });
+      await aviatorRounds.createIndex({ uploaderId: 1, dealerKey: 1, archivedAt: -1 }, { sparse: true });
+      await aviatorRounds.createIndex({ uploaderId: 1, gameId: 1, archivedAt: -1 });
+
+      const aviatorGames = db.collection("aviator_games");
+      await aviatorGames.createIndex(
+        { uploaderId: 1, gameId: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            gameId: { $exists: true },
+          },
+        }
+      );
+      await aviatorGames.createIndex({ uploaderId: 1, archivedAt: -1 });
+      await aviatorGames.createIndex({ uploaderId: 1, dealerName: 1, archivedAt: -1 }, { sparse: true });
+      await aviatorGames.createIndex({ uploaderId: 1, finalStatus: 1, archivedAt: -1 }, { sparse: true });
+
+      const aviatorStats = db.collection("aviator_stats");
+      await aviatorStats.createIndex(
+        { uploaderId: 1, dealerCharacter: 1, archivedAt: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            dealerCharacter: { $exists: true },
+            archivedAt: { $exists: true },
+          },
+        }
+      );
+      await aviatorStats.createIndex({ uploaderId: 1, archivedAt: -1 });
+
+      const aviatorPlayers = db.collection("aviator_players");
+      await aviatorPlayers.createIndex(
+        { uploaderId: 1, playerId: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            playerId: { $exists: true },
+          },
+        }
+      );
+      await aviatorPlayers.createIndex({ uploaderId: 1, updatedAt: -1 });
+      await aviatorPlayers.createIndex({ uploaderId: 1, name: 1 });
+
+      const aviatorStatsPlayer = db.collection("aviator_stats_player");
+      await aviatorStatsPlayer.createIndex(
+        { uploaderId: 1, playerId: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            playerId: { $exists: true },
+          },
+        }
+      );
+      await aviatorStatsPlayer.createIndex({ uploaderId: 1, updatedAt: -1 });
+      await aviatorStatsPlayer.createIndex({ uploaderId: 1, rounds: -1 });
+      await aviatorStatsPlayer.createIndex({ uploaderId: 1, net: -1 });
+
+      const aviatorStatsDealer = db.collection("aviator_stats_dealer");
+      await aviatorStatsDealer.createIndex(
+        { uploaderId: 1, dealerKey: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            dealerKey: { $exists: true },
+          },
+        }
+      );
+      await aviatorStatsDealer.createIndex({ uploaderId: 1, updatedAt: -1 });
+      await aviatorStatsDealer.createIndex({ uploaderId: 1, roundsHosted: -1 });
     })();
   }
 

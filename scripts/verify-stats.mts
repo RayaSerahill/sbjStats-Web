@@ -5,6 +5,7 @@
  *   npm run verify:stats
  */
 import { MongoClient } from "mongodb";
+import { handPayoutExpr } from "@/lib/roundMath";
 
 const client = new MongoClient(process.env.MONGODB_URI!);
 await client.connect();
@@ -74,5 +75,28 @@ const dupes = await games.aggregate([
 ]).toArray();
 console.log("duplicate (uploaderId, dedupeKey) pairs:", dupes[0]?.dupes ?? 0);
 console.log("games indexes:", (await games.indexes()).map((i) => i.name).join(", "));
+
+// 6. Read-path parity: the public leaderboard aggregation (split-aware
+// handPayoutExpr, grouped per player) must reproduce stats_player nets.
+const pipelineNets = await games.aggregate([
+  { $match: { gameType: "cards" } },
+  { $unwind: "$players" },
+  { $match: { "players.dealer": { $ne: true } } },
+  { $group: {
+      _id: { u: "$uploaderId", p: "$players.playerId" },
+      net: { $sum: { $subtract: [handPayoutExpr(), { $ifNull: ["$players.bet", 0] }] } },
+  } },
+]).toArray();
+const statsPlayers = await db.collection("stats_player").find({}).toArray();
+const statsNet = new Map(statsPlayers.map((p) => [`${p.uploaderId} ${p.playerId}`, p.net]));
+let readMismatch = 0;
+for (const row of pipelineNets) {
+  const key = `${row._id.u} ${row._id.p}`;
+  if (statsNet.get(key) !== row.net) {
+    readMismatch++;
+    if (readMismatch <= 5) console.log("read-path mismatch:", key, { pipeline: row.net, stats: statsNet.get(key) });
+  }
+}
+console.log("read-path player rows checked:", pipelineNets.length, "mismatches:", readMismatch);
 
 await client.close();

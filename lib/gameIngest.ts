@@ -61,10 +61,13 @@ function slugify(input: string) {
 }
 
 export function playerTagToParts(playerTag: string) {
-  // Some player tags are suffixed with instance markers like "Name@World [1]".
-  // Strip a trailing " [<digits>]" so identity and stats aggregate correctly.
+  // Some player tags are suffixed with instance markers: "Name@World [1]"
+  // (bracket form) or "Name@World/1329312872" (id form, seen on live uploads
+  // where the CSV export of the same round has the bare tag). Strip both so
+  // identity, stats, and cross-channel dedupe aggregate on one player.
   const trimmed = (playerTag ?? "")
     .replace(/\s*\[\d+\]\s*$/, "")
+    .replace(/\/\d+\s*$/, "")
     .trim();
   const at = trimmed.lastIndexOf("@");
   if (at === -1) {
@@ -158,7 +161,7 @@ export async function ingestRound(opts: {
 
   // Money is derived from the payload; the payload is the authoritative record.
   const totals = computeGameTotals(players);
-  const dedupeKey = computeDedupeKey(opts.sourceDateTime, payloadBase64 ?? JSON.stringify(rawEntries));
+  const dedupeKey = computeDedupeKey(opts.sourceDateTime, players);
 
   // Insert first and skip on duplicates (unique { uploaderId, dedupeKey } index).
   const gamesCol = opts.db.collection("games");

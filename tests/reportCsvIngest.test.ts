@@ -133,14 +133,10 @@ describe("ingestReportCsv mass import of test.csv (local, fake db)", () => {
 });
 
 describe("ingestReportCsv dedupe scoping (local, fake db)", () => {
-  // Deferred to Phase 3: the legacy global { sourceDateTime: 1 } unique index
-  // still exists alongside the new per-uploader { uploaderId, dedupeKey }
-  // index; once old docs are backfilled and the legacy index is dropped, this
-  // starts passing — then remove the todo flag.
-  it("a second uploader importing the same report still gets their own games (BUG: sourceDateTime unique index is global)", { todo: "Phase 3 index swap" }, async () => {
-    // The { sourceDateTime: 1 } unique index is not scoped by uploaderId, so
-    // dealer B's rows are silently dropped whenever dealer A imported games
-    // with the same timestamps. This is the "games missing" symptom.
+  it("a second uploader importing the same report still gets their own games", async () => {
+    // Dedupe is scoped per uploader ({ uploaderId, dedupeKey }); dealer B's
+    // rows must never be dropped just because dealer A imported games with
+    // the same timestamps (the pre-Phase-3 "games missing" bug).
     const db = new FakeDb();
     const csvText = loadTestCsvText();
     await quiet(() => ingestReportCsv({ db: db as any, uploaderId: UPLOADER_A, csvText }));

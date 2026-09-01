@@ -1,6 +1,44 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { displayHandPayout, handPayoutExpr } from "@/lib/roundMath";
+import { parseRoundEntries } from "@/lib/gameIngest";
+import { computeDedupeKey, displayHandPayout, handPayoutExpr, normalizeRoundTimestamp } from "@/lib/roundMath";
+
+describe("cross-channel round dedupe key", () => {
+  it("normalizes the same instant across offsets and formats", () => {
+    const utc = normalizeRoundTimestamp("09/03/2026 21.03.04 +00:00");
+    assert.match(utc, /^\d+$/);
+    assert.equal(normalizeRoundTimestamp("09/03/2026 23.03.04 +02:00"), utc);
+    assert.equal(normalizeRoundTimestamp("2026-03-09T21:03:04.000Z"), utc);
+    // No offset is read as UTC so every machine derives the same value.
+    assert.equal(normalizeRoundTimestamp("09/03/2026 21.03.04"), utc);
+    assert.equal(normalizeRoundTimestamp("2026-03-09T21:03:04"), utc);
+  });
+
+  it("keeps unparseable strings verbatim and empty input empty", () => {
+    assert.equal(normalizeRoundTimestamp("not a date"), "not a date");
+    assert.equal(normalizeRoundTimestamp(undefined), "");
+    assert.equal(normalizeRoundTimestamp(null), "");
+  });
+
+  it("produces the same key for a round arriving live and via CSV export", () => {
+    const entries = [
+      { PlayerName: "Lini Espi@Alpha", Cards: [10, 7], SplitNum: 0, Bet: 500000, Payout: 1000000, IsDoubleDown: false, Result: 1, Dealer: false, Integrity: 0 },
+      { PlayerName: "Dealer@Alpha", Cards: [10, 9], SplitNum: 0, Bet: 0, Payout: 0, IsDoubleDown: false, Result: 3, Dealer: true, Integrity: 0 },
+    ];
+    // Same decoded content, but the two channels serialize the payload bytes
+    // differently and render the timestamp in different offsets.
+    const live = parseRoundEntries(JSON.parse(JSON.stringify(entries)));
+    const csv = parseRoundEntries(JSON.parse(JSON.stringify(entries, null, 2)));
+    const liveKey = computeDedupeKey("09/03/2026 23.03.04 +02:00", live);
+    const csvKey = computeDedupeKey("09/03/2026 21.03.04 +00:00", csv);
+    assert.equal(liveKey, csvKey);
+
+    // A different second or different content is a different round.
+    assert.notEqual(computeDedupeKey("09/03/2026 21.03.05 +00:00", csv), csvKey);
+    const other = parseRoundEntries([{ ...entries[0], Bet: 600000 }, entries[1]]);
+    assert.notEqual(computeDedupeKey("09/03/2026 21.03.04 +00:00", other), csvKey);
+  });
+});
 
 describe("split-aware payout read helpers", () => {
   it("displayHandPayout prefers stored handPayout", () => {

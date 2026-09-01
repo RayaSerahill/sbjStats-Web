@@ -44,15 +44,25 @@ try {
 
   if (!dryRun) {
     // Backfill is done; make the per-uploader dedupe index exist here and now
-    // (same definition as ensureGameCollections). The legacy global
-    // sourceDateTime index is dropped in the Phase 3 migration.
-    await db.collection("games").createIndex(
+    // (same definition as ensureGameCollections).
+    const games = db.collection("games");
+    await games.createIndex(
       { uploaderId: 1, dedupeKey: 1 },
       {
         unique: true,
         partialFilterExpression: { uploaderId: { $exists: true }, dedupeKey: { $exists: true } },
       }
     );
+    // Phase 3: the legacy global sourceDateTime unique index (which wrongly
+    // collides distinct games across uploaders and within the same second) is
+    // only safe to drop once every doc carries a dedupeKey.
+    const unbackfilled = await games.findOne({ dedupeKey: { $exists: false } }, { projection: { _id: 1 } });
+    if (unbackfilled) {
+      console.warn("Some games still lack dedupeKey; keeping the legacy sourceDateTime index.");
+    } else {
+      await games.dropIndex("sourceDateTime_1").catch(() => {});
+      console.log("Legacy global sourceDateTime index dropped (per-uploader dedupe now governs imports).");
+    }
   }
 
   console.log(`\nDone in ${((Date.now() - started) / 1000).toFixed(1)}s`);

@@ -46,14 +46,8 @@ export class FakeCollection {
     this.name = name;
     this.uniqueKeyFns = [];
     if (name === "games") {
-      // Legacy sparse unique index on sourceDateTime. The field is present on
-      // every ingested doc (the driver serializes undefined as null), so it
-      // always participates in the index — exactly like production. Dropped in
-      // the Phase 3 index swap.
-      this.uniqueKeyFns.push((doc) =>
-        "sourceDateTime" in doc ? `sourceDateTime:${String(doc.sourceDateTime)}` : undefined
-      );
       // Per-uploader dedupe index { uploaderId: 1, dedupeKey: 1 } (partial).
+      // The legacy global sourceDateTime unique index is gone post-Phase 3.
       this.uniqueKeyFns.push((doc) =>
         doc.uploaderId != null && doc.dedupeKey != null
           ? `dedupe:${String(doc.uploaderId)}:${String(doc.dedupeKey)}`

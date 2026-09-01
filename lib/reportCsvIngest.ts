@@ -156,7 +156,7 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
       gameDocs.push({
         createdAt: r.createdAt,
         sourceDateTime: r.sourceDateTime,
-        dedupeKey: computeDedupeKey(r.sourceDateTime, payloadBase64),
+        dedupeKey: computeDedupeKey(r.sourceDateTime, players),
         uploaderId: opts.uploaderId,
         hostId: dealerEntry.playerId,
         gameType: "cards",

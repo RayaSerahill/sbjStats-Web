@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --import ./tests/setup/register.mjs --test \"tests/**/*.test.ts\"",
+    "test:db": "RUN_DB_TESTS=1 node --env-file=.env --import ./tests/setup/register.mjs --test \"tests/integration/*.test.ts\"",
+    "repair": "node --env-file=.env --import ./tests/setup/register.mjs scripts/repair-games.mts",
+    "verify:stats": "node --env-file=.env --import ./tests/setup/register.mjs scripts/verify-stats.mts",
     "db:init": "node --env-file=.env.local scripts/init-db.mjs"
   },
   "dependencies": {

@@ -95,7 +95,7 @@ function analyzeGame(doc: AnyDoc):
   };
 }
 
-type KeeperCandidate = { id: unknown; createdAt: Date; hasRepair: boolean };
+type KeeperCandidate = { id: AnyDoc["_id"]; createdAt: Date; hasRepair: boolean };
 
 /** Earlier createdAt wins; ties prefer the already-repaired original, then the smaller _id. */
 function betterKeeper(a: KeeperCandidate, b: KeeperCandidate) {
@@ -130,7 +130,7 @@ export async function repairGames(opts: { db: Db; dryRun?: boolean; now?: Date }
   // raw timestamp/payload strings differ. Keep one doc per key; the rest are
   // deleted and excluded from the rebuilt stats.
   const keeperByKey = new Map<string, KeeperCandidate>();
-  const loserIds: unknown[] = [];
+  const loserIds: AnyDoc["_id"][] = [];
   for await (const doc of games.find({ gameType: "cards" })) {
     const analysis = analyzeGame(doc);
     if (!analysis.ok) continue;

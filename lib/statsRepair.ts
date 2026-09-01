@@ -23,6 +23,7 @@ export type RepairReport = {
   scanned: number;
   repaired: number;
   alreadyCorrect: number;
+  duplicatesRemoved: number;
   payloadFallback: number;
   dedupeCollisions: number;
   anomalies: Array<{ gameId: string; reason: string }>;
@@ -43,15 +44,6 @@ function chunk<T>(arr: T[], size: number) {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
-}
-
-/**
- * Stable dedupe material for docs without payloadBase64 (legacy live rounds
- * ingested as direct JSON): built only from immutable raw fields so repeated
- * repair runs derive the same key.
- */
-function fallbackDedupeMaterial(players: AnyDoc[]) {
-  return JSON.stringify(players.map((p) => [p.playerTag, p.splitNum ?? 0, p.bet ?? 0, p.payout ?? 0, p.result ?? 0]));
 }
 
 function analyzeGame(doc: AnyDoc):
@@ -76,7 +68,7 @@ function analyzeGame(doc: AnyDoc):
         newPlayers: parsed,
         usedFallback: false,
         note: parsed.length !== players.length ? `payload has ${parsed.length} entries, doc had ${players.length}` : undefined,
-        dedupeKey: computeDedupeKey(sourceDateTime, payloadBase64),
+        dedupeKey: computeDedupeKey(sourceDateTime, parsed),
       };
     }
     return { ok: false, reason: "payloadBase64 present but not decodable" };
@@ -99,8 +91,17 @@ function analyzeGame(doc: AnyDoc):
     ok: true,
     newPlayers,
     usedFallback: true,
-    dedupeKey: computeDedupeKey(sourceDateTime, fallbackDedupeMaterial(players)),
+    dedupeKey: computeDedupeKey(sourceDateTime, newPlayers),
   };
+}
+
+type KeeperCandidate = { id: unknown; createdAt: Date; hasRepair: boolean };
+
+/** Earlier createdAt wins; ties prefer the already-repaired original, then the smaller _id. */
+function betterKeeper(a: KeeperCandidate, b: KeeperCandidate) {
+  if (+a.createdAt !== +b.createdAt) return +a.createdAt < +b.createdAt ? a : b;
+  if (a.hasRepair !== b.hasRepair) return a.hasRepair ? a : b;
+  return String(a.id) <= String(b.id) ? a : b;
 }
 
 export async function repairGames(opts: { db: Db; dryRun?: boolean; now?: Date }): Promise<RepairReport> {
@@ -115,12 +116,47 @@ export async function repairGames(opts: { db: Db; dryRun?: boolean; now?: Date }
     scanned: 0,
     repaired: 0,
     alreadyCorrect: 0,
+    duplicatesRemoved: 0,
     payloadFallback: 0,
     dedupeCollisions: 0,
     anomalies: [],
     statsDocs: { players: 0, hosts: 0, combos: 0 },
     perUploader: [],
   };
+
+  // Pass 1: find rounds stored more than once. The v2 dedupe key (normalized
+  // timestamp + canonical content) recognizes the same round even when it
+  // arrived through different channels (live upload vs CSV re-import) whose
+  // raw timestamp/payload strings differ. Keep one doc per key; the rest are
+  // deleted and excluded from the rebuilt stats.
+  const keeperByKey = new Map<string, KeeperCandidate>();
+  const loserIds: unknown[] = [];
+  for await (const doc of games.find({ gameType: "cards" })) {
+    const analysis = analyzeGame(doc);
+    if (!analysis.ok) continue;
+    const key = `${String(doc.uploaderId ?? "")}|${analysis.dedupeKey}`;
+    const cand: KeeperCandidate = {
+      id: doc._id,
+      createdAt: doc.createdAt instanceof Date ? doc.createdAt : new Date(0),
+      hasRepair: Boolean(doc.repair),
+    };
+    const existing = keeperByKey.get(key);
+    if (!existing) {
+      keeperByKey.set(key, cand);
+    } else {
+      const keeper = betterKeeper(existing, cand);
+      const loser = keeper === existing ? cand : existing;
+      keeperByKey.set(key, keeper);
+      loserIds.push(loser.id);
+    }
+  }
+  const loserIdSet = new Set(loserIds.map((id) => String(id)));
+  report.duplicatesRemoved = loserIds.length;
+  if (!dryRun && loserIds.length) {
+    for (const batch of chunk(loserIds, 500)) {
+      await games.deleteMany({ _id: { $in: batch } });
+    }
+  }
 
   const gameOps: AnyBulkWriteOperation[] = [];
   const playerAgg = new Map<string, AnyDoc>();
@@ -148,8 +184,9 @@ export async function repairGames(opts: { db: Db; dryRun?: boolean; now?: Date }
   };
 
   for await (const doc of games.find({ gameType: "cards" })) {
-    report.scanned++;
     const gameId = String(doc._id);
+    if (loserIdSet.has(gameId)) continue; // deleted duplicate (or would be, in dry-run)
+    report.scanned++;
     const uploaderId = String(doc.uploaderId ?? "");
     const createdAt: Date = doc.createdAt instanceof Date ? doc.createdAt : new Date(0);
 

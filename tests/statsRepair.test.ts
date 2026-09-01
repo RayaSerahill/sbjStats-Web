@@ -123,6 +123,55 @@ describe("repairGames on legacy-corrupted data (local, fake db)", () => {
     assert.ok((db.col("stats_player").docs as any[]).some((p) => p.playerId === "ghost:player"), "stats must be untouched");
   });
 
+  it("removes cross-channel duplicates of the same round and keeps the original", async () => {
+    const entries = [
+      { PlayerName: "Lini Espi@Alpha", Cards: [10, 7], SplitNum: 0, Bet: 500_000, Payout: 1_000_000, IsDoubleDown: false, Result: 1, Dealer: false, Integrity: 0 },
+      { PlayerName: "Angyal Hentes@Raiden", Cards: [10, 9], SplitNum: 0, Bet: 0, Payout: 0, IsDoubleDown: false, Result: 3, Dealer: true, Integrity: 0 },
+    ];
+    const db = new FakeDb();
+    const base = {
+      uploaderId: UPLOADER,
+      hostId: "raiden:angyal_hentes",
+      gameType: "cards",
+      integrity: { version: 1 },
+      players: parseRoundEntries(entries),
+    };
+    // The original (live upload, local offset, compact payload bytes)...
+    db.col("games").docs.push({
+      ...base,
+      _id: "live-original",
+      createdAt: new Date("2026-03-09T21:03:04Z"),
+      sourceDateTime: "09/03/2026 23.03.04 +02:00",
+      payloadBase64: Buffer.from(JSON.stringify(entries)).toString("base64"),
+    });
+    // ...and the same round re-imported from the CSV export (UTC offset,
+    // differently serialized payload bytes, later createdAt).
+    db.col("games").docs.push({
+      ...base,
+      _id: "csv-reimport",
+      createdAt: new Date("2026-09-02T10:00:00Z"),
+      sourceDateTime: "09/03/2026 21.03.04 +00:00",
+      payloadBase64: Buffer.from(JSON.stringify(entries, null, 2)).toString("base64"),
+    });
+
+    const report = await repairGames({ db: db as any });
+    assert.equal(report.duplicatesRemoved, 1);
+    assert.equal(report.scanned, 1);
+
+    const remaining = db.col("games").docs as any[];
+    assert.equal(remaining.length, 1);
+    assert.equal(remaining[0]._id, "live-original", "the earliest doc is kept");
+
+    const host = db.col("stats_host").docs[0] as any;
+    assert.equal(host.gamesHosted, 1, "stats count the round once");
+    assert.equal(host.net, 500_000);
+
+    // Idempotent: nothing left to remove.
+    const second = await repairGames({ db: db as any });
+    assert.equal(second.duplicatesRemoved, 0);
+    assert.equal(second.alreadyCorrect, 1);
+  });
+
   it("repairs live-style docs without payloadBase64 via the fallback grouping", async () => {
     const db = new FakeDb();
     // A split round stored by the legacy live path: no payloadBase64, raw

@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireAdminRequest } from "@/lib/auth";
 import { ensureGameCollections, getDb } from "@/lib/db";
+import { displayHandPayout } from "@/lib/roundMath";
 
 type GamePlayer = {
     dealer?: boolean;
     bet?: number;
     payout?: number;
+    handPayout?: number;
+    splitNum?: number;
 };
 
 type GameDoc = {
@@ -26,7 +29,7 @@ function toTotals(game: GameDoc) {
         : nonDealer.reduce((sum, player) => sum + (Number(player?.bet) || 0), 0);
     const paidOut = typeof game.paidOut === "number"
         ? game.paidOut
-        : nonDealer.reduce((sum, player) => sum + (Number(player?.payout) || 0), 0);
+        : nonDealer.reduce((sum, player) => sum + displayHandPayout(player), 0);
     const profit = typeof game.profit === "number" ? game.profit : collected - paidOut;
     return { collected, paidOut, profit };
 }

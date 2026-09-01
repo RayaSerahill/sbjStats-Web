@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense, cache } from "react";
 import { ensureAuthCollections, ensureGameCollections, getDb, type UserDoc } from "@/lib/db";
 import { playerTagToParts } from "@/lib/gameIngest";
+import { handPayoutExpr } from "@/lib/roundMath";
 import { DealerStats } from "../DealerStats";
 import { loadDealerStats } from "@/lib/dealerStats";
 import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } from "@/lib/statsStyle";
@@ -219,7 +220,8 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
           name: { $first: "$players.name" },
           world: { $first: "$players.world" },
           betTotal: { $sum: { $ifNull: ["$players.bet", 0] } },
-          payoutTotal: { $sum: { $ifNull: ["$players.payout", 0] } },
+          // Split-aware: a splitting player's payout must not be double-counted.
+          payoutTotal: { $sum: handPayoutExpr() },
         },
       },
       {

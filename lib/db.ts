@@ -160,8 +160,25 @@ export async function ensureGameCollections() {
 
       const games = db.collection("games");
       await games.createIndex({ createdAt: -1 });
-      // Used to dedupe CSV imports ("Date and time" column). Sparse so manual imports without this field still work.
-      await games.createIndex({ sourceDateTime: 1 }, { unique: true, sparse: true });
+      // Per-uploader round dedupe (hash of timestamp + payload).
+      await games.createIndex(
+        { uploaderId: 1, dedupeKey: 1 },
+        {
+          unique: true,
+          partialFilterExpression: { uploaderId: { $exists: true }, dedupeKey: { $exists: true } },
+        }
+      );
+      // The legacy global sourceDateTime unique index wrongly collides distinct
+      // games across uploaders and within the same second. It can only be
+      // dropped once every doc carries a dedupeKey (npm run repair backfills
+      // them); until then it must stay, because the per-uploader index cannot
+      // cover the old docs.
+      const unbackfilled = await games.findOne({ dedupeKey: { $exists: false } }, { projection: { _id: 1 } });
+      if (unbackfilled) {
+        console.warn("games: keeping legacy sourceDateTime index - docs without dedupeKey exist (run npm run repair)");
+      } else {
+        await games.dropIndex("sourceDateTime_1").catch(() => {});
+      }
       await games.createIndex({ uploaderId: 1, createdAt: -1 });
       await games.createIndex({ hostId: 1, createdAt: -1 });
       await games.createIndex({ "players.playerId": 1, createdAt: -1 });

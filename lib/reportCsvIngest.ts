@@ -1,6 +1,6 @@
 import type { Db } from "mongodb";
-import type { AnyBulkWriteOperation } from "mongodb";
 import { decodeRoundPayload, parseRoundEntries } from "@/lib/gameIngest";
+import { computeDedupeKey, computeGameTotals, isDuplicateKeyError, outcomeBuckets } from "@/lib/roundMath";
 
 type ReportRow = {
   sourceDateTime: string;
@@ -45,9 +45,10 @@ function splitCsvLine(line: string, delimiter: string) {
 function parseAmount(input: string): number | undefined {
   const raw = (input ?? "").trim();
   if (!raw) return undefined;
-  // CSV uses spaces/NBSP as thousand separators (e.g. "9 700 000").
+  // Reports use European formatting: dots, spaces, or NBSP as thousand
+  // separators (e.g. "1.200.000", "9 700 000").
   const cleaned = raw
-    .replace(/[\s\u00A0\u202F]/g, "")
+    .replace(/[\s\u00A0\u202F.]/g, "")
     .replace(/,/g, "")
     .replace(/'/g, "");
   const n = Number(cleaned);
@@ -92,8 +93,6 @@ function parseReportCsv(text: string): { rows: ReportRow[]; invalid: number } {
     const sourceDateTime = (parts[idxDate] ?? "").trim();
     const detailsBase64 = (parts[idxDetails] ?? "").trim();
 
-    console.log("SourceDateTime:", sourceDateTime);
-
     if (!sourceDateTime || !detailsBase64) {
       console.log(`Missing required fields at line ${i + 1}: Date and time="${sourceDateTime}"}"`);
       invalid++;
@@ -112,17 +111,6 @@ function parseReportCsv(text: string): { rows: ReportRow[]; invalid: number } {
   }
 
   return { rows, invalid };
-}
-
-function outcomeBuckets(result: number) {
-  // Result encoding from game base64 details:
-  // Bust=0, Win=1, Draw=2, Loss=3, Surrender=6
-  // For stats: Bust/Loss/Surrender => loss, Draw => draw, Win => win.
-  const r = Number(result);
-  if (r === 1) return { wins: 1, losses: 0, pushes: 0, other: 0 };
-  if (r === 2) return { wins: 0, losses: 0, pushes: 1, other: 0 };
-  if (r === 0 || r === 3 || r === 6) return { wins: 0, losses: 1, pushes: 0, other: 0 };
-  return { wins: 0, losses: 0, pushes: 0, other: 1 };
 }
 
 function chunk<T>(arr: T[], size: number) {
@@ -145,6 +133,7 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
 
   const gameDocs: any[] = [];
   const validRowIndexes: number[] = [];
+  let columnMismatches = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
@@ -155,34 +144,28 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
       const dealerEntry = players.find((p) => p.dealer);
       if (!dealerEntry) continue;
 
-      // Game-level totals (prefer CSV columns when available; fall back to summing per-player values).
-      const nonDealer = players.filter((p) => !p.dealer);
-      const payloadTotals = nonDealer.reduce(
-        (acc, p) => {
-          acc.collected += Number(p.bet) || 0;
-          acc.paidOut += Number(p.payout) || 0;
-          return acc;
-        },
-        { collected: 0, paidOut: 0 }
-      );
+      // Money comes from the payload (the authoritative record). The CSV's
+      // own totals columns are only a cross-check; a parse failure or
+      // disagreement is counted, never stored.
+      const totals = computeGameTotals(players);
+      if (typeof r.collected === "number" && r.collected !== totals.collected) columnMismatches++;
+      if (typeof r.paidOut === "number" && r.paidOut !== totals.paidOut) columnMismatches++;
+      if (typeof r.profit === "number" && r.profit !== totals.profit) columnMismatches++;
 
-      const collected = typeof r.collected === "number" ? r.collected : payloadTotals.collected;
-      const paidOut = typeof r.paidOut === "number" ? r.paidOut : payloadTotals.paidOut;
-      // Profit in the CSV is "Collected - Paid out" (house profit). Keep the same convention.
-      const profit = typeof r.profit === "number" ? r.profit : collected - paidOut;
-
+      const payloadBase64 = decoded.payloadBase64 ?? r.detailsBase64;
       gameDocs.push({
         createdAt: r.createdAt,
         sourceDateTime: r.sourceDateTime,
+        dedupeKey: computeDedupeKey(r.sourceDateTime, payloadBase64),
         uploaderId: opts.uploaderId,
         hostId: dealerEntry.playerId,
         gameType: "cards",
-        integrity: { version: 1 },
-        collected,
-        paidOut,
-        profit,
+        integrity: { version: 2 },
+        collected: totals.collected,
+        paidOut: totals.paidOut,
+        profit: totals.profit,
         players,
-        payloadBase64: decoded.payloadBase64 ?? r.detailsBase64,
+        payloadBase64,
       });
       validRowIndexes.push(i);
     } catch {
@@ -225,7 +208,7 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
   // Upsert players + stats only for newly inserted docs.
   const insertedDocs = Array.from(insertedIndexes).map((i) => gameDocs[i]);
   if (insertedDocs.length === 0) {
-    return { ok: true as const, inserted: 0, skipped, invalid: invalid + (rows.length - validRowIndexes.length) };
+    return { ok: true as const, inserted: 0, skipped, invalid: invalid + (rows.length - validRowIndexes.length), columnMismatches };
   }
 
   const nowByDoc = (doc: any) => doc.createdAt ?? new Date();
@@ -271,7 +254,14 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
   }));
 
   for (const batch of chunk(playerOps, 1000)) {
-    if (batch.length) await playersCol.bulkWrite(batch, { ordered: false });
+    if (!batch.length) continue;
+    try {
+      await playersCol.bulkWrite(batch, { ordered: false });
+    } catch (e) {
+      // Legacy docs may hold the same playerTag under the old "<world>:<playerTag>"
+      // _id scheme; the identity already exists, so duplicate-key noise is fine.
+      if (!isDuplicateKeyError(e)) throw e;
+    }
   }
 
   // Aggregate stats
@@ -318,7 +308,7 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
       if (p.dealer) continue;
       const o = outcomeBuckets(Number(p.result) || 0);
       const bet = Number(p.bet) || 0;
-      const payout = Number(p.payout) || 0;
+      const payout = Number(p.handPayout) || 0;
       const net = payout - bet;
 
       if (!playerAgg.has(p.playerId)) {
@@ -470,5 +460,5 @@ export async function ingestReportCsv(opts: { db: Db; uploaderId: string; csvTex
   }
 
   const invalidPayloads = rows.length - validRowIndexes.length;
-  return { ok: true as const, inserted, skipped, invalid: invalid + invalidPayloads };
+  return { ok: true as const, inserted, skipped, invalid: invalid + invalidPayloads, columnMismatches };
 }

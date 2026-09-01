@@ -1,6 +1,13 @@
 import { ObjectId } from "mongodb";
 import type { Db } from "mongodb";
 import type { AnyBulkWriteOperation } from "mongodb";
+import {
+  computeDedupeKey,
+  computeGameTotals,
+  computeHandPayouts,
+  isDuplicateKeyError,
+  outcomeBuckets,
+} from "@/lib/roundMath";
 
 type StatsHostDoc = Record<string, any>;
 
@@ -25,6 +32,8 @@ export type ParsedRoundEntry = {
   splitNum: number;
   bet: number;
   payout: number;
+  /** True per-hand payout; for a splitting player's SplitNum 0 entry the raw payout is the player's total. */
+  handPayout: number;
   isDoubleDown: boolean;
   result: number;
   cards: number[];
@@ -93,23 +102,13 @@ export function decodeRoundPayload(input: string): { entries: RawRoundEntry[]; p
   return { entries: JSON.parse(json), payloadBase64: raw };
 }
 
-function outcomeBuckets(result: number) {
-  // Result encoding from game base64 details:
-  // Bust=0, Win=1, Draw=2, Loss=3, Surrender=6
-  // For stats: Bust/Loss/Surrender => loss, Draw => draw, Win => win.
-  const r = Number(result);
-  if (r === 1) return { wins: 1, losses: 0, pushes: 0, other: 0 };
-  if (r === 2) return { wins: 0, losses: 0, pushes: 1, other: 0 };
-  if (r === 0 || r === 3 || r === 6) return { wins: 0, losses: 1, pushes: 0, other: 0 };
-  return { wins: 0, losses: 0, pushes: 0, other: 1 };
-}
-
 export function parseRoundEntries(rawEntries: RawRoundEntry[]): ParsedRoundEntry[] {
   if (!Array.isArray(rawEntries)) return [];
 
-  return rawEntries
-    .filter((e) => e && typeof e.PlayerName === "string")
-    .map((e) => {
+  const valid = rawEntries.filter((e) => e && typeof e.PlayerName === "string");
+  const handPayouts = computeHandPayouts(valid);
+
+  return valid.map((e, i) => {
       const { name, world, playerTag } = playerTagToParts(e.PlayerName);
       const playerId = toPlayerId(playerTag);
       const cards = Array.isArray(e.Cards) ? e.Cards.map((n) => Number(n)).filter((n) => Number.isFinite(n)) : [];
@@ -124,6 +123,7 @@ export function parseRoundEntries(rawEntries: RawRoundEntry[]): ParsedRoundEntry
         splitNum: Number.isFinite(Number(e.SplitNum)) ? Number(e.SplitNum) : 0,
         bet: Number.isFinite(Number(e.Bet)) ? Number(e.Bet) : 0,
         payout: Number.isFinite(Number(e.Payout)) ? Number(e.Payout) : 0,
+        handPayout: handPayouts[i],
         isDoubleDown: Boolean(e.IsDoubleDown),
         result: Number.isFinite(Number(e.Result)) ? Number(e.Result) : 0,
         cards,
@@ -156,17 +156,25 @@ export async function ingestRound(opts: {
   const uploaderId = opts.uploaderId;
   const hostId = dealerEntry.playerId;
 
-  // If the caller provides a dedupe key (CSV's "Date and time"), try to insert first and skip on duplicates.
+  // Money is derived from the payload; the payload is the authoritative record.
+  const totals = computeGameTotals(players);
+  const dedupeKey = computeDedupeKey(opts.sourceDateTime, payloadBase64 ?? JSON.stringify(rawEntries));
+
+  // Insert first and skip on duplicates (unique { uploaderId, dedupeKey } index).
   const gamesCol = opts.db.collection("games");
   const insertDoc = {
     createdAt,
     sourceDateTime: opts.sourceDateTime,
+    dedupeKey,
     uploaderId,
     hostId,
     gameType: "cards",
     integrity: {
-      version: 1,
+      version: 2,
     },
+    collected: totals.collected,
+    paidOut: totals.paidOut,
+    profit: totals.profit,
     players,
     payloadBase64,
   };
@@ -186,7 +194,8 @@ export async function ingestRound(opts: {
   const now = new Date();
 
   const playerOps: AnyBulkWriteOperation<PlayerDoc>[] = players.map((p) => {
-    const id = `${p.world}:${p.playerTag}`; // or just p.playerTag if guaranteed unique
+    // Same _id scheme as the CSV import path so both paths share one identity doc.
+    const id = p.playerId;
 
     return {
       updateOne: {
@@ -205,7 +214,15 @@ export async function ingestRound(opts: {
     };
   });
 
-  if (playerOps.length) await playersCol.bulkWrite(playerOps, { ordered: false });
+  if (playerOps.length) {
+    try {
+      await playersCol.bulkWrite(playerOps, { ordered: false });
+    } catch (e) {
+      // Legacy docs may hold the same playerTag under the old "<world>:<playerTag>"
+      // _id scheme; the identity already exists, so duplicate-key noise is fine.
+      if (!isDuplicateKeyError(e)) throw e;
+    }
+  }
 
   // Stats updates
   const statsPlayer = opts.db.collection("stats_player");
@@ -221,7 +238,7 @@ export async function ingestRound(opts: {
       acc.playerPushes += b.pushes;
       acc.playerOther += b.other;
       acc.betTotal += p.bet;
-      acc.payoutTotal += p.payout;
+      acc.payoutTotal += p.handPayout;
       return acc;
     },
     { playerWins: 0, playerLosses: 0, playerPushes: 0, playerOther: 0, betTotal: 0, payoutTotal: 0 }
@@ -232,7 +249,7 @@ export async function ingestRound(opts: {
 
   for (const p of nonDealer) {
     const o = outcomeBuckets(p.result);
-    const net = p.payout - p.bet;
+    const net = p.handPayout - p.bet;
     playerStatOps.push({
       updateOne: {
         filter: { uploaderId, playerId: p.playerId },
@@ -257,7 +274,7 @@ export async function ingestRound(opts: {
             pushes: o.pushes,
             otherResults: o.other,
             betTotal: p.bet,
-            payoutTotal: p.payout,
+            payoutTotal: p.handPayout,
             net,
             doubleDowns: p.isDoubleDown ? 1 : 0,
             splits: p.splitNum > 0 ? 1 : 0,
@@ -287,7 +304,7 @@ export async function ingestRound(opts: {
               pushes: o.pushes,
               otherResults: o.other,
               betTotal: p.bet,
-              payoutTotal: p.payout,
+              payoutTotal: p.handPayout,
               net,
             },
           },

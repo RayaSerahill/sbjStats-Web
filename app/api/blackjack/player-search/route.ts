@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 import { ensureAuthCollections, ensureGameCollections, getDb, type UserDoc } from "@/lib/db";
 import { playerTagToParts, toPlayerId } from "@/lib/gameIngest";
+import { handPayoutExpr } from "@/lib/roundMath";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -203,10 +204,11 @@ async function statsForPlayer(uploaderId: string, player: PlayerDoc, aliasRows: 
           hands: { $sum: 1 },
           wins: { $sum: { $cond: [{ $eq: ["$players.result", 1] }, 1, 0] } },
           betTotal: { $sum: { $ifNull: ["$players.bet", 0] } },
-          payoutTotal: { $sum: { $ifNull: ["$players.payout", 0] } },
+          // Split-aware: a splitting player's payout must not be double-counted.
+          payoutTotal: { $sum: handPayoutExpr() },
           profit: {
             $sum: {
-              $subtract: [{ $ifNull: ["$players.payout", 0] }, { $ifNull: ["$players.bet", 0] }],
+              $subtract: [handPayoutExpr(), { $ifNull: ["$players.bet", 0] }],
             },
           },
         },

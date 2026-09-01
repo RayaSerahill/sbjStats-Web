@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireAdminRequest } from "@/lib/auth";
 import { ensureGameCollections, getDb } from "@/lib/db";
+import { outcomeBuckets } from "@/lib/roundMath";
 
 type GamePlayer = {
     playerId: string;
@@ -12,10 +13,17 @@ type GamePlayer = {
     splitNum?: number;
     bet?: number;
     payout?: number;
+    handPayout?: number;
     isDoubleDown?: boolean;
     result?: number;
     comboKey?: string;
 };
+
+// Decrement exactly what ingestion added: new docs carry handPayout (split-aware),
+// legacy docs were incremented with the raw payout — mirror each symmetrically.
+function payoutForStats(player: GamePlayer) {
+    return Number(player.handPayout ?? player.payout) || 0;
+}
 
 type GameDoc = {
     _id?: ObjectId;
@@ -24,14 +32,6 @@ type GameDoc = {
     hostId?: string;
     players?: GamePlayer[];
 };
-
-function outcomeBuckets(result: number) {
-    const r = Number(result);
-    if (r === 1) return { wins: 1, losses: 0, pushes: 0, other: 0 };
-    if (r === 2) return { wins: 0, losses: 0, pushes: 1, other: 0 };
-    if (r === 0 || r === 3 || r === 6) return { wins: 0, losses: 1, pushes: 0, other: 0 };
-    return { wins: 0, losses: 0, pushes: 0, other: 1 };
-}
 
 export async function DELETE(req: Request, ctx: RouteContext<"/api/admin/games/[id]">) {
     await ensureGameCollections();
@@ -63,7 +63,7 @@ export async function DELETE(req: Request, ctx: RouteContext<"/api/admin/games/[
     const playerOps = nonDealer.map((player) => {
         const outcome = outcomeBuckets(Number(player.result) || 0);
         const bet = Number(player.bet) || 0;
-        const payout = Number(player.payout) || 0;
+        const payout = payoutForStats(player);
         const net = payout - bet;
 
         return {
@@ -99,7 +99,7 @@ export async function DELETE(req: Request, ctx: RouteContext<"/api/admin/games/[
         const existing = comboCounts.get(player.comboKey) ?? { seen: 0, wins: 0, losses: 0, pushes: 0, other: 0, betTotal: 0, payoutTotal: 0, net: 0 };
         const outcome = outcomeBuckets(Number(player.result) || 0);
         const bet = Number(player.bet) || 0;
-        const payout = Number(player.payout) || 0;
+        const payout = payoutForStats(player);
         existing.seen += 1;
         existing.wins += outcome.wins;
         existing.losses += outcome.losses;
@@ -138,7 +138,7 @@ export async function DELETE(req: Request, ctx: RouteContext<"/api/admin/games/[
             acc.playerPushes += outcome.pushes;
             acc.playerOtherResults += outcome.other;
             acc.betTotal += Number(player.bet) || 0;
-            acc.payoutTotal += Number(player.payout) || 0;
+            acc.payoutTotal += payoutForStats(player);
             return acc;
         },
         { playerWins: 0, playerLosses: 0, playerPushes: 0, playerOtherResults: 0, betTotal: 0, payoutTotal: 0 }

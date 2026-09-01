@@ -33,7 +33,12 @@ function valuesEqual(a: any, b: any) {
 }
 
 function matches(doc: Doc, filter: Doc) {
-  return Object.entries(filter).every(([key, value]) => valuesEqual(doc[key], value));
+  return Object.entries(filter).every(([key, value]) => {
+    if (value && typeof value === "object" && !(value instanceof Date) && Array.isArray((value as Doc).$in)) {
+      return (value as Doc).$in.some((v: unknown) => valuesEqual(doc[key], v));
+    }
+    return valuesEqual(doc[key], value);
+  });
 }
 
 export class FakeCollection {

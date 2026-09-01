@@ -95,13 +95,72 @@ export function displayHandPayout(p: { handPayout?: number; splitNum?: number; p
 }
 
 /**
- * Stable per-round dedupe key: timestamp + the exact payload. Scoped per
- * uploader by the { uploaderId, dedupeKey } unique index, so re-importing a
- * report skips existing rounds without one dealer's games shadowing
- * another's.
+ * Machine-independent timestamp normalization for dedupe: the same round can
+ * reach the system live and via CSV export with the SAME instant rendered in
+ * different offsets ("09/03/2026 23.03.04 +02:00" vs "09/03/2026 21.03.04
+ * +00:00") or in ISO form, so raw strings never dedupe across channels.
+ * Returns epoch seconds when parseable (missing offsets are read as UTC so
+ * every machine derives the same value), else the trimmed raw string.
  */
-export function computeDedupeKey(sourceDateTime: string | undefined, payload: string) {
-  return createHash("sha256").update(`${sourceDateTime ?? ""}\n${payload}`, "utf8").digest("hex");
+export function normalizeRoundTimestamp(sourceDateTime: string | undefined | null): string {
+  const s = (sourceDateTime ?? "").trim();
+  if (!s) return "";
+
+  // Report format: d/M/yyyy H.mm.ss (or colons) with optional offset.
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})[.:](\d{2})[.:](\d{2})(?:\s+([+-]\d{2}:\d{2}|Z))?$/);
+  if (m) {
+    const [, dd, mm, yyyy, HH, MM, SS, tz] = m;
+    const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${HH.padStart(2, "0")}:${MM}:${SS}${tz ?? "Z"}`;
+    const t = Date.parse(iso);
+    if (Number.isFinite(t)) return String(Math.floor(t / 1000));
+  }
+
+  // ISO-ish strings (legacy live rounds); no offset means UTC.
+  const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/.test(s);
+  const t = Date.parse(hasOffset || !/^\d{4}-\d{2}-\d{2}T/.test(s) ? s : `${s}Z`);
+  if (Number.isFinite(t)) return String(Math.floor(t / 1000));
+
+  return s;
+}
+
+type CanonicalPlayer = {
+  playerTag: string;
+  dealer: boolean;
+  splitNum: number;
+  bet: number;
+  payout: number;
+  result: number;
+  cards: number[];
+  isDoubleDown: boolean;
+};
+
+/** Canonical, serialization-independent identity of a round's content. */
+export function canonicalRoundContent(players: CanonicalPlayer[]) {
+  return JSON.stringify(
+    players.map((p) => [
+      p.playerTag,
+      p.dealer ? 1 : 0,
+      Number(p.splitNum) || 0,
+      Number(p.bet) || 0,
+      Number(p.payout) || 0,
+      Number(p.result) || 0,
+      (p.cards ?? []).map((c) => Number(c) || 0),
+      p.isDoubleDown ? 1 : 0,
+    ])
+  );
+}
+
+/**
+ * Stable per-round dedupe key (v2): normalized timestamp + canonical parsed
+ * content. The same round produces the same key whether it arrives live or
+ * from a CSV export, even though those channels serialize the payload bytes
+ * and the timestamp offset differently. Scoped per uploader by the
+ * { uploaderId, dedupeKey } unique index.
+ */
+export function computeDedupeKey(sourceDateTime: string | undefined | null, players: CanonicalPlayer[]) {
+  return createHash("sha256")
+    .update(`v2\n${normalizeRoundTimestamp(sourceDateTime)}\n${canonicalRoundContent(players)}`, "utf8")
+    .digest("hex");
 }
 
 /** True when the error is (only) MongoDB duplicate-key noise (E11000). */

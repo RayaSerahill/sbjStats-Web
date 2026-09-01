@@ -69,6 +69,7 @@ try {
   console.log(`  scanned:           ${report.scanned}`);
   console.log(`  repaired:          ${report.repaired}${dryRun ? " (would be)" : ""}`);
   console.log(`  already correct:   ${report.alreadyCorrect}`);
+  console.log(`  duplicates removed:${String(report.duplicatesRemoved).padStart(7)}${dryRun ? " (would be)" : ""} (same round stored more than once, e.g. live + CSV re-import)`);
   console.log(`  payload fallback:  ${report.payloadFallback} (no payloadBase64; handPayout derived from stored entries)`);
   console.log(`  dedupe collisions: ${report.dedupeCollisions}`);
   console.log(`  anomalies:         ${report.anomalies.length}`);

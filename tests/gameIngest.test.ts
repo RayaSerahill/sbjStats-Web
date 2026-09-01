@@ -22,6 +22,12 @@ describe("payload parsing", () => {
     assert.equal(playerTagToParts("Miri Swiftspark@Raiden [1]").playerTag, "Miri Swiftspark@Raiden");
   });
 
+  it("strips trailing '/<id>' instance markers seen on live uploads", () => {
+    const parts = playerTagToParts("Mai Zoldyck@Alpha/1329312872");
+    assert.equal(parts.playerTag, "Mai Zoldyck@Alpha");
+    assert.equal(parts.world, "Alpha");
+  });
+
   it("keeps combo keys order-sensitive", () => {
     assert.equal(toComboKey([10, 2]), "10-2");
     assert.equal(toComboKey([2, 10]), "2-10");

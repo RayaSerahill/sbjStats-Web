@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         inserted: result.inserted,
         skipped: result.skipped,
         invalid: result.invalid,
+        columnMismatches: result.columnMismatches,
       });
     } catch (err) {
       console.error("Failed to parse multipart form data:", err);
@@ -67,6 +68,7 @@ export async function POST(req: Request) {
       inserted: result.inserted,
       skipped: result.skipped,
       invalid: result.invalid,
+      columnMismatches: result.columnMismatches,
     });
   }
 

@@ -65,6 +65,36 @@ export function computeGameTotals(players: Array<{ dealer: boolean; bet: number;
 }
 
 /**
+ * Aggregation expression for a player entry's payout contribution when
+ * summing money per player or per game. Prefers the stored handPayout; for
+ * docs not yet repaired it falls back split-aware (only SplitNum 0 entries
+ * carry a player's payout, and that entry holds their total), so sums stay
+ * correct either way. Per-entry note: for an unrepaired splitting player the
+ * fallback attributes the whole total to the primary entry — exact for sums,
+ * which is all read paths use it for.
+ */
+export function handPayoutExpr(playersPath = "$players") {
+  return {
+    $ifNull: [
+      `${playersPath}.handPayout`,
+      {
+        $cond: [
+          { $eq: [{ $ifNull: [`${playersPath}.splitNum`, 0] }, 0] },
+          { $ifNull: [`${playersPath}.payout`, 0] },
+          0,
+        ],
+      },
+    ],
+  };
+}
+
+/** JS twin of handPayoutExpr for code that sums stored player entries. */
+export function displayHandPayout(p: { handPayout?: number; splitNum?: number; payout?: number }) {
+  if (typeof p?.handPayout === "number") return p.handPayout;
+  return (Number(p?.splitNum) || 0) === 0 ? Number(p?.payout) || 0 : 0;
+}
+
+/**
  * Stable per-round dedupe key: timestamp + the exact payload. Scoped per
  * uploader by the { uploaderId, dedupeKey } unique index, so re-importing a
  * report skips existing rounds without one dealer's games shadowing

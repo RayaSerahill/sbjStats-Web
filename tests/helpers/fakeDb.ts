@@ -129,6 +129,7 @@ export class FakeCollection {
 
     if (existing) {
       for (const [key, value] of Object.entries(update.$set ?? {})) existing[key] = value;
+      for (const key of Object.keys(update.$unset ?? {})) delete existing[key];
       for (const [key, value] of Object.entries(update.$inc ?? {})) {
         existing[key] = (Number(existing[key]) || 0) + Number(value);
       }

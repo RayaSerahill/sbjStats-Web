@@ -7,11 +7,13 @@ import {
   ChartLine,
   Check,
   ChevronDown,
+  Disc,
   EyeOff,
   Gamepad2,
   Gift,
   Home as HomeIcon,
   Key,
+  Layers,
   Moon,
   Palette,
   Settings,
@@ -34,7 +36,7 @@ import {
 import type { DashboardTheme } from "@/lib/db";
 import { LogoutButton } from "./LogoutButton";
 
-type NavGroupId = "general" | "blackjack" | "scratch" | "admin";
+type NavGroupId = "general" | "blackjack" | "scratch" | "wheel" | "admin";
 
 type NavItem = {
   id: string;
@@ -60,6 +62,9 @@ const legacyHashToPath: Record<string, string> = {
   "scratch-games": "/dashboard/scratch/games",
   "scratch-prizes": "/dashboard/scratch/prizes",
   "scratch-settings": "/dashboard/scratch/settings",
+  "wheel-games": "/dashboard/wheel/games",
+  "wheel-prizes": "/dashboard/wheel/prizes",
+  "wheel-presets": "/dashboard/wheel/presets",
   aliases: "/dashboard/aliases",
   "hidden-players": "/dashboard/hidden-players",
   "api-keys": "/dashboard/api-keys",
@@ -126,6 +131,15 @@ function buildNavGroups(canManageUsers: boolean, teamInviteCount: number): NavGr
         { id: "scratch-games", href: "/dashboard/scratch/games", label: "Games", icon: Ticket },
         { id: "scratch-prizes", href: "/dashboard/scratch/prizes", label: "Prizes", icon: Gift },
         { id: "scratch-settings", href: "/dashboard/scratch/settings", label: "Settings", icon: Settings },
+      ],
+    },
+    {
+      id: "wheel",
+      label: "Wheel",
+      items: [
+        { id: "wheel-games", href: "/dashboard/wheel/games", label: "Games", icon: Disc },
+        { id: "wheel-prizes", href: "/dashboard/wheel/prizes", label: "Prizes", icon: Gift },
+        { id: "wheel-presets", href: "/dashboard/wheel/presets", label: "Presets", icon: Layers },
       ],
     },
   ];
@@ -313,6 +327,7 @@ export function DashboardShell({
     general: true,
     blackjack: true,
     scratch: true,
+    wheel: true,
     admin: true,
   });
 

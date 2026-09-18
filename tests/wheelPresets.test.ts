@@ -163,8 +163,8 @@ describe("resolveWheelPresetVersion", () => {
     assert.equal(resolveWheelPresetVersion(versions, T3 + 999)?.version, 3);
   });
 
-  it("gives games older than every version the oldest one", () => {
-    assert.equal(resolveWheelPresetVersion(versions, T1 - 1)?.version, 1);
+  it("leaves games older than every version presetless", () => {
+    assert.equal(resolveWheelPresetVersion(versions, T1 - 1), undefined);
     assert.equal(resolveWheelPresetVersion([], T1), undefined);
   });
 });
@@ -278,6 +278,35 @@ describe("games and preset versions (local, fake db)", () => {
 
     const third = await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2 }] }], T3);
     assert.equal(third.linkedGames, 0);
+  });
+
+  it("does not guess a preset for games played before the first known version", async () => {
+    const db = new FakeDb();
+    await uploadGames(db, [gameAt(1, T1 - 10), gameAt(2, T1 + 10)]);
+    const result = await uploadPresets(db, [{ name: "MyPreset", segments: [oneMil] }], T1);
+    assert.equal(result.linkedGames, 1);
+
+    const byUuid = Object.fromEntries(db.col("wheel_games").docs.map((g) => [g.gameUuid, g]));
+    assert.equal(byUuid["1"].presetVersion, undefined);
+    assert.equal(byUuid["1"].presetId, undefined);
+    assert.equal(byUuid["2"].presetVersion, 1);
+
+    // Games arriving later that predate every version stay presetless too.
+    await uploadGames(db, [gameAt(3, T1 - 5)]);
+    assert.equal(db.col("wheel_games").docs.find((g) => g.gameUuid === "3")?.presetVersion, undefined);
+  });
+
+  it("clears a link that no longer resolves", async () => {
+    const db = new FakeDb();
+    await uploadGames(db, [gameAt(1, T1 - 10)]);
+    const game = db.col("wheel_games").docs[0];
+    game.presetId = "stale";
+    game.presetVersion = 99;
+
+    const result = await uploadPresets(db, [{ name: "MyPreset", segments: [oneMil] }], T1);
+    assert.equal(result.linkedGames, 1);
+    assert.equal("presetId" in db.col("wheel_games").docs[0], false);
+    assert.equal("presetVersion" in db.col("wheel_games").docs[0], false);
   });
 
   it("leaves games of other uploaders alone", async () => {

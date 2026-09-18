@@ -6,6 +6,7 @@ import { ensureAuthCollections, ensureGameCollections, getDb, type UserDoc } fro
 import { ScratchCharts } from "./charts";
 import { LeaderboardElement } from "./leaderboard";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
+import { DiscordComponentEmbed } from "@/app/components/DiscordComponentEmbed";
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 import { normalizeVisibleScratchDealers, type ScratchSettingsDoc } from "@/lib/scratchSettings";
@@ -83,6 +84,15 @@ export async function ScratchStatsPage({
 
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.scratchFontColor, fontFamily }}>
+      <DiscordComponentEmbed
+        displayName={result.displayName}
+        username={result.username || result.displayName}
+        rootGame={result.publicStatsRootGame}
+        games={[
+          { game: "blackjack", enabled: style.publicNavShowBlackjack },
+          { game: "scratch", enabled: style.publicNavShowScratch },
+        ]}
+      />
       <div className="mx-auto w-full max-w-5xl">
         <StatsPageNav
           username={result.username || result.displayName}

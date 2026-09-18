@@ -136,17 +136,20 @@ export function isWheelPresetPayload(value: unknown): value is WheelPresetPayloa
 
 const GIL_VALUE_TEXT_RE = /^\s*(\d+(?:[.,]\d+)?)\s*([km])?/i;
 
+const MILLION = 1_000_000;
+
 /**
- * SimpleWheel often leaves gil_value at 0 on gil segments and encodes the
- * amount in `value` as millions instead ("0.5" is 500,000 gil). A k/m
- * suffix is honoured if present; bare numbers are millions.
+ * SimpleWheel counts gil in millions on segments: gil_value 1 is one
+ * million gil, and when gil_value is left at 0 the amount sits in `value`
+ * with the same unit ("0.5" is 500,000 gil). A k/m suffix in the text is
+ * honoured if someone typed one; bare numbers are millions.
  */
 export function gilValueFromSegmentText(value: string): number {
   const match = value.match(GIL_VALUE_TEXT_RE);
   if (!match) return 0;
   const amount = Number(match[1].replace(",", "."));
   if (!Number.isFinite(amount)) return 0;
-  const multiplier = match[2]?.toLowerCase() === "k" ? 1_000 : 1_000_000;
+  const multiplier = match[2]?.toLowerCase() === "k" ? 1_000 : MILLION;
   const gil = Math.round(amount * multiplier);
   return Number.isSafeInteger(gil) && gil > 0 ? gil : 0;
 }
@@ -161,7 +164,8 @@ export function normalizeWheelSegment(raw: unknown): NormalizedWheelSegment {
   const url = str(s.url);
   const label = type === "image" ? presetUrl : type === "imageurl" ? url : value;
   const valueTypeGil = bool(s.value_type_gil);
-  const explicitGil = Math.max(0, Math.trunc(num(s.gil_value)));
+  const explicitMillions = Math.max(0, num(s.gil_value));
+  const explicitGil = Math.round(explicitMillions * MILLION);
   const gilValue = valueTypeGil && explicitGil === 0 ? gilValueFromSegmentText(value) : explicitGil;
 
   const effects = Array.isArray(s.effects)

@@ -464,6 +464,7 @@ export async function BlackjackStatsPage({
         games={[
           { game: "blackjack", enabled: style.publicNavShowBlackjack },
           { game: "scratch", enabled: style.publicNavShowScratch },
+          { game: "wheel", enabled: style.publicNavShowWheel },
         ]}
       />
       <div className="mx-auto w-full max-w-5xl">
@@ -472,6 +473,7 @@ export async function BlackjackStatsPage({
           rootGame={data.publicStatsRootGame}
           showBlackjack={style.publicNavShowBlackjack}
           showScratch={style.publicNavShowScratch}
+          showWheel={style.publicNavShowWheel}
           background={style.publicNavBackground}
           borderRadius={style.publicNavBorderRadius}
           fontColor={style.publicNavFontColor}

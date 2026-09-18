@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  gilValueFromSegmentText,
   hashWheelSegments,
   ingestWheelPresets,
   normalizeWheelSegment,
@@ -103,6 +104,22 @@ describe("wheel segment normalisation", () => {
   it("keeps only known effects, deduplicated", () => {
     const seg = normalizeWheelSegment({ ...oneMil, effects: ["coins", "COINS", "lasers", "fireworks"] });
     assert.deepEqual(seg.effects, ["coins", "fireworks"]);
+  });
+
+  it("reads value as millions of gil when gil_value is left at 0", () => {
+    const seg = normalizeWheelSegment({ ...oneMil, value: "0.5", gil_value: 0 });
+    assert.equal(seg.gilValue, 500_000);
+    assert.equal(seg.label, "0.5");
+    assert.equal(normalizeWheelSegment({ ...oneMil, value: "2", gil_value: 0 }).gilValue, 2_000_000);
+    assert.equal(normalizeWheelSegment({ ...oneMil, value: "250k gil", gil_value: 0 }).gilValue, 250_000);
+    assert.equal(normalizeWheelSegment({ ...oneMil, value: "1,5", gil_value: 0 }).gilValue, 1_500_000);
+  });
+
+  it("prefers an explicit gil_value and ignores value on non-gil segments", () => {
+    assert.equal(normalizeWheelSegment({ ...oneMil, value: "0.5", gil_value: 750_000 }).gilValue, 750_000);
+    assert.equal(normalizeWheelSegment({ ...bankrupt, value: "0.5", value_type_gil: false }).gilValue, 0);
+    assert.equal(gilValueFromSegmentText("Bankrupt"), 0);
+    assert.equal(gilValueFromSegmentText("x5"), 0);
   });
 
   it("fills defaults for a bare segment", () => {

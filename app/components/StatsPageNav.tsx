@@ -21,6 +21,7 @@ type StatsPageNavProps = {
   rootGame: PublicStatsGame;
   showBlackjack: boolean;
   showScratch: boolean;
+  showWheel?: boolean;
   background: StatsBackgroundStyle;
   borderRadius: number;
   fontColor: string;
@@ -31,7 +32,7 @@ type StatsPageNavProps = {
   active: StatsNavItemStyle;
 };
 
-type NavKey = "blackjack" | "scratch";
+type NavKey = "blackjack" | "scratch" | "wheel";
 type NavLink = {
   key: NavKey;
   href: string;
@@ -44,6 +45,7 @@ export function StatsPageNav({
   rootGame,
   showBlackjack,
   showScratch,
+  showWheel = false,
   background,
   borderRadius,
   fontColor,
@@ -59,7 +61,7 @@ export function StatsPageNav({
   const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
   const lastPathSegment = pathSegments.at(-1);
   const activeKey: NavKey =
-    pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch")
+    pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch" || lastPathSegment === "wheel")
       ? lastPathSegment
       : normalizedRootGame;
 
@@ -89,6 +91,14 @@ export function StatsPageNav({
           href: publicStatsGamePath(username, "scratch", normalizedRootGame),
           label: "Scratch",
           isActive: activeKey === "scratch",
+        }
+      : null,
+    showWheel
+      ? {
+          key: "wheel" as const,
+          href: publicStatsGamePath(username, "wheel", normalizedRootGame),
+          label: "Wheel",
+          isActive: activeKey === "wheel",
         }
       : null,
   ].filter((link): link is NavLink => link !== null);

@@ -190,6 +190,9 @@ const run = async () => {
   await wheelPresets.createIndex({ uploaderId: 1, name: 1, activeFrom: -1 });
   await wheelPresets.createIndex({ uploaderId: 1, lastSeenAt: -1 });
 
+  const wheelSettings = db.collection("wheel_settings");
+  await wheelSettings.createIndex({ uploaderId: 1 }, { unique: true });
+
   const teams = db.collection("teams");
   await teams.createIndex({ slug: 1 }, { unique: true });
   await teams.createIndex({ ownerId: 1 }, { unique: true });
@@ -214,7 +217,7 @@ const run = async () => {
   const traffic = db.collection("traffic");
   await traffic.createIndex({ userId: 1, at: 1 })
 
-  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, scratch_settings, wheel_games, wheel_prizes, wheel_presets, teams, books, traffic)`);
+  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, scratch_settings, wheel_games, wheel_prizes, wheel_presets, wheel_settings, teams, books, traffic)`);
 };
 
 run()

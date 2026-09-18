@@ -143,6 +143,7 @@ export async function ensureGameCollections() {
       await ensureCollection(db, "wheel_games");
       await ensureCollection(db, "wheel_prizes");
       await ensureCollection(db, "wheel_presets");
+      await ensureCollection(db, "wheel_settings");
 
       const players = db.collection("players");
       await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -306,6 +307,9 @@ export async function ensureGameCollections() {
       );
       await wheelPresets.createIndex({ uploaderId: 1, name: 1, activeFrom: -1 });
       await wheelPresets.createIndex({ uploaderId: 1, lastSeenAt: -1 });
+
+      const wheelSettings = db.collection("wheel_settings");
+      await wheelSettings.createIndex({ uploaderId: 1 }, { unique: true });
     })();
   }
 

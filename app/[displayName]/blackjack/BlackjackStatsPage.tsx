@@ -8,6 +8,7 @@ import { loadDealerStats } from "@/lib/dealerStats";
 import { getBackgroundStyleCss, getStatsFontFamily, getStatsStyleForUploader } from "@/lib/statsStyle";
 import {StatsFooterSection} from "@/app/components/StatsFooterSection";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
+import { DiscordComponentEmbed } from "@/app/components/DiscordComponentEmbed";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 import { PlayerSearch } from "../PlayerSearch";
 import { findPublicStatsUser } from "@/lib/publicStatsUser";
@@ -456,6 +457,15 @@ export async function BlackjackStatsPage({
   const title = data.displayName;
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: style.fontColor, fontFamily }}>
+      <DiscordComponentEmbed
+        displayName={data.displayName}
+        username={data.username || data.displayName}
+        rootGame={data.publicStatsRootGame}
+        games={[
+          { game: "blackjack", enabled: style.publicNavShowBlackjack },
+          { game: "scratch", enabled: style.publicNavShowScratch },
+        ]}
+      />
       <div className="mx-auto w-full max-w-5xl">
         <StatsPageNav
           username={data.username || data.displayName}

@@ -33,7 +33,7 @@ const oneMil = {
   ...bankrupt,
   value: "1M gil",
   value_type_gil: true,
-  gil_value: 1_000_000,
+  gil_value: 1,
   win: true,
   bankrupt: false,
   probability: 1,
@@ -115,8 +115,11 @@ describe("wheel segment normalisation", () => {
     assert.equal(normalizeWheelSegment({ ...oneMil, value: "1,5", gil_value: 0 }).gilValue, 1_500_000);
   });
 
-  it("prefers an explicit gil_value and ignores value on non-gil segments", () => {
-    assert.equal(normalizeWheelSegment({ ...oneMil, value: "0.5", gil_value: 750_000 }).gilValue, 750_000);
+  it("treats gil_value as millions and prefers it over the value text", () => {
+    assert.equal(normalizeWheelSegment({ ...oneMil, value: "0.5", gil_value: 0.75 }).gilValue, 750_000);
+    assert.equal(normalizeWheelSegment({ ...oneMil, value: "x", gil_value: 1 }).gilValue, 1_000_000);
+    assert.equal(normalizeWheelSegment({ ...oneMil, value: "x", gil_value: 2.5 }).gilValue, 2_500_000);
+    assert.equal(normalizeWheelSegment({ ...bankrupt, gil_value: 3 }).gilValue, 3_000_000);
     assert.equal(normalizeWheelSegment({ ...bankrupt, value: "0.5", value_type_gil: false }).gilValue, 0);
     assert.equal(gilValueFromSegmentText("Bankrupt"), 0);
     assert.equal(gilValueFromSegmentText("x5"), 0);
@@ -136,7 +139,7 @@ describe("wheel segment normalisation", () => {
     const reordered = Object.fromEntries(Object.entries(oneMil).reverse());
     const b = [normalizeWheelSegment({ ...reordered, value: "  1M gil " })];
     assert.equal(hashWheelSegments(a), hashWheelSegments(b));
-    assert.notEqual(hashWheelSegments(a), hashWheelSegments([normalizeWheelSegment({ ...oneMil, gil_value: 2_000_000 })]));
+    assert.notEqual(hashWheelSegments(a), hashWheelSegments([normalizeWheelSegment({ ...oneMil, gil_value: 2 })]));
   });
 
   it("values a prize label from the segments, but only for flat gil segments", () => {
@@ -192,7 +195,7 @@ describe("ingestWheelPresets (local, fake db)", () => {
   it("opens a new version when the segments change and closes the old one", async () => {
     const db = new FakeDb();
     await upload(db, [{ name: "MyPreset", segments: [bankrupt, oneMil] }], T1);
-    const result = await upload(db, [{ name: "MyPreset", segments: [bankrupt, { ...oneMil, gil_value: 2_000_000 }] }], T2);
+    const result = await upload(db, [{ name: "MyPreset", segments: [bankrupt, { ...oneMil, gil_value: 2 }] }], T2);
     assert.deepEqual([result.created, result.versioned, result.unchanged], [0, 1, 0]);
 
     const docs = db.col("wheel_presets").docs.sort((a, b) => a.version - b.version);
@@ -247,7 +250,7 @@ describe("games and preset versions (local, fake db)", () => {
   it("stamps games with the version current at their archivedAt when presets came first", async () => {
     const db = new FakeDb();
     await uploadPresets(db, [{ name: "MyPreset", segments: [oneMil] }], T1);
-    await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2_000_000 }] }], T2);
+    await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2 }] }], T2);
     await uploadGames(db, [gameAt(1, T1 + 10), gameAt(2, T2 + 10)]);
 
     const games = db.col("wheel_games").docs;
@@ -267,13 +270,13 @@ describe("games and preset versions (local, fake db)", () => {
     assert.equal(first.linkedGames, 2);
     assert.equal(db.col("wheel_games").docs.every((g) => g.presetVersion === 1), true);
 
-    const second = await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2_000_000 }] }], T2);
+    const second = await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2 }] }], T2);
     assert.equal(second.linkedGames, 1);
     const byUuid = Object.fromEntries(db.col("wheel_games").docs.map((g) => [g.gameUuid, g]));
     assert.equal(byUuid["1"].presetVersion, 1);
     assert.equal(byUuid["2"].presetVersion, 2);
 
-    const third = await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2_000_000 }] }], T3);
+    const third = await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2 }] }], T3);
     assert.equal(third.linkedGames, 0);
   });
 

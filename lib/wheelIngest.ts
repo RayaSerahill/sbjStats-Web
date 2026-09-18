@@ -14,7 +14,8 @@ import { normalizeScratchPrizeName, parseFormattedGilPrizeValue } from "@/lib/sc
  * the plugin and must be ignored here rather than rejected.
  */
 export type WheelGamePayload = {
-  game_uuid: string;
+  /** Documented as a string, but SimpleWheel actually ships its integer row id. Both are fine. */
+  game_uuid: string | number;
   player_name: string;
   player_homeworld?: string | null;
   host_name?: string;
@@ -22,6 +23,8 @@ export type WheelGamePayload = {
   preset?: string;
   max_spins?: number;
   spins_used?: number | null;
+  /** Not in the contract, but present on real archive rows: how many spins the player paid for. */
+  spins_paid?: number | null;
   spin_cost?: number;
   prizes_won?: unknown[];
   archived_at?: number | string | null;
@@ -37,6 +40,7 @@ export type NormalizedWheelGame = {
   preset?: string;
   maxSpins: number;
   spinsUsed?: number;
+  spinsPaid?: number;
   spinCost: number;
   prizesWon: string[];
   archivedAt: number;
@@ -56,6 +60,7 @@ export type WheelGameDoc = {
   preset?: string;
   maxSpins: number;
   spinsUsed?: number;
+  spinsPaid?: number;
   spinCost: number;
   prizesWon: string[];
   archivedAt: number;
@@ -88,6 +93,10 @@ function isIntLike(value: unknown): boolean {
   return false;
 }
 
+function isGameId(value: unknown): value is string | number {
+  return isNonEmptyString(value) || (typeof value === "number" && Number.isFinite(value));
+}
+
 /**
  * Loose shape check. Only the identity fields are mandatory; everything
  * else is coerced with safe defaults so a slightly odd SimpleWheel row
@@ -99,7 +108,7 @@ export function isWheelGamePayload(value: unknown): value is WheelGamePayload {
   const v = value as Record<string, unknown>;
 
   return (
-    isNonEmptyString(v.game_uuid) &&
+    isGameId(v.game_uuid) &&
     isNonEmptyString(v.player_name) &&
     (isNullish(v.player_homeworld) || typeof v.player_homeworld === "string") &&
     (isNullish(v.host_name) || typeof v.host_name === "string") &&
@@ -107,6 +116,7 @@ export function isWheelGamePayload(value: unknown): value is WheelGamePayload {
     (isNullish(v.preset) || typeof v.preset === "string") &&
     (isNullish(v.max_spins) || isIntLike(v.max_spins)) &&
     (isNullish(v.spins_used) || isIntLike(v.spins_used)) &&
+    (isNullish(v.spins_paid) || isIntLike(v.spins_paid)) &&
     (isNullish(v.spin_cost) || isIntLike(v.spin_cost)) &&
     (isNullish(v.prizes_won) || Array.isArray(v.prizes_won)) &&
     (isNullish(v.dealer) || typeof v.dealer === "string")
@@ -169,10 +179,11 @@ export function normalizeWheelPayload(value: WheelGamePayload, opts?: { now?: ()
   const dealer = optionalString(value.dealer);
   const hostName = optionalString(value.host_name);
   const spinsUsed = toOptionalInt(value.spins_used);
+  const spinsPaid = toOptionalInt(value.spins_paid);
   const playerHomeworld = optionalString(value.player_homeworld);
 
   return {
-    gameUuid: value.game_uuid.trim(),
+    gameUuid: String(value.game_uuid).trim(),
     playerName: value.player_name.trim(),
     playerHomeworld,
     hostName,
@@ -180,6 +191,7 @@ export function normalizeWheelPayload(value: WheelGamePayload, opts?: { now?: ()
     preset: optionalString(value.preset),
     maxSpins: Math.max(0, toInt(value.max_spins, 0)),
     spinsUsed: spinsUsed === undefined ? undefined : Math.max(0, spinsUsed),
+    spinsPaid: spinsPaid === undefined ? undefined : Math.max(0, spinsPaid),
     spinCost: Math.max(0, toInt(value.spin_cost, 0)),
     prizesWon: normalizePrizesWon(value.prizes_won),
     archivedAt: normalizeWheelArchivedAt(value.archived_at, opts?.now),
@@ -232,6 +244,7 @@ export function mergeWheelGames(base: NormalizedWheelGame, incoming: NormalizedW
     preset: stronger.preset ?? weaker.preset,
     maxSpins: stronger.maxSpins || weaker.maxSpins,
     spinsUsed: stronger.spinsUsed ?? weaker.spinsUsed,
+    spinsPaid: stronger.spinsPaid ?? weaker.spinsPaid,
     spinCost: stronger.spinCost || weaker.spinCost,
     prizesWon: stronger.prizesWon.length ? stronger.prizesWon : weaker.prizesWon,
     archivedAt: stronger.archivedAt,
@@ -282,6 +295,7 @@ export async function ingestWheelGames(opts: {
       ...(game.theme !== undefined ? { theme: game.theme } : {}),
       ...(game.preset !== undefined ? { preset: game.preset } : {}),
       ...(game.spinsUsed !== undefined ? { spinsUsed: game.spinsUsed } : {}),
+      ...(game.spinsPaid !== undefined ? { spinsPaid: game.spinsPaid } : {}),
       // Archive rows borrow host_name as their dealer; that guess must not
       // trample the real dealer name a live upload already stored, so it only
       // lands on brand-new docs (see $setOnInsert below).

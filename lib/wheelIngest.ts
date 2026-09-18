@@ -282,7 +282,10 @@ export async function ingestWheelGames(opts: {
       ...(game.theme !== undefined ? { theme: game.theme } : {}),
       ...(game.preset !== undefined ? { preset: game.preset } : {}),
       ...(game.spinsUsed !== undefined ? { spinsUsed: game.spinsUsed } : {}),
-      ...(game.dealer !== undefined ? { dealer: game.dealer } : {}),
+      // Archive rows borrow host_name as their dealer; that guess must not
+      // trample the real dealer name a live upload already stored, so it only
+      // lands on brand-new docs (see $setOnInsert below).
+      ...(game.live && game.dealer !== undefined ? { dealer: game.dealer } : {}),
       ...(game.live ? { live: true } : {}),
     };
 
@@ -299,6 +302,7 @@ export async function ingestWheelGames(opts: {
             gameUuid: game.gameUuid,
             createdAt: now,
             ...(game.live ? {} : { live: false }),
+            ...(!game.live && game.dealer !== undefined ? { dealer: game.dealer } : {}),
           },
         },
         upsert: true,

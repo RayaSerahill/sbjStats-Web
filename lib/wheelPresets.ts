@@ -256,20 +256,19 @@ export function parseWheelPresetUpload(
 /**
  * Picks the version that was current at `archivedAt`: the newest version
  * whose activeFrom is not after the game. A game older than every known
- * version gets the oldest one, since that is the best guess we have.
+ * version stays presetless rather than being guessed at.
  */
 export function resolveWheelPresetVersion<T extends { activeFrom: number; version: number }>(
   versions: T[],
   archivedAt: number
 ): T | undefined {
-  if (versions.length === 0) return undefined;
   const sorted = [...versions].sort((a, b) => a.activeFrom - b.activeFrom || a.version - b.version);
   let match: T | undefined;
   for (const v of sorted) {
     if (v.activeFrom <= archivedAt) match = v;
     else break;
   }
-  return match ?? sorted[0];
+  return match;
 }
 
 /** Gil value of a prize label according to one preset version, or null if it is not a flat gil segment. */
@@ -325,7 +324,8 @@ type WheelGameLinkDoc = {
 
 /**
  * Re-points every game of the given presets at the version that was
- * current when it was played. Used after a preset first appears or changes.
+ * current when it was played, and clears links that no longer resolve.
+ * Used after a preset first appears or changes.
  */
 export async function linkWheelGamesToPresets(opts: { db: Db; uploaderId: string; names: string[] }) {
   const names = Array.from(new Set(opts.names.filter((n) => n.trim())));
@@ -338,11 +338,18 @@ export async function linkWheelGamesToPresets(opts: { db: Db; uploaderId: string
   const ops: AnyBulkWriteOperation<WheelGameLinkDoc>[] = [];
   for (const row of rows) {
     const ref = pickWheelPresetRef(versionsByName, row.preset, row.archivedAt);
-    if (!ref) continue;
+    const filter = { _id: row._id as any, uploaderId: opts.uploaderId };
+
+    if (!ref) {
+      if (row.presetId === undefined && row.presetVersion === undefined) continue;
+      ops.push({ updateOne: { filter, update: { $unset: { presetId: "", presetVersion: "" } } } });
+      continue;
+    }
+
     if (row.presetVersion === ref.presetVersion && String(row.presetId) === String(ref.presetId)) continue;
     ops.push({
       updateOne: {
-        filter: { _id: row._id as any, uploaderId: opts.uploaderId },
+        filter,
         update: { $set: { presetId: ref.presetId, presetVersion: ref.presetVersion } },
       },
     });

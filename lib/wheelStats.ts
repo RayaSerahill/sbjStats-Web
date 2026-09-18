@@ -106,9 +106,10 @@ export function wheelGameSpins(game: WheelStatsGameRow): number {
 }
 
 /**
- * Value of one prize label for one game. The linked preset version knows
- * best; a dealer-configured prize value comes next; "1M gil"-style labels
- * value themselves; everything else (multipliers, free spins, mounts) is 0.
+ * Value of one prize label for one game. A dealer-set override in
+ * wheel_prizes wins; otherwise the preset version the game is linked to
+ * decides; "1M gil"-style labels value themselves; everything else
+ * (multipliers, free spins, mounts) is 0.
  */
 export function wheelPrizeValue(
   label: string,
@@ -118,13 +119,13 @@ export function wheelPrizeValue(
   const name = label.trim();
   if (!name) return 0;
 
+  const fromConfig = configured.get(name);
+  if (typeof fromConfig === "number" && Number.isFinite(fromConfig)) return fromConfig;
+
   if (segments) {
     const fromPreset = wheelPrizeValueFromSegments(segments, name);
     if (fromPreset !== null) return fromPreset;
   }
-
-  const fromConfig = configured.get(name);
-  if (typeof fromConfig === "number" && Number.isFinite(fromConfig)) return fromConfig;
 
   return parseFormattedGilPrizeValue(name) ?? 0;
 }

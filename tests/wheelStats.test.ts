@@ -24,7 +24,8 @@ describe("wheelGameSpins", () => {
 describe("wheelPrizeValue", () => {
   const configured = new Map([["Rare Mount", 3_000_000]]);
 
-  it("prefers the preset version, then configured values, then the label", () => {
+  it("prefers a manual override, then the preset version, then the label", () => {
+    assert.equal(wheelPrizeValue("1M gil", presetV2.segments, new Map([["1M gil", 7]])), 7);
     assert.equal(wheelPrizeValue("1M gil", presetV2.segments, configured), 2_000_000);
     assert.equal(wheelPrizeValue("Half", presetV1.segments, configured), 500_000);
     assert.equal(wheelPrizeValue("Rare Mount", presetV1.segments, configured), 3_000_000);

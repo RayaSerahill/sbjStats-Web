@@ -1,5 +1,4 @@
 import type { Db, AnyBulkWriteOperation } from "mongodb";
-import { normalizeScratchPrizeName, parseFormattedGilPrizeValue } from "@/lib/scratchPrizes";
 import { loadWheelPresetVersions, pickWheelPresetRef } from "@/lib/wheelPresets";
 
 /**
@@ -71,14 +70,6 @@ export type WheelGameDoc = {
   presetVersion?: number;
   /** Whether a live record has ever been merged into this doc. */
   live: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-};
-
-type WheelPrizeDoc = {
-  uploaderId: string;
-  prize: string;
-  value?: number | null;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -344,82 +335,5 @@ export async function ingestWheelGames(opts: {
     ok: true as const,
     inserted: result.upsertedCount,
     updated: result.matchedCount,
-  };
-}
-
-/**
- * Same trick as Scratch: prize labels like "1M Gil" or "250k Gil" carry their
- * own value, so record it up front. Never overwrites a value a dealer typed in.
- */
-export async function upsertFormattedGilWheelPrizeValues(opts: {
-  db: Db;
-  uploaderId: string;
-  games: NormalizedWheelGame[];
-}) {
-  const inferredValues = new Map<string, number>();
-
-  for (const game of opts.games) {
-    for (const rawPrize of game.prizesWon) {
-      const prize = normalizeScratchPrizeName(rawPrize);
-      if (!prize) continue;
-
-      const value = parseFormattedGilPrizeValue(prize);
-      if (value === null) continue;
-
-      inferredValues.set(prize, value);
-    }
-  }
-
-  if (inferredValues.size === 0) {
-    return { ok: true as const, inserted: 0, updated: 0 };
-  }
-
-  const wheelPrizes = opts.db.collection<WheelPrizeDoc>("wheel_prizes");
-  const now = new Date();
-  const entries = Array.from(inferredValues.entries());
-
-  const fillMissingOps: AnyBulkWriteOperation<WheelPrizeDoc>[] = entries.map(([prize, value]) => ({
-    updateOne: {
-      filter: {
-        uploaderId: opts.uploaderId,
-        prize,
-        $or: [{ value: null }, { value: { $exists: false } }],
-      },
-      update: {
-        $set: {
-          value,
-          updatedAt: now,
-        },
-      },
-    },
-  }));
-
-  const fillMissingResult = await wheelPrizes.bulkWrite(fillMissingOps, { ordered: false });
-
-  const insertMissingOps: AnyBulkWriteOperation<WheelPrizeDoc>[] = entries.map(([prize, value]) => ({
-    updateOne: {
-      filter: {
-        uploaderId: opts.uploaderId,
-        prize,
-      },
-      update: {
-        $setOnInsert: {
-          uploaderId: opts.uploaderId,
-          prize,
-          value,
-          createdAt: now,
-          updatedAt: now,
-        },
-      },
-      upsert: true,
-    },
-  }));
-
-  const insertMissingResult = await wheelPrizes.bulkWrite(insertMissingOps, { ordered: false });
-
-  return {
-    ok: true as const,
-    inserted: insertMissingResult.upsertedCount,
-    updated: fillMissingResult.modifiedCount,
   };
 }

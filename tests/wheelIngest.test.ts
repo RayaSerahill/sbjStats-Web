@@ -8,7 +8,6 @@ import {
   normalizeWheelArchivedAt,
   normalizeWheelPayload,
   parseWheelUploadBody,
-  upsertFormattedGilWheelPrizeValues,
 } from "@/lib/wheelIngest";
 import { FakeDb } from "@/tests/helpers/fakeDb";
 
@@ -287,40 +286,5 @@ describe("ingestWheelGames (local, fake db)", () => {
     await ingestWheelGames({ db: db as any, uploaderId: "a", games: parseWheelUploadBody(liveRecord).games });
     await ingestWheelGames({ db: db as any, uploaderId: "b", games: parseWheelUploadBody(liveRecord).games });
     assert.equal(db.col("wheel_games").docs.length, 2);
-  });
-});
-
-describe("wheel prize auto-valuation (local, fake db)", () => {
-  it("infers gil values from prize labels and ignores the rest", async () => {
-    const db = new FakeDb();
-    const games = parseWheelUploadBody([
-      { ...liveRecord, prizes_won: ["1M Gil", "Rare Mount", "250k gil"] },
-    ]).games;
-    const result = await upsertFormattedGilWheelPrizeValues({ db: db as any, uploaderId: "u", games });
-    assert.equal(result.inserted, 2);
-
-    const prizes = db.col("wheel_prizes").docs;
-    assert.deepEqual(
-      prizes.map((p) => [p.prize, p.value]).sort(),
-      [
-        ["1M Gil", 1_000_000],
-        ["250k gil", 250_000],
-      ]
-    );
-  });
-
-  it("fills a blank value but never overwrites one a dealer set", async () => {
-    const db = new FakeDb();
-    const prizes = db.col("wheel_prizes");
-    await prizes.insertOne({ uploaderId: "u", prize: "1M Gil", value: 999 });
-    await prizes.insertOne({ uploaderId: "u", prize: "250k Gil", value: null });
-
-    const games = parseWheelUploadBody([{ ...liveRecord, prizes_won: ["1M Gil", "250k Gil"] }]).games;
-    const result = await upsertFormattedGilWheelPrizeValues({ db: db as any, uploaderId: "u", games });
-    assert.equal(result.inserted, 0);
-    assert.equal(result.updated, 1);
-
-    assert.equal(prizes.findOneSync({ uploaderId: "u", prize: "1M Gil" })?.value, 999);
-    assert.equal(prizes.findOneSync({ uploaderId: "u", prize: "250k Gil" })?.value, 250_000);
   });
 });

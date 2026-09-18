@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserRequest } from "@/lib/auth";
 import { ensureGameCollections, getDb } from "@/lib/db";
-import { ingestWheelGames, parseWheelUploadBody, upsertFormattedGilWheelPrizeValues } from "@/lib/wheelIngest";
+import { ingestWheelGames, parseWheelUploadBody } from "@/lib/wheelIngest";
 
 /**
  * SimpleWheel upload endpoint used by the SimpleStats plugin.
@@ -43,18 +43,12 @@ export async function POST(req: Request) {
     uploaderId: gate.auth.id,
     games,
   });
-  const autoValues = await upsertFormattedGilWheelPrizeValues({
-    db,
-    uploaderId: gate.auth.id,
-    games,
-  });
 
   return NextResponse.json({
     ok: true,
     imported: result.inserted,
     updated: result.updated,
     skipped,
-    autoValuedPrizes: autoValues.inserted + autoValues.updated,
     count: total,
   });
 }

@@ -68,6 +68,7 @@ export type NormalizedStatsStyle = {
   scratchLeaderboardTabHoverTextColor: string;
   publicNavShowBlackjack: boolean;
   publicNavShowScratch: boolean;
+  publicNavShowWheel: boolean;
   publicNavBackground: StatsBackgroundStyle;
   publicNavBorderRadius: number;
   publicNavFontColor: string;
@@ -133,6 +134,7 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   scratchLeaderboardTabHoverTextColor: "#000000",
   publicNavShowBlackjack: true,
   publicNavShowScratch: true,
+  publicNavShowWheel: false,
   publicNavBackground: defaultBackground("#ffffff"),
   publicNavBorderRadius: 18,
   publicNavFontColor: "#000000",
@@ -330,6 +332,7 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
     ),
     publicNavShowBlackjack: normalizeBool(input?.publicNavShowBlackjack, DEFAULT_STATS_STYLE.publicNavShowBlackjack),
     publicNavShowScratch: normalizeBool(input?.publicNavShowScratch, DEFAULT_STATS_STYLE.publicNavShowScratch),
+    publicNavShowWheel: normalizeBool(input?.publicNavShowWheel, DEFAULT_STATS_STYLE.publicNavShowWheel),
     publicNavBackground: normalizeBackgroundStyle(input?.publicNavBackground, DEFAULT_STATS_STYLE.publicNavBackground),
     publicNavBorderRadius: normalizeInt(input?.publicNavBorderRadius, DEFAULT_STATS_STYLE.publicNavBorderRadius, 0, 999),
     publicNavFontColor: normalizeHex(input?.publicNavFontColor, DEFAULT_STATS_STYLE.publicNavFontColor),

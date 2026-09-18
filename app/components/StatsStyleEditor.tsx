@@ -71,6 +71,7 @@ type StatsStyle = {
   scratchLeaderboardTabHoverTextColor: string;
   publicNavShowBlackjack: boolean;
   publicNavShowScratch: boolean;
+  publicNavShowWheel: boolean;
   publicNavBackground: StatsBackgroundStyle;
   publicNavBorderRadius: number;
   publicNavFontColor: string;
@@ -136,6 +137,7 @@ const defaults: StatsStyle = {
   scratchLeaderboardTabHoverTextColor: "#000000",
   publicNavShowBlackjack: true,
   publicNavShowScratch: true,
+  publicNavShowWheel: false,
   publicNavBackground: makeBackground("#ffffff"),
   publicNavBorderRadius: 18,
   publicNavFontColor: "#000000",
@@ -687,6 +689,11 @@ export function StatsStyleEditor() {
               label="Show Scratch link"
               checked={style.publicNavShowScratch}
               onChange={(publicNavShowScratch) => setStyle((s) => ({ ...s, publicNavShowScratch }))}
+            />
+            <CheckboxField
+              label="Show Wheel link"
+              checked={style.publicNavShowWheel}
+              onChange={(publicNavShowWheel) => setStyle((s) => ({ ...s, publicNavShowWheel }))}
             />
           </div>
 

@@ -56,7 +56,43 @@ const otherArchiveRecord = {
   archived_at: 1758110400,
 };
 
+// A row exactly as SimpleWheel really sends it: numeric game_uuid, an
+// undocumented spins_paid, multiplier prizes and a lowercase host name.
+const realArchiveRow = {
+  host_name: "raya' serahill",
+  theme: "espi",
+  spins_paid: 3,
+  spin_cost: 100000,
+  preset: "The Big Wheel",
+  game_uuid: 4677,
+  player_name: "R'ana Khali",
+  max_spins: 3,
+  prizes_won: ["x5", "x0.5", "x0.5"],
+  player_homeworld: null,
+  spins_used: null,
+  archived_at: 1786552378,
+};
+
 describe("wheel payload validation", () => {
+  it("accepts a real SimpleWheel archive row with a numeric game_uuid", () => {
+    assert.equal(isWheelGamePayload(realArchiveRow), true);
+    const game = normalizeWheelPayload(realArchiveRow);
+    assert.equal(game.gameUuid, "4677");
+    assert.equal(game.spinsPaid, 3);
+    assert.equal(game.spinsUsed, undefined);
+    assert.equal(game.dealer, "raya' serahill");
+    assert.deepEqual(game.prizesWon, ["x5", "x0.5", "x0.5"]);
+  });
+
+  it("treats string and numeric ids for the same game as one game", () => {
+    const games = dedupeWheelGames([
+      normalizeWheelPayload(realArchiveRow),
+      normalizeWheelPayload({ ...realArchiveRow, game_uuid: "4677", dealer: "Raya Serahill" }),
+    ]);
+    assert.equal(games.length, 1);
+    assert.equal(games[0].live, true);
+  });
+
   it("accepts the live and archive examples from the contract", () => {
     assert.equal(isWheelGamePayload(liveRecord), true);
     assert.equal(isWheelGamePayload(archiveRecord), true);
@@ -67,6 +103,8 @@ describe("wheel payload validation", () => {
     assert.equal(isWheelGamePayload({ game_uuid: "x", player_name: "y" }), true);
     assert.equal(isWheelGamePayload({ player_name: "y" }), false);
     assert.equal(isWheelGamePayload({ game_uuid: "", player_name: "y" }), false);
+    assert.equal(isWheelGamePayload({ game_uuid: 4812, player_name: "y" }), true);
+    assert.equal(isWheelGamePayload({ game_uuid: NaN, player_name: "y" }), false);
     assert.equal(isWheelGamePayload({ game_uuid: "x", player_name: "   " }), false);
     assert.equal(isWheelGamePayload(null), false);
     assert.equal(isWheelGamePayload([liveRecord]), false);

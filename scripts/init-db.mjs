@@ -159,6 +159,7 @@ const run = async () => {
   await wheelGames.createIndex({ uploaderId: 1, playerName: 1, archivedAt: -1 });
   await wheelGames.createIndex({ uploaderId: 1, dealer: 1, archivedAt: -1 }, { sparse: true });
   await wheelGames.createIndex({ uploaderId: 1, preset: 1, archivedAt: -1 }, { sparse: true });
+  await wheelGames.createIndex({ uploaderId: 1, presetId: 1, archivedAt: -1 }, { sparse: true });
 
   const wheelPrizes = db.collection("wheel_prizes");
   await wheelPrizes.createIndex(
@@ -172,6 +173,22 @@ const run = async () => {
     }
   );
   await wheelPrizes.createIndex({ uploaderId: 1, updatedAt: -1 }, { sparse: true });
+
+  const wheelPresets = db.collection("wheel_presets");
+  // One doc per (name, version); versions are opened when a preset's segments change.
+  await wheelPresets.createIndex(
+    { uploaderId: 1, name: 1, version: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        uploaderId: { $exists: true },
+        name: { $exists: true },
+        version: { $exists: true },
+      },
+    }
+  );
+  await wheelPresets.createIndex({ uploaderId: 1, name: 1, activeFrom: -1 });
+  await wheelPresets.createIndex({ uploaderId: 1, lastSeenAt: -1 });
 
   const teams = db.collection("teams");
   await teams.createIndex({ slug: 1 }, { unique: true });
@@ -197,7 +214,7 @@ const run = async () => {
   const traffic = db.collection("traffic");
   await traffic.createIndex({ userId: 1, at: 1 })
 
-  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, scratch_settings, wheel_games, wheel_prizes, teams, books, traffic)`);
+  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, scratch_settings, wheel_games, wheel_prizes, wheel_presets, teams, books, traffic)`);
 };
 
 run()

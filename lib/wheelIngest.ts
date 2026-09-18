@@ -1,5 +1,6 @@
 import type { Db, AnyBulkWriteOperation } from "mongodb";
 import { normalizeScratchPrizeName, parseFormattedGilPrizeValue } from "@/lib/scratchPrizes";
+import { loadWheelPresetVersions, pickWheelPresetRef } from "@/lib/wheelPresets";
 
 /**
  * SimpleWheel upload contract (see the SimpleStats plugin docs).
@@ -65,6 +66,9 @@ export type WheelGameDoc = {
   prizesWon: string[];
   archivedAt: number;
   dealer?: string;
+  /** The wheel_presets version that was current when this game was played, if known. */
+  presetId?: unknown;
+  presetVersion?: number;
   /** Whether a live record has ever been merged into this doc. */
   live: boolean;
   createdAt?: Date;
@@ -280,7 +284,16 @@ export async function ingestWheelGames(opts: {
   const wheelGames = opts.db.collection<WheelGameDoc>("wheel_games");
   const now = opts.now ?? new Date();
 
+  // Tie each game to the preset version that was current when it was played.
+  const presetVersions = await loadWheelPresetVersions({
+    db: opts.db,
+    uploaderId: opts.uploaderId,
+    names: games.map((g) => g.preset).filter((n): n is string => typeof n === "string"),
+  });
+
   const ops: AnyBulkWriteOperation<WheelGameDoc>[] = games.map((game) => {
+    const presetRef = pickWheelPresetRef(presetVersions, game.preset, game.archivedAt);
+
     // Only $set what this record actually knows. An archive row carries
     // nulls for the live-only fields and must not wipe an earlier live upload.
     const set: Partial<WheelGameDoc> = {
@@ -296,6 +309,7 @@ export async function ingestWheelGames(opts: {
       ...(game.preset !== undefined ? { preset: game.preset } : {}),
       ...(game.spinsUsed !== undefined ? { spinsUsed: game.spinsUsed } : {}),
       ...(game.spinsPaid !== undefined ? { spinsPaid: game.spinsPaid } : {}),
+      ...(presetRef ? { presetId: presetRef.presetId, presetVersion: presetRef.presetVersion } : {}),
       // Archive rows borrow host_name as their dealer; that guess must not
       // trample the real dealer name a live upload already stored, so it only
       // lands on brand-new docs (see $setOnInsert below).

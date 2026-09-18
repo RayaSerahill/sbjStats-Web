@@ -256,19 +256,22 @@ export function parseWheelPresetUpload(
 /**
  * Picks the version that was current at `archivedAt`: the newest version
  * whose activeFrom is not after the game. A game older than every known
- * version stays presetless rather than being guessed at.
+ * version of a preset it names gets the earliest version, the closest we
+ * have in time. Only a name with no stored preset at all leaves a game
+ * presetless.
  */
 export function resolveWheelPresetVersion<T extends { activeFrom: number; version: number }>(
   versions: T[],
   archivedAt: number
 ): T | undefined {
+  if (versions.length === 0) return undefined;
   const sorted = [...versions].sort((a, b) => a.activeFrom - b.activeFrom || a.version - b.version);
   let match: T | undefined;
   for (const v of sorted) {
     if (v.activeFrom <= archivedAt) match = v;
     else break;
   }
-  return match;
+  return match ?? sorted[0];
 }
 
 /** Gil value of a prize label according to one preset version, or null if it is not a flat gil segment. */

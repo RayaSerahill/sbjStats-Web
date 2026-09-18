@@ -140,6 +140,10 @@ export async function ensureGameCollections() {
       await ensureCollection(db, "scratch_games");
       await ensureCollection(db, "scratch_prizes");
       await ensureCollection(db, "scratch_settings");
+      await ensureCollection(db, "wheel_games");
+      await ensureCollection(db, "wheel_prizes");
+      await ensureCollection(db, "wheel_presets");
+      await ensureCollection(db, "wheel_settings");
 
       const players = db.collection("players");
       await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -255,6 +259,57 @@ export async function ensureGameCollections() {
 
       const scratchSettings = db.collection("scratch_settings");
       await scratchSettings.createIndex({ uploaderId: 1 }, { unique: true });
+
+      const wheelGames = db.collection("wheel_games");
+      // SimpleWheel hands us a stable game id, so dedupe on it per uploader:
+      // live and archive uploads of the same game collapse into one doc.
+      await wheelGames.createIndex(
+        { uploaderId: 1, gameUuid: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            gameUuid: { $exists: true },
+          },
+        }
+      );
+      await wheelGames.createIndex({ uploaderId: 1, archivedAt: -1 });
+      await wheelGames.createIndex({ uploaderId: 1, playerName: 1, archivedAt: -1 });
+      await wheelGames.createIndex({ uploaderId: 1, dealer: 1, archivedAt: -1 }, { sparse: true });
+      await wheelGames.createIndex({ uploaderId: 1, preset: 1, archivedAt: -1 }, { sparse: true });
+      await wheelGames.createIndex({ uploaderId: 1, presetId: 1, archivedAt: -1 }, { sparse: true });
+
+      const wheelPrizes = db.collection("wheel_prizes");
+      await wheelPrizes.createIndex(
+        { uploaderId: 1, prize: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            prize: { $exists: true },
+          },
+        }
+      );
+      await wheelPrizes.createIndex({ uploaderId: 1, updatedAt: -1 }, { sparse: true });
+
+      const wheelPresets = db.collection("wheel_presets");
+      // One doc per (name, version); versions are opened when a preset's segments change.
+      await wheelPresets.createIndex(
+        { uploaderId: 1, name: 1, version: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            name: { $exists: true },
+            version: { $exists: true },
+          },
+        }
+      );
+      await wheelPresets.createIndex({ uploaderId: 1, name: 1, activeFrom: -1 });
+      await wheelPresets.createIndex({ uploaderId: 1, lastSeenAt: -1 });
+
+      const wheelSettings = db.collection("wheel_settings");
+      await wheelSettings.createIndex({ uploaderId: 1 }, { unique: true });
     })();
   }
 

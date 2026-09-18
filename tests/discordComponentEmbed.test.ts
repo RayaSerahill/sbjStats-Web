@@ -40,6 +40,33 @@ describe("discord component embed", () => {
     assert.equal(DISCORD_COMPONENT_EMBED_IMAGE_URL, "https://stats.serahill.net/simplestats.ico");
   });
 
+  it("adds a Wheel button when the wheel nav link is enabled, at /<name> when it is the root game", () => {
+    const wheelExtra = hostStatsComponentEmbedButtons({
+      ...base,
+      rootGame: "blackjack",
+      games: [
+        { game: "blackjack", enabled: true },
+        { game: "scratch", enabled: true },
+        { game: "wheel", enabled: true },
+      ],
+    });
+    assert.deepEqual(
+      wheelExtra.map((b) => [b.label, b.url]),
+      [
+        ["Blackjack", "https://stats.serahill.net/raya"],
+        ["Scratch", "https://stats.serahill.net/raya/scratch"],
+        ["Wheel", "https://stats.serahill.net/raya/wheel"],
+      ]
+    );
+
+    const wheelRoot = hostStatsComponentEmbedButtons({
+      ...base,
+      rootGame: "wheel",
+      games: [{ game: "scratch", enabled: false }, { game: "wheel", enabled: true }],
+    });
+    assert.deepEqual(wheelRoot.map((b) => [b.label, b.url]), [["Wheel", "https://stats.serahill.net/raya"]]);
+  });
+
   it("links the root game at /<name> and the other game at /<name>/<game>", () => {
     const blackjackRoot = hostStatsComponentEmbedButtons({
       ...base,

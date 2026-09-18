@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BlackjackStatsPage, generateBlackjackMetadata } from "./blackjack/BlackjackStatsPage";
 import { ScratchStatsPage, generateScratchMetadata } from "./scratch/ScratchStatsPage";
+import { WheelStatsPage, generateWheelMetadata } from "./wheel/WheelStatsPage";
 import { getPublicStatsRootGameForDisplayName } from "@/lib/publicStatsUser";
 
 export const runtime = "nodejs";
@@ -15,6 +16,8 @@ export async function generateMetadata({ params }: PublicStatsPageProps): Promis
   const rootGame = await getPublicStatsRootGameForDisplayName(displayName);
   const childParams = Promise.resolve({ displayName });
 
+  if (rootGame === "wheel") return generateWheelMetadata({ params: childParams });
+
   return rootGame === "scratch"
     ? generateScratchMetadata({ params: childParams })
     : generateBlackjackMetadata({ params: childParams });
@@ -24,6 +27,8 @@ export default async function PublicStatsRootPage({ params }: PublicStatsPagePro
   const { displayName } = await params;
   const rootGame = await getPublicStatsRootGameForDisplayName(displayName);
   const childParams = Promise.resolve({ displayName });
+
+  if (rootGame === "wheel") return <WheelStatsPage params={childParams} />;
 
   return rootGame === "scratch" ? (
     <ScratchStatsPage params={childParams} />

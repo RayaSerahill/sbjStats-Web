@@ -7,6 +7,7 @@
  *   - games:   { sourceDateTime: 1 } unique (global, sparse — but note the
  *     driver serializes `undefined` as `null`, and a present null IS indexed)
  *   - players: { playerTag: 1 } unique
+ *   - wheel_games: { uploaderId: 1, gameUuid: 1 } unique (partial)
  *
  * Duplicate-key failures are surfaced with the same shape the mongodb v7
  * driver uses (error.code / error.writeErrors[].{code,index} /
@@ -32,10 +33,17 @@ function valuesEqual(a: any, b: any) {
   return a === b;
 }
 
-function matches(doc: Doc, filter: Doc) {
+function matches(doc: Doc, filter: Doc): boolean {
   return Object.entries(filter).every(([key, value]) => {
+    if (key === "$or") {
+      return Array.isArray(value) && value.some((sub: Doc) => matches(doc, sub));
+    }
     if (value && typeof value === "object" && !(value instanceof Date) && Array.isArray((value as Doc).$in)) {
       return (value as Doc).$in.some((v: unknown) => valuesEqual(doc[key], v));
+    }
+    if (value && typeof value === "object" && !(value instanceof Date) && "$exists" in (value as Doc)) {
+      const present = doc[key] !== undefined;
+      return present === Boolean((value as Doc).$exists);
     }
     return valuesEqual(doc[key], value);
   });
@@ -61,6 +69,13 @@ export class FakeCollection {
     }
     if (name === "players") {
       this.uniqueKeyFns.push((doc) => (doc.playerTag != null ? `playerTag:${String(doc.playerTag)}` : undefined));
+    }
+    if (name === "wheel_games") {
+      this.uniqueKeyFns.push((doc) =>
+        doc.uploaderId != null && doc.gameUuid != null
+          ? `wheel:${String(doc.uploaderId)}:${String(doc.gameUuid)}`
+          : undefined
+      );
     }
   }
 
@@ -114,6 +129,7 @@ export class FakeCollection {
 
     if (existing) {
       for (const [key, value] of Object.entries(update.$set ?? {})) existing[key] = value;
+      for (const key of Object.keys(update.$unset ?? {})) delete existing[key];
       for (const [key, value] of Object.entries(update.$inc ?? {})) {
         existing[key] = (Number(existing[key]) || 0) + Number(value);
       }
@@ -151,18 +167,23 @@ export class FakeCollection {
 
   async bulkWrite(ops: Doc[], _opts?: { ordered?: boolean }) {
     const writeErrors: Array<{ code: number; index: number }> = [];
+    let matchedCount = 0;
+    let upsertedCount = 0;
     ops.forEach((op, index) => {
       const spec = op.updateOne;
       if (!spec) throw new Error(`fakeDb bulkWrite only supports updateOne ops (got ${Object.keys(op).join(",")})`);
       try {
-        this.applyUpdate(spec.filter, spec.update, Boolean(spec.upsert));
+        const res = this.applyUpdate(spec.filter, spec.update, Boolean(spec.upsert));
+        matchedCount += res.matched;
+        if (res.upserted) upsertedCount += 1;
       } catch (e: any) {
         if (e?.code === 11000) writeErrors.push({ code: 11000, index });
         else throw e;
       }
     });
     if (writeErrors.length) throw new FakeBulkWriteError(writeErrors, {});
-    return { acknowledged: true };
+    // modifiedCount is approximated as matchedCount: the fake does not diff values.
+    return { acknowledged: true, matchedCount, upsertedCount, modifiedCount: matchedCount };
   }
 
   findOneSync(filter: Doc) {

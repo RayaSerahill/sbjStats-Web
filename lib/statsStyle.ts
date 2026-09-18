@@ -58,6 +58,7 @@ export type StatsStyleDoc = {
   scratchLeaderboardTabHoverTextColor: string;
   publicNavShowBlackjack: boolean;
   publicNavShowScratch: boolean;
+  publicNavShowWheel: boolean;
   publicNavBackground: StatsBackgroundStyle;
   publicNavBorderRadius: number;
   publicNavFontColor: string;
@@ -110,6 +111,7 @@ export type StatsStyleInput = Partial<
     | "scratchLeaderboardTabHoverTextColor"
     | "publicNavShowBlackjack"
     | "publicNavShowScratch"
+    | "publicNavShowWheel"
     | "publicNavBackground"
     | "publicNavBorderRadius"
     | "publicNavFontColor"

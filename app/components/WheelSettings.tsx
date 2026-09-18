@@ -1,0 +1,206 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { RefreshCw, Save } from "lucide-react";
+import { DashboardPageHeader, DashboardSection } from "@/app/components/DashboardSection";
+
+type DealerRow = {
+  name: string;
+  games: number;
+  enabled: boolean;
+};
+
+type WheelSettingsResponse = {
+  ok: true;
+  dealers: DealerRow[];
+  visibleDealers: string[];
+  updatedAt: string | null;
+};
+
+const intFmt = new Intl.NumberFormat(undefined, {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+function fmtInt(value: number) {
+  return intFmt.format(Number(value) || 0);
+}
+
+function isDealerRow(value: unknown): value is DealerRow {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return typeof row.name === "string" && typeof row.games === "number" && typeof row.enabled === "boolean";
+}
+
+function messageFromError(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback;
+}
+
+export function WheelSettings() {
+  const [dealers, setDealers] = useState<DealerRow[]>([]);
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/admin/wheel/settings", { cache: "no-store" });
+      const data = (await res.json().catch(() => ({}))) as Partial<WheelSettingsResponse> & { error?: string };
+      if (!res.ok) throw new Error(data?.error ?? "Failed to load wheel settings");
+
+      const nextDealers = Array.isArray(data.dealers) ? data.dealers.filter(isDealerRow) : [];
+      const nextChecked: Record<string, boolean> = {};
+      for (const dealer of nextDealers) {
+        nextChecked[dealer.name] = dealer.enabled;
+      }
+
+      setDealers(nextDealers);
+      setChecked(nextChecked);
+    } catch (err: unknown) {
+      setDealers([]);
+      setChecked({});
+      setMessage(messageFromError(err, "Failed to load wheel settings"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const filteredDealers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return dealers;
+    return dealers.filter((dealer) => dealer.name.toLowerCase().includes(q));
+  }, [dealers, query]);
+
+  const visibleCount = useMemo(
+    () => dealers.reduce((sum, dealer) => sum + (checked[dealer.name] ? 1 : 0), 0),
+    [checked, dealers]
+  );
+
+  const dirtyCount = useMemo(
+    () => dealers.reduce((sum, dealer) => sum + ((checked[dealer.name] ?? false) !== dealer.enabled ? 1 : 0), 0),
+    [checked, dealers]
+  );
+
+  const save = async () => {
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const visibleDealers = dealers.filter((dealer) => checked[dealer.name]).map((dealer) => dealer.name);
+      const res = await fetch("/api/admin/wheel/settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ visibleDealers }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data?.error ?? "Failed to save wheel settings");
+
+      setDealers((current) => current.map((dealer) => ({ ...dealer, enabled: Boolean(checked[dealer.name]) })));
+      setMessage("Saved");
+    } catch (err: unknown) {
+      setMessage(messageFromError(err, "Failed to save wheel settings"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-3xl cute-border admin-item-container">
+      <DashboardPageHeader
+        title="Wheel Settings"
+        description="Public wheel stats include only checked characters. Nothing is shown until at least one is ticked."
+        action={
+          <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700">
+            {dirtyCount ? `${dirtyCount} unsaved change${dirtyCount === 1 ? "" : "s"}` : `${visibleCount} visible`}
+          </div>
+        }
+      />
+
+      <div className="mt-6 space-y-6">
+        <DashboardSection title="Filters and actions">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-600">Search characters</span>
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Type to filter..."
+                  className="w-full rounded-2xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400"
+                />
+              </label>
+            </div>
+
+            <div className="flex gap-2 md:justify-end">
+              <button
+                type="button"
+                onClick={() => void load()}
+                disabled={loading || saving}
+                className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden />
+                Refresh
+              </button>
+              <button
+                type="button"
+                onClick={() => void save()}
+                disabled={loading || saving || dirtyCount === 0}
+                className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" aria-hidden />
+                {saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </DashboardSection>
+
+        {message ? <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">{message}</div> : null}
+
+        <DashboardSection title="Visible characters" bodyClassName="p-0">
+          <div className="overflow-hidden bg-white">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700">
+              <div>Display</div>
+              <div>Character</div>
+              <div className="text-right">games</div>
+            </div>
+
+            {loading ? (
+              <div className="px-3 py-4 text-sm text-zinc-600">Loading...</div>
+            ) : filteredDealers.length ? (
+              <div>
+                {filteredDealers.map((dealer) => (
+                  <label
+                    key={dealer.name}
+                    className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-zinc-100 px-3 py-2 text-sm text-zinc-800 transition last:border-b-0 hover:bg-zinc-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(checked[dealer.name])}
+                      onChange={(event) => setChecked((current) => ({ ...current, [dealer.name]: event.target.checked }))}
+                      className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+                    />
+                    <span className="truncate font-medium text-zinc-900" title={dealer.name}>
+                      {dealer.name}
+                    </span>
+                    <span className="text-right tabular-nums text-zinc-700">{fmtInt(dealer.games)}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div className="px-3 py-4 text-sm text-zinc-600">No character names found in wheel games.</div>
+            )}
+          </div>
+        </DashboardSection>
+      </div>
+    </div>
+  );
+}

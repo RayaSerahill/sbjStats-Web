@@ -37,7 +37,7 @@ describe("discord component embed", () => {
     assert.equal(section.components[0].content, `# Raya Serahill hosting stats\n${DISCORD_COMPONENT_EMBED_DESCRIPTION}`);
     assert.equal(section.accessory.type, 11);
     assert.equal(section.accessory.media.url, DISCORD_COMPONENT_EMBED_IMAGE_URL);
-    assert.equal(DISCORD_COMPONENT_EMBED_IMAGE_URL, "https://stats.serahill.net/simplestats.ico");
+    assert.equal(DISCORD_COMPONENT_EMBED_IMAGE_URL, "https://stats.serahill.net/simplestats.png");
   });
 
   it("adds a Wheel button when the wheel nav link is enabled, at /<name> when it is the root game", () => {

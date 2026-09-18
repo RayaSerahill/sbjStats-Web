@@ -14,7 +14,7 @@ export const DISCORD_COMPONENT_EMBED_SCRIPT_ID = "discord:component-embed";
 export const DISCORD_COMPONENT_EMBED_ACCENT_COLOR = 0xff9fc6;
 export const DISCORD_COMPONENT_EMBED_IMAGE_URL = "https://stats.serahill.net/simplestats.ico";
 export const DISCORD_COMPONENT_EMBED_DESCRIPTION =
-  "Look up the host's stats regarding the games they host and track your own losses or wins at the same time!";
+  "Look up the stats of this host regarding the games they host inside FFXIV and track your own losses or wins at the same time if you have played on their table!";
 
 // Components v2 type ids.
 const COMPONENT_ACTION_ROW = 1;

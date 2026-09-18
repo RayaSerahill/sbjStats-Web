@@ -10,6 +10,7 @@ import {
   wheelPrizeValueFromSegments,
 } from "@/lib/wheelPresets";
 import { ingestWheelGames, parseWheelUploadBody } from "@/lib/wheelIngest";
+import { linkWheelGamesToPresets } from "@/lib/wheelPresets";
 import { FakeDb } from "@/tests/helpers/fakeDb";
 
 const bankrupt = {
@@ -163,8 +164,8 @@ describe("resolveWheelPresetVersion", () => {
     assert.equal(resolveWheelPresetVersion(versions, T3 + 999)?.version, 3);
   });
 
-  it("leaves games older than every version presetless", () => {
-    assert.equal(resolveWheelPresetVersion(versions, T1 - 1), undefined);
+  it("gives games older than every version the earliest one, and unknown presets nothing", () => {
+    assert.equal(resolveWheelPresetVersion(versions, T1 - 1)?.version, 1);
     assert.equal(resolveWheelPresetVersion([], T1), undefined);
   });
 });
@@ -280,31 +281,43 @@ describe("games and preset versions (local, fake db)", () => {
     assert.equal(third.linkedGames, 0);
   });
 
-  it("does not guess a preset for games played before the first known version", async () => {
+  it("links games played before the first known version to that earliest version", async () => {
     const db = new FakeDb();
     await uploadGames(db, [gameAt(1, T1 - 10), gameAt(2, T1 + 10)]);
     const result = await uploadPresets(db, [{ name: "MyPreset", segments: [oneMil] }], T1);
-    assert.equal(result.linkedGames, 1);
+    assert.equal(result.linkedGames, 2);
 
     const byUuid = Object.fromEntries(db.col("wheel_games").docs.map((g) => [g.gameUuid, g]));
-    assert.equal(byUuid["1"].presetVersion, undefined);
-    assert.equal(byUuid["1"].presetId, undefined);
+    assert.equal(byUuid["1"].presetVersion, 1);
     assert.equal(byUuid["2"].presetVersion, 1);
 
-    // Games arriving later that predate every version stay presetless too.
+    // A newer version does not steal the old games; they stay on the earliest.
+    await uploadPresets(db, [{ name: "MyPreset", segments: [{ ...oneMil, gil_value: 2 }] }], T2);
     await uploadGames(db, [gameAt(3, T1 - 5)]);
-    assert.equal(db.col("wheel_games").docs.find((g) => g.gameUuid === "3")?.presetVersion, undefined);
+    const after = Object.fromEntries(db.col("wheel_games").docs.map((g) => [g.gameUuid, g]));
+    assert.equal(after["1"].presetVersion, 1);
+    assert.equal(after["3"].presetVersion, 1);
   });
 
-  it("clears a link that no longer resolves", async () => {
+  it("leaves games presetless when no preset of that name exists", async () => {
     const db = new FakeDb();
-    await uploadGames(db, [gameAt(1, T1 - 10)]);
+    await uploadPresets(db, [{ name: "MyPreset", segments: [oneMil] }], T1);
+    await uploadGames(db, [{ ...gameAt(1, T1 + 10), preset: "Mystery Wheel" }]);
+    const game = db.col("wheel_games").docs[0];
+    assert.equal(game.preset, "Mystery Wheel");
+    assert.equal(game.presetVersion, undefined);
+    assert.equal(game.presetId, undefined);
+  });
+
+  it("clears a stale link when the named preset has no versions", async () => {
+    const db = new FakeDb();
+    await uploadGames(db, [gameAt(1, T1)]);
     const game = db.col("wheel_games").docs[0];
     game.presetId = "stale";
     game.presetVersion = 99;
 
-    const result = await uploadPresets(db, [{ name: "MyPreset", segments: [oneMil] }], T1);
-    assert.equal(result.linkedGames, 1);
+    const result = await linkWheelGamesToPresets({ db: db as any, uploaderId: "u", names: ["MyPreset"] });
+    assert.equal(result.linked, 1);
     assert.equal("presetId" in db.col("wheel_games").docs[0], false);
     assert.equal("presetVersion" in db.col("wheel_games").docs[0], false);
   });

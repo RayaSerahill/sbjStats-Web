@@ -10,6 +10,7 @@ import { DiscordComponentEmbed } from "@/app/components/DiscordComponentEmbed";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
 import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 import { findPublicStatsUser } from "@/lib/publicStatsUser";
+import { normalizeVisibleWheelDealers, type WheelSettingsDoc } from "@/lib/wheelSettings";
 import { normalizePublicStatsRootGame, type PublicStatsGame } from "@/lib/publicStatsRoutes";
 import {
   calculateWheelStats,
@@ -172,6 +173,7 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
   const gamesTable = db.collection("wheel_games");
   const presetsTable = db.collection("wheel_presets");
   const prizesTable = db.collection("wheel_prizes");
+  const settingsTable = db.collection<WheelSettingsDoc>("wheel_settings");
   const aliasesTable = db.collection("aliases");
 
   const { user, displayName: dn, normalizedDisplayName: dnNorm } = await findPublicStatsUser(db, displayName);
@@ -182,18 +184,20 @@ async function loadStats(displayName: string): Promise<LoadStatsResult> {
 
   const uploaderId = user._id.toHexString();
   const includeGlobalAliases = usesGlobalAliases(user);
+  const settings = await settingsTable.findOne({ uploaderId }, { projection: { visibleDealers: 1 } });
+  const visibleDealers = normalizeVisibleWheelDealers(settings?.visibleDealers);
 
   void db.collection("traffic").insertOne({
     userId: user._id,
     at: new Date(),
   });
 
-  // The plugin only uploads games hosted by the API key's own character,
-  // so there is no per-dealer visibility filter here yet.
+  // Like Scratch: only games hosted by a dealer the host has ticked in
+  // the wheel settings are shown publicly.
   const [games, presets, prizes, aliases, style, nameDoc] = await Promise.all([
     gamesTable
       .find(
-        { uploaderId },
+        { uploaderId, dealer: { $in: visibleDealers } },
         {
           projection: {
             _id: 1,

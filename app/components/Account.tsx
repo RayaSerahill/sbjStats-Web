@@ -335,7 +335,7 @@ export function Account() {
             <p className="mt-2 text-xs text-zinc-500">Both stats.serahill.net and stats.gamba.pro open the same public stats pages.</p>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Stats root game">
+          <div className="mt-4 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Stats root game">
             {PUBLIC_STATS_GAME_OPTIONS.map((option) => {
               const active = normalizedRootGame === option.key;
               return (

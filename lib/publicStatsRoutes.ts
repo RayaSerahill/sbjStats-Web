@@ -1,10 +1,11 @@
-export type PublicStatsGame = "blackjack" | "scratch";
+export type PublicStatsGame = "blackjack" | "scratch" | "wheel";
 
 export const DEFAULT_PUBLIC_STATS_ROOT_GAME: PublicStatsGame = "blackjack";
 
 export const PUBLIC_STATS_GAME_OPTIONS: Array<{ key: PublicStatsGame; label: string }> = [
   { key: "blackjack", label: "Blackjack" },
   { key: "scratch", label: "Scratch" },
+  { key: "wheel", label: "Wheel" },
 ];
 
 export const PUBLIC_STATS_DOMAIN_OPTIONS = [
@@ -15,7 +16,7 @@ export const PUBLIC_STATS_DOMAIN_OPTIONS = [
 export const DEFAULT_PUBLIC_STATS_ORIGIN = PUBLIC_STATS_DOMAIN_OPTIONS[0].origin;
 
 export function isPublicStatsGame(value: unknown): value is PublicStatsGame {
-  return value === "blackjack" || value === "scratch";
+  return value === "blackjack" || value === "scratch" || value === "wheel";
 }
 
 export function normalizePublicStatsOrigin(value: unknown) {
@@ -27,7 +28,7 @@ export function normalizePublicStatsRootGame(value: unknown): PublicStatsGame {
 }
 
 export function publicStatsRootGameValidationMessage(value: unknown) {
-  return isPublicStatsGame(value) ? null : "Stats root game must be blackjack or scratch";
+  return isPublicStatsGame(value) ? null : "Stats root game must be blackjack, scratch or wheel";
 }
 
 export function otherPublicStatsGame(game: PublicStatsGame): PublicStatsGame {

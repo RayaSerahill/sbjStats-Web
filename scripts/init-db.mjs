@@ -142,6 +142,37 @@ const run = async () => {
   const scratchSettings = db.collection("scratch_settings");
   await scratchSettings.createIndex({ uploaderId: 1 }, { unique: true });
 
+  const wheelGames = db.collection("wheel_games");
+  // SimpleWheel hands us a stable game id, so dedupe on it per uploader:
+  // live and archive uploads of the same game collapse into one doc.
+  await wheelGames.createIndex(
+    { uploaderId: 1, gameUuid: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        uploaderId: { $exists: true },
+        gameUuid: { $exists: true },
+      },
+    }
+  );
+  await wheelGames.createIndex({ uploaderId: 1, archivedAt: -1 });
+  await wheelGames.createIndex({ uploaderId: 1, playerName: 1, archivedAt: -1 });
+  await wheelGames.createIndex({ uploaderId: 1, dealer: 1, archivedAt: -1 }, { sparse: true });
+  await wheelGames.createIndex({ uploaderId: 1, preset: 1, archivedAt: -1 }, { sparse: true });
+
+  const wheelPrizes = db.collection("wheel_prizes");
+  await wheelPrizes.createIndex(
+    { uploaderId: 1, prize: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        uploaderId: { $exists: true },
+        prize: { $exists: true },
+      },
+    }
+  );
+  await wheelPrizes.createIndex({ uploaderId: 1, updatedAt: -1 }, { sparse: true });
+
   const teams = db.collection("teams");
   await teams.createIndex({ slug: 1 }, { unique: true });
   await teams.createIndex({ ownerId: 1 }, { unique: true });
@@ -166,7 +197,7 @@ const run = async () => {
   const traffic = db.collection("traffic");
   await traffic.createIndex({ userId: 1, at: 1 })
 
-  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, scratch_settings, teams, books, traffic)`);
+  console.log(`OK: indexes ready in db "${dbName}" (users, whitelist, games, players, aliases, blacklist, stats_*, stats_styles, scratch_games, scratch_prizes, scratch_settings, wheel_games, wheel_prizes, teams, books, traffic)`);
 };
 
 run()

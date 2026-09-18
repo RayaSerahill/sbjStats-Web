@@ -65,6 +65,7 @@ const legacyHashToPath: Record<string, string> = {
   "wheel-games": "/dashboard/wheel/games",
   "wheel-prizes": "/dashboard/wheel/prizes",
   "wheel-presets": "/dashboard/wheel/presets",
+  "wheel-settings": "/dashboard/wheel/settings",
   aliases: "/dashboard/aliases",
   "hidden-players": "/dashboard/hidden-players",
   "api-keys": "/dashboard/api-keys",
@@ -140,6 +141,7 @@ function buildNavGroups(canManageUsers: boolean, teamInviteCount: number): NavGr
         { id: "wheel-games", href: "/dashboard/wheel/games", label: "Games", icon: Disc },
         { id: "wheel-prizes", href: "/dashboard/wheel/prizes", label: "Prizes", icon: Gift },
         { id: "wheel-presets", href: "/dashboard/wheel/presets", label: "Presets", icon: Layers },
+        { id: "wheel-settings", href: "/dashboard/wheel/settings", label: "Settings", icon: Settings },
       ],
     },
   ];

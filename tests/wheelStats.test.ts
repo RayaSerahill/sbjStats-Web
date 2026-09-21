@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { calculateWheelStats, wheelGameSpins, wheelPrizeValue } from "@/lib/wheelStats";
+import { calculateWheelStats, wheelGameSpins, wheelHallOfFame, wheelOutcomeSlices, wheelPrizeValue } from "@/lib/wheelStats";
 import { normalizeWheelSegment } from "@/lib/wheelPresets";
 
 const DAY = 86_400;
@@ -112,5 +112,52 @@ describe("calculateWheelStats", () => {
     assert.deepEqual(stats.dailyProfits, []);
     assert.deepEqual(stats.players, []);
     assert.deepEqual(stats.prizes, []);
+  });
+});
+
+describe("wheelHallOfFame", () => {
+  const player = (name: string, totalGames: number, totalSpins: number, totalWinValue: number) => ({
+    name,
+    totalGames,
+    totalSpins,
+    totalWinValue,
+    prizes: [],
+  });
+
+  it("crowns the biggest winner, busiest spinner and most frequent player", () => {
+    const fame = wheelHallOfFame([player("Lini", 3, 10, 5_000_000), player("Rini", 9, 40, 1_000_000), player("Nini", 1, 1, 0)]);
+    assert.deepEqual(fame.biggestWinner, { name: "Lini", value: 5_000_000 });
+    assert.deepEqual(fame.mostSpins, { name: "Rini", value: 40 });
+    assert.deepEqual(fame.mostGames, { name: "Rini", value: 9 });
+  });
+
+  it("only lets seasoned spinners be the luckiest, unless nobody is seasoned", () => {
+    const seasoned = wheelHallOfFame([player("Lucky", 1, 1, 10_000_000), player("Steady", 4, 10, 5_000_000)]);
+    assert.deepEqual(seasoned.luckiestSpinner, { name: "Steady", value: 500_000 });
+
+    const fresh = wheelHallOfFame([player("Lucky", 1, 1, 10_000_000), player("Meh", 1, 2, 1_000_000)]);
+    assert.deepEqual(fresh.luckiestSpinner, { name: "Lucky", value: 10_000_000 });
+  });
+
+  it("leaves the podium empty when nobody has played", () => {
+    assert.deepEqual(wheelHallOfFame([]), { biggestWinner: null, mostSpins: null, mostGames: null, luckiestSpinner: null });
+  });
+});
+
+describe("wheelOutcomeSlices", () => {
+  const prize = (name: string, value: number) => ({ name, value, prizeValue: 0, totalWinValue: 0 });
+
+  it("keeps the top prizes and folds the tail into Other", () => {
+    const slices = wheelOutcomeSlices([prize("a", 10), prize("b", 8), prize("c", 3), prize("d", 2), prize("e", 1), prize("f", 1)], 4);
+    assert.deepEqual(slices, [
+      { name: "a", count: 10 },
+      { name: "b", count: 8 },
+      { name: "c", count: 3 },
+      { name: "Other", count: 4 },
+    ]);
+  });
+
+  it("does not bother with Other when everything fits", () => {
+    assert.deepEqual(wheelOutcomeSlices([prize("a", 2), prize("zero", 0)]), [{ name: "a", count: 2 }]);
   });
 });

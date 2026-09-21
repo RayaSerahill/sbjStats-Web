@@ -167,6 +167,63 @@
   background: #fff7fb;
 }
 
+.live-surface {
+  display: grid;
+  gap: 12px;
+}
+
+.live-preview-swatch {
+  height: 56px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+.live-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.live-modes button {
+  padding: 8px 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.live-modes button.is-active {
+  border-color: #18181b;
+  background: #18181b;
+  color: #fff;
+}
+
+.live-field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.live-field input,
+.live-field select {
+  padding: 8px 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-weight: 500;
+  color: #18181b;
+}
+
+.live-stop {
+  display: grid;
+  gap: 6px;
+}
+
 .live-reset {
   margin-top: 12px;
   padding: 6px 10px;

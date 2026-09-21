@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DashboardPageHeader } from "@/app/components/DashboardSection";
 
 type StatsFontStyle = "sans" | "serif" | "mono" | "old-london";
+type StatsWheelLayout = "classic" | "fortune";
 type StatsBackgroundMode = "color" | "image" | "gradient";
 type StatsImageFit = "cover" | "repeat";
 type StatsGradientDirection =
@@ -34,6 +35,7 @@ type StatsNavItemStyle = {
 };
 
 type StatsStyle = {
+  wheelLayout: StatsWheelLayout;
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
@@ -100,6 +102,7 @@ const makeNavItemStyle = (background: string, fontColor: string, fontStyle: Stat
 });
 
 const defaults: StatsStyle = {
+  wheelLayout: "classic",
   background: makeBackground("#000000"),
   containerBackground: makeBackground("#ffffff"),
   elementBackground: makeBackground("#ffffff"),
@@ -439,6 +442,100 @@ function BackgroundEditor({
   );
 }
 
+const wheelLayoutOptions: Array<{ value: StatsWheelLayout; title: string; blurb: string }> = [
+  {
+    value: "classic",
+    title: "Classic",
+    blurb: "The wheel page shares the scratch page's look and every scratch style setting below applies to it.",
+  },
+  {
+    value: "fortune",
+    title: "Fortune",
+    blurb: "A pastel Wheel of Fortune board with stat tiles, a hall of fame, daily sparklines, a prize donut and a two-pane leaderboard. Brings its own colors; only the shared nav and leaderboard size carry over.",
+  },
+];
+
+function WheelLayoutPreview({ layout }: { layout: StatsWheelLayout }) {
+  if (layout === "fortune") {
+    return (
+      <div className="grid gap-1 rounded-xl bg-gradient-to-b from-[#ece5ff] to-[#dbeeff] p-2">
+        <div className="mx-auto h-2 w-1/2 rounded-full border border-[#33b7a4] bg-white/80" />
+        <div className="grid grid-cols-6 gap-1">
+          {["#e9ddff", "#d4f4ea", "#ffd9e8", "#d8ebff", "#ffe3cf", "#fff1bf"].map((color) => (
+            <div key={color} className="h-4 rounded bg-white" style={{ borderTop: `3px solid ${color}` }} />
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-1">
+          <div className="h-5 rounded bg-white" style={{ borderTop: "3px solid #d4f4ea" }} />
+          <div className="h-5 rounded bg-white" style={{ borderTop: "3px solid #ffd9e8" }} />
+          <div className="h-5 rounded bg-white" style={{ borderTop: "3px solid #fff1bf" }} />
+        </div>
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-1">
+          <div className="h-5 rounded bg-white" />
+          <div className="h-5 rounded bg-white" />
+          <div className="h-5 w-5 rounded-full border-4 border-[#c9b6ff] bg-white" />
+        </div>
+        <div className="h-6 rounded bg-white" />
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-1 rounded-xl bg-black p-2">
+      <div className="grid gap-1 rounded-lg bg-white p-1.5">
+        <div className="h-1.5 w-1/3 rounded bg-zinc-300" />
+        <div className="grid grid-cols-3 gap-1">
+          <div className="h-4 rounded border border-zinc-200" />
+          <div className="h-4 rounded border border-zinc-200" />
+          <div className="h-4 rounded border border-zinc-200" />
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          <div className="grid gap-1">
+            <div className="h-6 rounded border border-zinc-200" />
+            <div className="h-6 rounded border border-zinc-200" />
+          </div>
+          <div className="h-[52px] rounded border border-zinc-200" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WheelLayoutPicker({ value, onChange }: { value: StatsWheelLayout; onChange: (value: StatsWheelLayout) => void }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2" role="radiogroup" aria-label="Wheel page layout">
+      {wheelLayoutOptions.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(option.value)}
+            className={[
+              "grid gap-3 rounded-2xl border-2 bg-white p-4 text-left transition",
+              active ? "border-[#FF9FC6] shadow-[0_0_0_4px_rgba(255,159,198,0.2)]" : "border-zinc-200 hover:border-zinc-300",
+            ].join(" ")}
+          >
+            <WheelLayoutPreview layout={option.value} />
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                <span
+                  className={["h-3 w-3 rounded-full border", active ? "border-[#FF9FC6] bg-[#FF9FC6]" : "border-zinc-300"].join(" ")}
+                  aria-hidden
+                />
+                {option.title}
+                {option.value === "classic" ? <span className="text-xs font-normal text-zinc-500">(current default)</span> : null}
+              </div>
+              <p className="mt-1 text-xs text-zinc-600">{option.blurb}</p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function SectionCard({
   title,
   description,
@@ -669,12 +766,18 @@ export function StatsStyleEditor() {
     <div className="stats-style-editor rounded-3xl cute-border admin-item-container">
       <DashboardPageHeader
         title="Stats style"
-        description="Customize the public stats pages with separate style groups for the main dealer page and the scratch page."
+        description="Customize the public stats pages: choose the wheel page layout, then style the shared nav, the main dealer page and the scratch page."
       />
 
       {loading ? <div className="mt-4 text-sm text-zinc-700">Loading…</div> : null}
 
       <div className="mt-6 grid gap-6">
+        <SectionCard
+          title="Wheel page layout"
+          description="Pick which look the public wheel page wears. Classic keeps the scratch-styled page; Fortune is the new pastel board."
+        >
+          <WheelLayoutPicker value={style.wheelLayout} onChange={(wheelLayout) => setStyle((s) => ({ ...s, wheelLayout }))} />
+        </SectionCard>
         <SectionCard
           title="Shared nav"
           description="These settings style the shared top navigation shown on both public stats pages."

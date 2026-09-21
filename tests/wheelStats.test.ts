@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { calculateWheelStats, wheelGameSpins, wheelHallOfFame, wheelOutcomeSlices, wheelPrizeValue, wheelRecentDays } from "@/lib/wheelStats";
+import {
+  calculateWheelStats,
+  wheelGameSpins,
+  wheelHallOfFame,
+  wheelOutcomeSlices,
+  wheelPrizeIsBankrupt,
+  wheelPrizeValue,
+  wheelRecentDays,
+} from "@/lib/wheelStats";
 import { normalizeWheelSegment } from "@/lib/wheelPresets";
 
 const DAY = 86_400;
@@ -9,6 +17,8 @@ const T0 = 1_700_000_000; // 2023-11-14 22:13 UTC
 const gilSeg = (value: string, millions: number) =>
   normalizeWheelSegment({ type: "string", value, value_type_gil: true, gil_value: millions, win: true });
 const textSeg = (value: string) => normalizeWheelSegment({ type: "string", value, value_type_gil: false });
+
+const bustSeg = (value: string) => normalizeWheelSegment({ type: "string", value, bankrupt: true });
 
 const presetV1 = { _id: "p1", name: "Small", version: 1, segments: [gilSeg("1M gil", 1), gilSeg("Half", 0.5), textSeg("5 FREE SPINS")] };
 const presetV2 = { _id: "p2", name: "Small", version: 2, segments: [gilSeg("1M gil", 2)] };
@@ -37,6 +47,67 @@ describe("wheelPrizeValue", () => {
     assert.equal(wheelPrizeValue("5 FREE SPINS", presetV1.segments, configured), 0);
     assert.equal(wheelPrizeValue("Mystery", undefined, new Map()), 0);
     assert.equal(wheelPrizeValue("", presetV1.segments, configured), 0);
+  });
+});
+
+describe("wheelPrizeIsBankrupt", () => {
+  const segments = [gilSeg("1M gil", 1), bustSeg("Oops")];
+
+  it("trusts the preset segment when the game has one", () => {
+    assert.equal(wheelPrizeIsBankrupt("Oops", segments), true);
+    assert.equal(wheelPrizeIsBankrupt("oops ", segments), true);
+    assert.equal(wheelPrizeIsBankrupt("1M gil", segments), false);
+  });
+
+  it("falls back to the label when the segment is unknown", () => {
+    assert.equal(wheelPrizeIsBankrupt("BANKRUPT", segments), true);
+    assert.equal(wheelPrizeIsBankrupt("Bankrupt!", undefined), true);
+    assert.equal(wheelPrizeIsBankrupt("2M gil", undefined), false);
+    assert.equal(wheelPrizeIsBankrupt("", undefined), false);
+  });
+});
+
+describe("calculateWheelStats with bankrupts", () => {
+  const preset = { _id: "b1", name: "Bust", version: 1, segments: [gilSeg("2M gil", 2), gilSeg("1M gil", 1), bustSeg("BANKRUPT")] };
+
+  it("wipes the pot on a bankrupt and remembers what was lost", () => {
+    const stats = calculateWheelStats({
+      games: [{ _id: 1, playerName: "Lini", archivedAt: T0, presetId: "b1", prizesWon: ["2M gil", "1M gil", "BANKRUPT", "1M gil"] }],
+      presets: [preset],
+      prizes: [],
+      aliases: [],
+    });
+    assert.equal(stats.totalWinValue, 1_000_000);
+    assert.equal(stats.bankrupts, 1);
+    assert.equal(stats.lostToBankrupt, 3_000_000);
+    assert.equal(stats.players[0].totalWinValue, 1_000_000);
+    assert.equal(stats.players[0].bankrupts, 1);
+    assert.equal(stats.players[0].lostToBankrupt, 3_000_000);
+    assert.equal(stats.new.totalWinValue, 1_000_000);
+  });
+
+  it("counts a bankrupt as a landed prize worth nothing", () => {
+    const stats = calculateWheelStats({
+      games: [{ _id: 1, playerName: "Lini", archivedAt: T0, presetId: "b1", prizesWon: ["BANKRUPT", "BANKRUPT"] }],
+      presets: [preset],
+      prizes: [],
+      aliases: [],
+    });
+    assert.equal(stats.totalWinValue, 0);
+    assert.equal(stats.bankrupts, 2);
+    assert.equal(stats.lostToBankrupt, 0);
+    assert.deepEqual(stats.prizes, [{ name: "BANKRUPT", value: 2, prizeValue: 0, totalWinValue: 0 }]);
+  });
+
+  it("spots a bankrupt by label when the game has no preset", () => {
+    const stats = calculateWheelStats({
+      games: [{ _id: 1, playerName: "Lini", archivedAt: T0, prizesWon: ["500K gil", "Bankrupt"] }],
+      presets: [],
+      prizes: [],
+      aliases: [],
+    });
+    assert.equal(stats.totalWinValue, 0);
+    assert.equal(stats.lostToBankrupt, 500_000);
   });
 });
 
@@ -116,19 +187,22 @@ describe("calculateWheelStats", () => {
 });
 
 describe("wheelHallOfFame", () => {
-  const player = (name: string, totalGames: number, totalSpins: number, totalWinValue: number) => ({
+  const player = (name: string, totalGames: number, totalSpins: number, totalWinValue: number, bankrupts = 0) => ({
     name,
     totalGames,
     totalSpins,
     totalWinValue,
+    bankrupts,
+    lostToBankrupt: 0,
     prizes: [],
   });
 
-  it("crowns the biggest winner, busiest spinner and most frequent player", () => {
-    const fame = wheelHallOfFame([player("Lini", 3, 10, 5_000_000), player("Rini", 9, 40, 1_000_000), player("Nini", 1, 1, 0)]);
+  it("crowns the biggest winner, busiest spinner, most frequent player and most bankrupt", () => {
+    const fame = wheelHallOfFame([player("Lini", 3, 10, 5_000_000, 2), player("Rini", 9, 40, 1_000_000, 7), player("Nini", 1, 1, 0)]);
     assert.deepEqual(fame.biggestWinner, { name: "Lini", value: 5_000_000 });
     assert.deepEqual(fame.mostSpins, { name: "Rini", value: 40 });
     assert.deepEqual(fame.mostGames, { name: "Rini", value: 9 });
+    assert.deepEqual(fame.mostBankrupt, { name: "Rini", value: 7 });
   });
 
   it("only lets seasoned spinners be the luckiest, unless nobody is seasoned", () => {
@@ -140,7 +214,13 @@ describe("wheelHallOfFame", () => {
   });
 
   it("leaves the podium empty when nobody has played", () => {
-    assert.deepEqual(wheelHallOfFame([]), { biggestWinner: null, mostSpins: null, mostGames: null, luckiestSpinner: null });
+    assert.deepEqual(wheelHallOfFame([]), {
+      biggestWinner: null,
+      mostSpins: null,
+      mostGames: null,
+      mostBankrupt: null,
+      luckiestSpinner: null,
+    });
   });
 });
 

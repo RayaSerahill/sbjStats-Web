@@ -8,9 +8,12 @@ type Player = {
   totalGames: number;
   totalSpins: number;
   totalWinValue: number;
+  bankrupts: number;
+  lostToBankrupt: number;
 };
 
 type Metric = "won" | "spins" | "games";
+type Detail = "bankrupts" | "lost" | "perSpin";
 
 const TABS: Array<{ key: Metric; label: string; icon: string }> = [
   { key: "won", label: "Top Gil", icon: "💰" },
@@ -18,46 +21,61 @@ const TABS: Array<{ key: Metric; label: string; icon: string }> = [
   { key: "games", label: "Most Active", icon: "🎮" },
 ];
 
-const COLUMNS: Array<{ key: Metric; label: string }> = [
-  { key: "won", label: "Total Gil Won" },
-  { key: "spins", label: "Total Spins" },
-  { key: "games", label: "Games" },
+const COLUMNS: Array<{ key: Detail; label: string; icon: string }> = [
+  { key: "bankrupts", label: "Bankrupts", icon: "💣" },
+  { key: "lost", label: "Lost to Bankrupts", icon: "💸" },
+  { key: "perSpin", label: "Gil / Spin", icon: "🍀" },
 ];
 
 function metricOf(player: Player, metric: Metric) {
   return metric === "won" ? player.totalWinValue : metric === "spins" ? player.totalSpins : player.totalGames;
 }
 
+function detailOf(player: Player, detail: Detail) {
+  if (detail === "bankrupts") return player.bankrupts;
+  if (detail === "lost") return player.lostToBankrupt;
+  return player.totalSpins > 0 ? player.totalWinValue / player.totalSpins : 0;
+}
+
 function fmtMetric(value: number, metric: Metric) {
   return metric === "won" ? fmtGil(value) : fmtInt(value);
+}
+
+function fmtDetail(value: number, detail: Detail) {
+  return detail === "bankrupts" ? fmtInt(value) : fmtGil(Math.round(value));
+}
+
+function tieBreak(a: Player, b: Player) {
+  return b.totalWinValue - a.totalWinValue || b.totalSpins - a.totalSpins || b.totalGames - a.totalGames || a.name.localeCompare(b.name);
 }
 
 function rank(players: Player[], metric: Metric, size: number) {
   return players
     .slice()
-    .sort(
-      (a, b) =>
-        metricOf(b, metric) - metricOf(a, metric) ||
-        b.totalWinValue - a.totalWinValue ||
-        b.totalSpins - a.totalSpins ||
-        b.totalGames - a.totalGames ||
-        a.name.localeCompare(b.name)
-    )
+    .sort((a, b) => metricOf(b, metric) - metricOf(a, metric) || tieBreak(a, b))
+    .slice(0, size);
+}
+
+function rankDetail(players: Player[], detail: Detail, size: number) {
+  return players
+    .slice()
+    .sort((a, b) => detailOf(b, detail) - detailOf(a, detail) || tieBreak(a, b))
     .slice(0, size);
 }
 
 const PODIUM = ["is-first", "is-second", "is-third"];
 
 /**
- * Tabs drive the compact list on the left; the sort picker drives the
- * full table on the right, so a reader can eyeball two rankings at once.
+ * Tabs drive the headline ranking on the left. The table on the right
+ * holds the more obscure numbers (bankrupts, gil lost to them, gil per
+ * spin) and the sort picker decides which of those leads.
  */
 export function FortuneLeaderboard({ players, size }: { players: Player[]; size: number }) {
   const [tab, setTab] = useState<Metric>("won");
-  const [sortBy, setSortBy] = useState<Metric>("won");
+  const [sortBy, setSortBy] = useState<Detail>("bankrupts");
 
   const listed = useMemo(() => rank(players, tab, size), [players, tab, size]);
-  const tabled = useMemo(() => rank(players, sortBy, size), [players, sortBy, size]);
+  const tabled = useMemo(() => rankDetail(players, sortBy, size), [players, sortBy, size]);
 
   if (!players.length) {
     return <div className="fortune-empty">No spinners on the board yet.</div>;
@@ -83,7 +101,7 @@ export function FortuneLeaderboard({ players, size }: { players: Player[]; size:
         </div>
         <label className="fortune-sort">
           Sort by
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as Metric)}>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as Detail)}>
             {COLUMNS.map((column) => (
               <option key={column.key} value={column.key}>
                 {column.label}
@@ -113,7 +131,7 @@ export function FortuneLeaderboard({ players, size }: { players: Player[]; size:
                 <th>Player</th>
                 {COLUMNS.map((column) => (
                   <th key={column.key} className={`is-num${sortBy === column.key ? " is-sorted" : ""}`}>
-                    {column.label}
+                    <span aria-hidden>{column.icon}</span> {column.label}
                   </th>
                 ))}
               </tr>
@@ -130,7 +148,7 @@ export function FortuneLeaderboard({ players, size }: { players: Player[]; size:
                   </td>
                   {COLUMNS.map((column) => (
                     <td key={column.key} className={`is-num${sortBy === column.key ? " is-sorted" : ""}`}>
-                      {fmtMetric(metricOf(player, column.key), column.key)}
+                      {fmtDetail(detailOf(player, column.key), column.key)}
                     </td>
                   ))}
                 </tr>

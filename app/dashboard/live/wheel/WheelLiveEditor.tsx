@@ -9,9 +9,11 @@ import {
   DEFAULT_FORTUNE_THEME,
   FORTUNE_COLOR_KEYS,
   FORTUNE_COLOR_LABELS,
+  FORTUNE_EDIT_KEYS,
+  FORTUNE_EDIT_LABELS,
   FORTUNE_SURFACE_KEYS,
-  FORTUNE_SURFACE_LABELS,
   type FortuneColorKey,
+  type FortuneEditKey,
   type FortuneSurfaceKey,
   type FortuneTheme,
 } from "@/lib/fortuneTheme";
@@ -30,8 +32,12 @@ type Props = {
 
 type Box = { top: number; left: number; width: number; height: number };
 
-function isSurfaceKey(value: string | undefined): value is FortuneSurfaceKey {
-  return !!value && (FORTUNE_SURFACE_KEYS as readonly string[]).includes(value);
+function isEditKey(value: string | undefined): value is FortuneEditKey {
+  return !!value && (FORTUNE_EDIT_KEYS as readonly string[]).includes(value);
+}
+
+function isSurfaceKey(value: FortuneEditKey): value is FortuneSurfaceKey {
+  return (FORTUNE_SURFACE_KEYS as readonly string[]).includes(value);
 }
 
 function boxOf(el: Element, stage: HTMLElement): Box {
@@ -57,8 +63,8 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
 
   const [theme, setTheme] = useState<FortuneTheme>(style.fortune);
   const [saved, setSaved] = useState<FortuneTheme>(style.fortune);
-  const [selected, setSelected] = useState<FortuneSurfaceKey | null>(null);
-  const [hoverKey, setHoverKey] = useState<FortuneSurfaceKey | null>(null);
+  const [selected, setSelected] = useState<FortuneEditKey | null>(null);
+  const [hoverKey, setHoverKey] = useState<FortuneEditKey | null>(null);
   const [hoverBox, setHoverBox] = useState<Box | null>(null);
   const [selectedBox, setSelectedBox] = useState<Box | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,7 +110,7 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
     if (el === hoverElRef.current) return;
     hoverElRef.current = el;
     const key = el?.getAttribute("data-edit") ?? undefined;
-    setHoverKey(isSurfaceKey(key) ? key : null);
+    setHoverKey(isEditKey(key) ? key : null);
     measure();
   };
 
@@ -120,7 +126,7 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
     if (isInteractive(target)) return;
     const el = target.closest("[data-edit]");
     const key = el?.getAttribute("data-edit") ?? undefined;
-    if (!el || !isSurfaceKey(key)) return;
+    if (!el || !isEditKey(key)) return;
     e.preventDefault();
     e.stopPropagation();
     selectedElRef.current = el;
@@ -128,7 +134,7 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
     measure();
   };
 
-  const select = (key: FortuneSurfaceKey) => {
+  const select = (key: FortuneEditKey) => {
     const stage = stageRef.current;
     selectedElRef.current = stage?.querySelector(`[data-edit="${key}"]`) ?? null;
     selectedElRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -145,6 +151,12 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
   const setSurface = (key: FortuneSurfaceKey, value: StatsBackgroundStyle) =>
     setTheme((t) => ({ ...t, surfaces: { ...t.surfaces, [key]: value } }));
   const setColor = (key: FortuneColorKey, value: string) => setTheme((t) => ({ ...t, colors: { ...t.colors, [key]: value } }));
+  const setDonutColor = (index: number, value: string) =>
+    setTheme((t) => {
+      const donut = t.donut.slice();
+      donut[index] = value;
+      return { ...t, donut };
+    });
 
   const save = async () => {
     setBusy(true);
@@ -173,7 +185,7 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
     setTheme(DEFAULT_FORTUNE_THEME);
   };
 
-  const panelLabel = selected ? FORTUNE_SURFACE_LABELS[selected] : null;
+  const panelLabel = selected ? FORTUNE_EDIT_LABELS[selected] : null;
 
   return (
     <div
@@ -197,12 +209,12 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
 
       {selectedBox && selected ? (
         <div className="fortune-edit-highlight is-selected" style={selectedBox} aria-hidden>
-          <span className="fortune-edit-tag">{FORTUNE_SURFACE_LABELS[selected].label}</span>
+          <span className="fortune-edit-tag">{FORTUNE_EDIT_LABELS[selected].label}</span>
         </div>
       ) : null}
       {hoverBox && hoverKey && hoverKey !== selected ? (
         <div className="fortune-edit-highlight" style={hoverBox} aria-hidden>
-          <span className="fortune-edit-tag">{FORTUNE_SURFACE_LABELS[hoverKey].label}</span>
+          <span className="fortune-edit-tag">{FORTUNE_EDIT_LABELS[hoverKey].label}</span>
         </div>
       ) : null}
 
@@ -238,16 +250,38 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
             </button>
           </div>
 
-          <BackgroundEditor label="Background" value={theme.surfaces[selected]} onChange={(value) => setSurface(selected, value)} />
-          <button type="button" className="live-reset" onClick={() => setSurface(selected, DEFAULT_FORTUNE_THEME.surfaces[selected])}>
-            Reset this element
-          </button>
+          {isSurfaceKey(selected) ? (
+            <>
+              <BackgroundEditor label="Background" value={theme.surfaces[selected]} onChange={(value) => setSurface(selected, value)} />
+              <button type="button" className="live-reset" onClick={() => setSurface(selected, DEFAULT_FORTUNE_THEME.surfaces[selected])}>
+                Reset this element
+              </button>
+            </>
+          ) : selected === "donut" ? (
+            <>
+              <div className="grid gap-3">
+                {theme.donut.map((color, index) => (
+                  <AdvancedColorField key={index} label={`Slice ${index + 1}`} value={color} onChange={(value) => setDonutColor(index, value)} />
+                ))}
+              </div>
+              <button type="button" className="live-reset" onClick={() => setTheme((t) => ({ ...t, donut: DEFAULT_FORTUNE_THEME.donut }))}>
+                Reset the donut
+              </button>
+            </>
+          ) : (
+            <>
+              <AdvancedColorField label="Line colour" value={theme.colors[selected]} onChange={(value) => setColor(selected, value)} />
+              <button type="button" className="live-reset" onClick={() => setColor(selected, DEFAULT_FORTUNE_THEME.colors[selected])}>
+                Reset this chart
+              </button>
+            </>
+          )}
 
           {selected === "page" ? (
             <div className="live-panel-section">
               <div className="live-panel-section-title">Colours</div>
               <div className="grid gap-3">
-                {FORTUNE_COLOR_KEYS.map((key) => (
+                {FORTUNE_COLOR_KEYS.filter((key) => key !== "chartGames" && key !== "chartGil").map((key) => (
                   <AdvancedColorField key={key} label={FORTUNE_COLOR_LABELS[key]} value={theme.colors[key]} onChange={(value) => setColor(key, value)} />
                 ))}
               </div>
@@ -257,9 +291,9 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
           <div className="live-panel-section">
             <div className="live-panel-section-title">Jump to</div>
             <div className="live-jump">
-              {FORTUNE_SURFACE_KEYS.map((key) => (
+              {FORTUNE_EDIT_KEYS.map((key) => (
                 <button key={key} type="button" className={key === selected ? "is-active" : ""} onClick={() => select(key)}>
-                  {FORTUNE_SURFACE_LABELS[key].label}
+                  {FORTUNE_EDIT_LABELS[key].label}
                 </button>
               ))}
             </div>

@@ -449,12 +449,9 @@
   background: var(--f-mint);
 }
 
-.fortune-rank-row.is-second {
-  background: #eef9f5;
-}
-
+.fortune-rank-row.is-second,
 .fortune-rank-row.is-third {
-  background: #f6fcfa;
+  background: #faf8ff;
 }
 
 .fortune-rank-num {
@@ -532,9 +529,6 @@
   border-top: 1px solid var(--f-border);
 }
 
-.fortune-table tbody tr:first-child td:not(.is-sorted) {
-  background: var(--f-mint);
-}
 
 .fortune-player {
   display: inline-flex;
@@ -566,4 +560,40 @@
   .fortune-stat-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .fortune-two-up { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
   .fortune-board-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+}
+
+/* ---------- live editor ---------- */
+
+.fortune-editing [data-edit] {
+  cursor: pointer;
+}
+
+.fortune-edit-highlight {
+  position: absolute;
+  z-index: 40;
+  pointer-events: none;
+  border: 3px dashed var(--f-teal, #33b7a4);
+  border-radius: 14px;
+  box-shadow: 0 0 0 4px rgba(51, 183, 164, 0.18), 0 0 0 9999px rgba(58, 52, 84, 0.04);
+  transition: top 0.08s, left 0.08s, width 0.08s, height 0.08s;
+}
+
+.fortune-edit-highlight.is-selected {
+  border-style: solid;
+}
+
+.fortune-edit-tag {
+  position: absolute;
+  top: -12px;
+  left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--f-teal, #33b7a4);
+  color: #fff;
+  font-family: "Quicksand", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }

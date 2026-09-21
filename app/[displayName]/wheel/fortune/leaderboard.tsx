@@ -100,6 +100,7 @@ export function FortuneLeaderboard({ players, size, theme }: { players: Player[]
               aria-selected={tab === t.key}
               className={`fortune-tab${tab === t.key ? " is-active" : ""}`}
               onClick={() => setTab(t.key)}
+              {...(tab === t.key ? surface("tabActive") : {})}
             >
               <span aria-hidden>{t.icon}</span>
               {t.label}

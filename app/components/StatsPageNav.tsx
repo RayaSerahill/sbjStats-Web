@@ -51,21 +51,25 @@ export function useStatsPageNavLinks({
   showBlackjack,
   showScratch,
   showWheel = false,
+  activeOverride,
 }: {
   username: string;
   rootGame: PublicStatsGame;
   showBlackjack: boolean;
   showScratch: boolean;
   showWheel?: boolean;
+  /** Force the current link, for pages that are not under the public stats path. */
+  activeOverride?: StatsNavKey;
 }): StatsNavLink[] {
   const pathname = usePathname();
   const normalizedRootGame = normalizePublicStatsRootGame(rootGame);
   const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
   const lastPathSegment = pathSegments.at(-1);
   const activeKey: StatsNavKey =
-    pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch" || lastPathSegment === "wheel")
+    activeOverride ??
+    (pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch" || lastPathSegment === "wheel")
       ? lastPathSegment
-      : normalizedRootGame;
+      : normalizedRootGame);
 
   const games: Array<{ key: StatsNavKey; label: string; show: boolean }> = [
     { key: "blackjack", label: "Blackjack", show: showBlackjack },

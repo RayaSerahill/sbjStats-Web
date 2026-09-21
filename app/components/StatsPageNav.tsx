@@ -32,13 +32,60 @@ type StatsPageNavProps = {
   active: StatsNavItemStyle;
 };
 
-type NavKey = "blackjack" | "scratch" | "wheel";
-type NavLink = {
-  key: NavKey;
+export type StatsNavKey = "blackjack" | "scratch" | "wheel";
+export type StatsNavLink = {
+  key: StatsNavKey;
   href: string;
   label: string;
   isActive: boolean;
 };
+type NavKey = StatsNavKey;
+
+/**
+ * Which game links a host's public nav shows and which one is current.
+ * Shared by every nav skin so they never disagree on the links.
+ */
+export function useStatsPageNavLinks({
+  username,
+  rootGame,
+  showBlackjack,
+  showScratch,
+  showWheel = false,
+  activeOverride,
+}: {
+  username: string;
+  rootGame: PublicStatsGame;
+  showBlackjack: boolean;
+  showScratch: boolean;
+  showWheel?: boolean;
+  /** Force the current link, for pages that are not under the public stats path. */
+  activeOverride?: StatsNavKey;
+}): StatsNavLink[] {
+  const pathname = usePathname();
+  const normalizedRootGame = normalizePublicStatsRootGame(rootGame);
+  const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
+  const lastPathSegment = pathSegments.at(-1);
+  const activeKey: StatsNavKey =
+    activeOverride ??
+    (pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch" || lastPathSegment === "wheel")
+      ? lastPathSegment
+      : normalizedRootGame);
+
+  const games: Array<{ key: StatsNavKey; label: string; show: boolean }> = [
+    { key: "blackjack", label: "Blackjack", show: showBlackjack },
+    { key: "scratch", label: "Scratch", show: showScratch },
+    { key: "wheel", label: "Wheel", show: showWheel },
+  ];
+
+  return games
+    .filter((game) => game.show)
+    .map((game) => ({
+      key: game.key,
+      href: publicStatsGamePath(username, game.key, normalizedRootGame),
+      label: game.label,
+      isActive: activeKey === game.key,
+    }));
+}
 
 export function StatsPageNav({
   username,
@@ -55,15 +102,8 @@ export function StatsPageNav({
   hover,
   active,
 }: StatsPageNavProps) {
-  const pathname = usePathname();
   const [hovered, setHovered] = useState<NavKey | null>(null);
-  const normalizedRootGame = normalizePublicStatsRootGame(rootGame);
-  const pathSegments = pathname?.split("/").filter(Boolean) ?? [];
-  const lastPathSegment = pathSegments.at(-1);
-  const activeKey: NavKey =
-    pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch" || lastPathSegment === "wheel")
-      ? lastPathSegment
-      : normalizedRootGame;
+  const links = useStatsPageNavLinks({ username, rootGame, showBlackjack, showScratch, showWheel });
 
   const containerStyle = useMemo(
     () => ({
@@ -75,33 +115,6 @@ export function StatsPageNav({
     }),
     [background, borderRadius, fontColor, fontSize, fontStyle]
   );
-
-  const links: NavLink[] = [
-    showBlackjack
-      ? {
-          key: "blackjack" as const,
-          href: publicStatsGamePath(username, "blackjack", normalizedRootGame),
-          label: "Blackjack",
-          isActive: activeKey === "blackjack",
-        }
-      : null,
-    showScratch
-      ? {
-          key: "scratch" as const,
-          href: publicStatsGamePath(username, "scratch", normalizedRootGame),
-          label: "Scratch",
-          isActive: activeKey === "scratch",
-        }
-      : null,
-    showWheel
-      ? {
-          key: "wheel" as const,
-          href: publicStatsGamePath(username, "wheel", normalizedRootGame),
-          label: "Wheel",
-          isActive: activeKey === "wheel",
-        }
-      : null,
-  ].filter((link): link is NavLink => link !== null);
 
   if (links.length === 0) {
     return null;

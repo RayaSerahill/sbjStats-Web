@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
+import { getBackgroundStyleCss } from "@/lib/statsStyleShared";
+import type { FortuneSurfaceKey, FortuneTheme } from "@/lib/fortuneTheme";
 import { avatarFor, fmtGil, fmtInt } from "./format";
 
 type Player = {
@@ -70,9 +72,15 @@ const PODIUM = ["is-first", "is-second", "is-third"];
  * holds the more obscure numbers (bankrupts, gil lost to them, gil per
  * spin) and the sort picker decides which of those leads.
  */
-export function FortuneLeaderboard({ players, size }: { players: Player[]; size: number }) {
+export function FortuneLeaderboard({ players, size, theme }: { players: Player[]; size: number; theme: FortuneTheme }) {
   const [tab, setTab] = useState<Metric>("won");
   const [sortBy, setSortBy] = useState<Detail>("bankrupts");
+
+  const surface = (key: FortuneSurfaceKey): { style: CSSProperties; "data-edit": FortuneSurfaceKey } => ({
+    style: getBackgroundStyleCss(theme.surfaces[key]),
+    "data-edit": key,
+  });
+  const sortedCell = (key: Detail) => (sortBy === key ? surface("tableSorted") : {});
 
   const listed = useMemo(() => rank(players, tab, size), [players, tab, size]);
   const tabled = useMemo(() => rankDetail(players, sortBy, size), [players, sortBy, size]);
@@ -82,7 +90,7 @@ export function FortuneLeaderboard({ players, size }: { players: Player[]; size:
   }
 
   return (
-    <div className="fortune-card fortune-board">
+    <div className="fortune-card fortune-board" {...surface("card")}>
       <div className="fortune-board-top">
         <div className="fortune-tabs" role="tablist" aria-label="Leaderboard ranking">
           {TABS.map((t) => (
@@ -114,7 +122,7 @@ export function FortuneLeaderboard({ players, size }: { players: Player[]; size:
       <div className="fortune-board-grid">
         <ol className="fortune-rank-list">
           {listed.map((player, i) => (
-            <li key={player.name} className={`fortune-rank-row ${PODIUM[i] ?? ""}`.trim()}>
+            <li key={player.name} className={`fortune-rank-row ${PODIUM[i] ?? ""}`.trim()} {...(i === 0 ? surface("podium") : {})}>
               <span className="fortune-rank-num">{i + 1}</span>
               <span className="fortune-avatar" aria-hidden>{avatarFor(player.name)}</span>
               <span className="fortune-rank-name" title={player.name}>{player.name}</span>
@@ -127,10 +135,10 @@ export function FortuneLeaderboard({ players, size }: { players: Player[]; size:
           <table className="fortune-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Player</th>
+                <th {...surface("tableHead")}>#</th>
+                <th {...surface("tableHead")}>Player</th>
                 {COLUMNS.map((column) => (
-                  <th key={column.key} className={`is-num${sortBy === column.key ? " is-sorted" : ""}`}>
+                  <th key={column.key} className={`is-num${sortBy === column.key ? " is-sorted" : ""}`} {...(sortBy === column.key ? sortedCell(column.key) : surface("tableHead"))}>
                     <span aria-hidden>{column.icon}</span> {column.label}
                   </th>
                 ))}
@@ -139,15 +147,19 @@ export function FortuneLeaderboard({ players, size }: { players: Player[]; size:
             <tbody>
               {tabled.map((player, i) => (
                 <tr key={player.name}>
-                  <td>{i + 1}</td>
-                  <td>
+                  <td {...(i === 0 ? surface("podium") : {})}>{i + 1}</td>
+                  <td {...(i === 0 ? surface("podium") : {})}>
                     <span className="fortune-player">
                       <span className="fortune-avatar" aria-hidden>{avatarFor(player.name)}</span>
                       {player.name}
                     </span>
                   </td>
                   {COLUMNS.map((column) => (
-                    <td key={column.key} className={`is-num${sortBy === column.key ? " is-sorted" : ""}`}>
+                    <td
+                      key={column.key}
+                      className={`is-num${sortBy === column.key ? " is-sorted" : ""}`}
+                      {...(sortBy === column.key ? sortedCell(column.key) : i === 0 ? surface("podium") : {})}
+                    >
                       {fmtDetail(detailOf(player, column.key), column.key)}
                     </td>
                   ))}

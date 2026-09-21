@@ -3,8 +3,15 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { FortuneLayout } from "@/app/[displayName]/wheel/fortune/FortuneLayout";
-import { AdvancedColorField, BackgroundEditor } from "@/app/components/StatsStyleEditor";
-import { normalizeFortuneTheme, type NormalizedStatsStyle, type StatsBackgroundStyle } from "@/lib/statsStyleShared";
+import { AdvancedColorField } from "@/app/components/StatsStyleEditor";
+import {
+  normalizeFortuneTheme,
+  type NormalizedStatsStyle,
+  type StatsBackgroundStyle,
+  type StatsGradientDirection,
+  type StatsImageFit,
+} from "@/lib/statsStyleShared";
+import { surfaceCss } from "@/app/[displayName]/wheel/fortune/format";
 import {
   DEFAULT_FORTUNE_THEME,
   FORTUNE_COLOR_KEYS,
@@ -49,6 +56,110 @@ function boxOf(el: Element, stage: HTMLElement): Box {
 /** Controls the browser can handle on their own inside the board (tabs, sort picker). */
 function isInteractive(target: Element) {
   return !!target.closest("button, select, input, textarea");
+}
+
+const DIRECTIONS: Array<{ value: StatsGradientDirection; label: string }> = [
+  { value: "to bottom", label: "Down" },
+  { value: "to top", label: "Up" },
+  { value: "to right", label: "Right" },
+  { value: "to left", label: "Left" },
+  { value: "to bottom right", label: "Down right" },
+  { value: "to bottom left", label: "Down left" },
+  { value: "to top right", label: "Up right" },
+  { value: "to top left", label: "Up left" },
+];
+
+/**
+ * Edits one surface. Each mode only shows the fields it actually paints
+ * with, so a colour picked in colour mode is the colour you see.
+ */
+function LiveSurfaceEditor({ value, onChange }: { value: StatsBackgroundStyle; onChange: (value: StatsBackgroundStyle) => void }) {
+  const stops = value.gradientColors.length >= 2 ? value.gradientColors : [value.color, value.color];
+
+  const setMode = (mode: StatsBackgroundStyle["mode"]) => {
+    if (mode === value.mode) return;
+    if (mode === "color") {
+      // Carry the first gradient stop over so the page does not jump to an old colour.
+      onChange({ ...value, mode, color: value.mode === "gradient" ? stops[0] : value.color });
+      return;
+    }
+    if (mode === "gradient") {
+      const same = stops.every((stop) => stop === stops[0]);
+      onChange({ ...value, mode, gradientColors: same ? [value.color, value.color] : stops });
+      return;
+    }
+    onChange({ ...value, mode });
+  };
+
+  const setStop = (index: number, color: string) => {
+    const next = stops.slice();
+    next[index] = color;
+    onChange({ ...value, gradientColors: next });
+  };
+
+  return (
+    <div className="live-surface">
+      <div className="live-preview-swatch" style={surfaceCss(value)} aria-hidden />
+      <div className="live-modes" role="tablist" aria-label="Surface type">
+        {([
+          ["color", "Colour"],
+          ["gradient", "Gradient"],
+          ["image", "Image"],
+        ] as const).map(([mode, label]) => (
+          <button key={mode} type="button" role="tab" aria-selected={value.mode === mode} className={value.mode === mode ? "is-active" : ""} onClick={() => setMode(mode)}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {value.mode === "color" ? <AdvancedColorField label="Colour" value={value.color} onChange={(color) => onChange({ ...value, color })} /> : null}
+
+      {value.mode === "gradient" ? (
+        <div className="grid gap-3">
+          <label className="live-field">
+            <span>Direction</span>
+            <select value={value.gradientDirection} onChange={(e) => onChange({ ...value, gradientDirection: e.target.value as StatsGradientDirection })}>
+              {DIRECTIONS.map((direction) => (
+                <option key={direction.value} value={direction.value}>
+                  {direction.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {stops.map((stop, index) => (
+            <div key={index} className="live-stop">
+              <AdvancedColorField label={`Stop ${index + 1}`} value={stop} onChange={(color) => setStop(index, color)} />
+              {stops.length > 2 ? (
+                <button type="button" className="live-reset" onClick={() => onChange({ ...value, gradientColors: stops.filter((_, i) => i !== index) })}>
+                  Remove stop {index + 1}
+                </button>
+              ) : null}
+            </div>
+          ))}
+          <button type="button" className="live-panel-close" onClick={() => onChange({ ...value, gradientColors: [...stops, stops[stops.length - 1]] })}>
+            Add a stop
+          </button>
+        </div>
+      ) : null}
+
+      {value.mode === "image" ? (
+        <div className="grid gap-3">
+          <label className="live-field">
+            <span>Image URL or path</span>
+            <input value={value.imageUrl} onChange={(e) => onChange({ ...value, imageUrl: e.target.value })} placeholder="/img/noise.png or https://..." spellCheck={false} />
+          </label>
+          <label className="live-field">
+            <span>Fit</span>
+            <select value={value.imageFit} onChange={(e) => onChange({ ...value, imageFit: e.target.value as StatsImageFit })}>
+              <option value="cover">Cover</option>
+              <option value="repeat">Repeat</option>
+            </select>
+          </label>
+          <AdvancedColorField label="Colour behind the image" value={value.color} onChange={(color) => onChange({ ...value, color })} />
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 /**
@@ -252,7 +363,7 @@ export function WheelLiveEditor({ displayName, username, rootGame, style, stats,
 
           {isSurfaceKey(selected) ? (
             <>
-              <BackgroundEditor label="Background" value={theme.surfaces[selected]} onChange={(value) => setSurface(selected, value)} />
+              <LiveSurfaceEditor value={theme.surfaces[selected]} onChange={(value) => setSurface(selected, value)} />
               <button type="button" className="live-reset" onClick={() => setSurface(selected, DEFAULT_FORTUNE_THEME.surfaces[selected])}>
                 Reset this element
               </button>

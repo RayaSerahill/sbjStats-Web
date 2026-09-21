@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 
 export type StatsFontStyle = "sans" | "serif" | "mono" | "old-london";
+/** classic: the scratch-styled wheel page. fortune: the pastel Wheel of Fortune board. */
+export type StatsWheelLayout = "classic" | "fortune";
 export type StatsBackgroundMode = "color" | "image" | "gradient";
 export type StatsImageFit = "cover" | "repeat";
 export type StatsGradientDirection =
@@ -31,6 +33,7 @@ export type StatsNavItemStyle = {
 };
 
 export type NormalizedStatsStyle = {
+  wheelLayout: StatsWheelLayout;
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
@@ -97,6 +100,7 @@ const defaultNavItemStyle = (backgroundColor: string, fontColor: string, fontSty
 });
 
 export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
+  wheelLayout: "classic",
   background: defaultBackground("#000000"),
   containerBackground: defaultBackground("#ffffff"),
   elementBackground: defaultBackground("#ffffff"),
@@ -148,6 +152,7 @@ export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
 const FONT_STYLE_VALUES: StatsFontStyle[] = ["sans", "serif", "mono", "old-london"];
 const BG_MODE_VALUES: StatsBackgroundMode[] = ["color", "image", "gradient"];
 const IMAGE_FIT_VALUES: StatsImageFit[] = ["cover", "repeat"];
+const WHEEL_LAYOUT_VALUES: StatsWheelLayout[] = ["classic", "fortune"];
 const GRADIENT_DIRECTION_VALUES: StatsGradientDirection[] = [
   "to bottom",
   "to top",
@@ -173,6 +178,12 @@ function normalizeInt(input: unknown, fallback: number, min: number, max: number
 function normalizeFontStyle(input: unknown, fallback: StatsFontStyle): StatsFontStyle {
   return typeof input === "string" && FONT_STYLE_VALUES.includes(input as StatsFontStyle)
     ? (input as StatsFontStyle)
+    : fallback;
+}
+
+function normalizeWheelLayout(input: unknown, fallback: StatsWheelLayout): StatsWheelLayout {
+  return typeof input === "string" && WHEEL_LAYOUT_VALUES.includes(input as StatsWheelLayout)
+    ? (input as StatsWheelLayout)
     : fallback;
 }
 
@@ -265,6 +276,7 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
   const playerSearchChartTotalProfitColor = normalizeHex(input?.playerSearchChartTotalProfitColor, playerSearchAccentColor);
 
   return {
+    wheelLayout: normalizeWheelLayout(input?.wheelLayout, DEFAULT_STATS_STYLE.wheelLayout),
     background,
     containerBackground,
     elementBackground,

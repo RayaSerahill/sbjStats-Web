@@ -1,31 +1,18 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import { getBackgroundStyleCss, getStatsFontFamily } from "@/lib/statsStyleShared";
-import { getStatsStyleForUploader } from "@/lib/statsStyle";
-import { ensureAuthCollections, ensureGameCollections, getDb, type UserDoc } from "@/lib/db";
+import { ensureAuthCollections, getDb } from "@/lib/db";
 import { WheelCharts } from "./charts";
 import { WheelLeaderboard } from "./leaderboard";
 import { FortuneLayout } from "./fortune/FortuneLayout";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
 import { DiscordComponentEmbed } from "@/app/components/DiscordComponentEmbed";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
-import { GLOBAL_ALIASES_CREATED_BY, orderAliasesByPrecedence, usesGlobalAliases } from "@/lib/aliases";
 import { findPublicStatsUser } from "@/lib/publicStatsUser";
-import { normalizeVisibleWheelDealers, type WheelSettingsDoc } from "@/lib/wheelSettings";
-import { normalizePublicStatsRootGame, type PublicStatsGame } from "@/lib/publicStatsRoutes";
-import {
-  calculateWheelStats,
-  type WheelStatsAliasRow,
-  type WheelStatsGameRow,
-  type WheelStatsPresetRow,
-  type WheelStatsPrizeRow,
-} from "@/lib/wheelStats";
+import { calculateWheelStats } from "@/lib/wheelStats";
+import { loadWheelStatsByDisplayName } from "./loadStats";
 
-const loadStatsCached = cache(loadStats);
-
-type StatsPageStyle = Awaited<ReturnType<typeof getStatsStyleForUploader>>;
-
-type AliasRow = WheelStatsAliasRow & { createdBy?: string };
+const loadStatsCached = cache(loadWheelStatsByDisplayName);
 
 export async function generateWheelMetadata({ params }: { params: Promise<{ displayName: string }> }): Promise<Metadata> {
   const { displayName } = await params;
@@ -184,85 +171,6 @@ export async function WheelStatsPage({ params }: { params: Promise<{ displayName
   );
 }
 
-async function loadStats(displayName: string): Promise<LoadStatsResult> {
-  await ensureAuthCollections();
-  await ensureGameCollections();
-
-  const db = await getDb();
-
-  const users = db.collection<UserDoc>("users");
-  const gamesTable = db.collection("wheel_games");
-  const presetsTable = db.collection("wheel_presets");
-  const prizesTable = db.collection("wheel_prizes");
-  const settingsTable = db.collection<WheelSettingsDoc>("wheel_settings");
-  const aliasesTable = db.collection("aliases");
-
-  const { user, displayName: dn, normalizedDisplayName: dnNorm } = await findPublicStatsUser(db, displayName);
-
-  if (!dn || !user?._id) {
-    return { ok: false };
-  }
-
-  const uploaderId = user._id.toHexString();
-  const includeGlobalAliases = usesGlobalAliases(user);
-  const settings = await settingsTable.findOne({ uploaderId }, { projection: { visibleDealers: 1 } });
-  const visibleDealers = normalizeVisibleWheelDealers(settings?.visibleDealers);
-
-  void db.collection("traffic").insertOne({
-    userId: user._id,
-    at: new Date(),
-  });
-
-  // Like Scratch: only games hosted by a dealer the host has ticked in
-  // the wheel settings are shown publicly.
-  const [games, presets, prizes, aliases, style, nameDoc] = await Promise.all([
-    gamesTable
-      .find(
-        { uploaderId, dealer: { $in: visibleDealers } },
-        {
-          projection: {
-            _id: 1,
-            playerName: 1,
-            archivedAt: 1,
-            preset: 1,
-            presetId: 1,
-            maxSpins: 1,
-            spinsUsed: 1,
-            spinsPaid: 1,
-            spinCost: 1,
-            prizesWon: 1,
-          },
-        }
-      )
-      .toArray(),
-    presetsTable.find({ uploaderId }, { projection: { _id: 1, name: 1, version: 1, segments: 1 } }).toArray(),
-    prizesTable.find({ uploaderId }, { projection: { _id: 0, prize: 1, value: 1 } }).toArray(),
-    aliasesTable
-      .find(
-        includeGlobalAliases
-          ? { createdBy: { $in: [GLOBAL_ALIASES_CREATED_BY, uploaderId] } }
-          : { createdBy: uploaderId },
-        { projection: { primaryTag: 1, aliasTag: 1, createdBy: 1 } }
-      )
-      .toArray(),
-    getStatsStyleForUploader(uploaderId, db),
-    users.findOne({ _id: user._id }, { projection: { name: 1, username: 1 } }),
-  ]);
-
-  return {
-    ok: true,
-    displayName: nameDoc?.name ?? user.name ?? user.username ?? dn,
-    username: user.username ?? dnNorm,
-    uploaderId,
-    games: games as WheelStatsGameRow[],
-    presets: presets as WheelStatsPresetRow[],
-    prizes: prizes as WheelStatsPrizeRow[],
-    aliases: orderAliasesByPrecedence(aliases as AliasRow[], uploaderId),
-    publicStatsRootGame: normalizePublicStatsRootGame(user.publicStatsRootGame),
-    style,
-  };
-}
-
 function fmtInt(n: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 }
@@ -272,18 +180,3 @@ function fmtDelta(n: number) {
   const sign = n < 0 ? "-" : "+";
   return `${sign}${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(abs)}`;
 }
-
-export type LoadStatsResult =
-  | { ok: false }
-  | {
-      ok: true;
-      displayName: string;
-      username: string;
-      uploaderId: string;
-      games: WheelStatsGameRow[];
-      presets: WheelStatsPresetRow[];
-      prizes: WheelStatsPrizeRow[];
-      aliases: AliasRow[];
-      publicStatsRootGame: PublicStatsGame;
-      style: StatsPageStyle;
-    };

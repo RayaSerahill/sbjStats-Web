@@ -5,6 +5,7 @@ import { getStatsStyleForUploader } from "@/lib/statsStyle";
 import { ensureAuthCollections, ensureGameCollections, getDb, type UserDoc } from "@/lib/db";
 import { WheelCharts } from "./charts";
 import { WheelLeaderboard } from "./leaderboard";
+import { FortuneLayout } from "./fortune/FortuneLayout";
 import { StatsPageNav } from "@/app/components/StatsPageNav";
 import { DiscordComponentEmbed } from "@/app/components/DiscordComponentEmbed";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
@@ -37,9 +38,9 @@ export async function generateWheelMetadata({ params }: { params: Promise<{ disp
 }
 
 /**
- * Public wheel stats page. Deliberately wears the Scratch page's clothes
- * (same layout and the scratch style group) until the wheel gets a look
- * of its own.
+ * Public wheel stats page. The classic layout wears the Scratch page's
+ * clothes (same layout and the scratch style group); the fortune layout
+ * is the pastel Wheel of Fortune board hosts can pick in the dashboard.
  */
 export async function WheelStatsPage({ params }: { params: Promise<{ displayName: string }> }) {
   const { displayName } = await params;
@@ -56,8 +57,37 @@ export async function WheelStatsPage({ params }: { params: Promise<{ displayName
   }
 
   const stats = calculateWheelStats(result);
-
   const style = result.style;
+
+  const embed = (
+    <DiscordComponentEmbed
+      displayName={result.displayName}
+      username={result.username || result.displayName}
+      rootGame={result.publicStatsRootGame}
+      games={[
+        { game: "blackjack", enabled: style.publicNavShowBlackjack },
+        { game: "scratch", enabled: style.publicNavShowScratch },
+        { game: "wheel", enabled: style.publicNavShowWheel },
+      ]}
+    />
+  );
+
+  if (style.wheelLayout === "fortune") {
+    return (
+      <>
+        {embed}
+        <FortuneLayout
+          displayName={result.displayName}
+          username={result.username || result.displayName}
+          rootGame={result.publicStatsRootGame}
+          style={style}
+          stats={stats}
+          hasGames={result.games.length > 0}
+        />
+      </>
+    );
+  }
+
   const fontColor = style.scratchFontColor;
   const fontFamily = getStatsFontFamily(style.scratchFontStyle);
   const pageBackgroundStyle = getBackgroundStyleCss(style.scratchBackground);
@@ -66,16 +96,7 @@ export async function WheelStatsPage({ params }: { params: Promise<{ displayName
 
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: fontColor, fontFamily }}>
-      <DiscordComponentEmbed
-        displayName={result.displayName}
-        username={result.username || result.displayName}
-        rootGame={result.publicStatsRootGame}
-        games={[
-          { game: "blackjack", enabled: style.publicNavShowBlackjack },
-          { game: "scratch", enabled: style.publicNavShowScratch },
-          { game: "wheel", enabled: style.publicNavShowWheel },
-        ]}
-      />
+      {embed}
       <div className="mx-auto w-full max-w-5xl">
         <StatsPageNav
           username={result.username || result.displayName}

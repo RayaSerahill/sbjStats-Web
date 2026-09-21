@@ -11,16 +11,26 @@ import {
   type StatsBackgroundStyle,
   type StatsFontStyle,
   type StatsNavItemStyle,
+  type StatsWheelLayout,
   type StatsBackgroundMode,
   type StatsImageFit,
   type StatsGradientDirection,
 } from "./statsStyleShared";
 
-export type { StatsBackgroundStyle, StatsFontStyle, StatsNavItemStyle, StatsBackgroundMode, StatsImageFit, StatsGradientDirection };
+export type {
+  StatsBackgroundStyle,
+  StatsFontStyle,
+  StatsNavItemStyle,
+  StatsWheelLayout,
+  StatsBackgroundMode,
+  StatsImageFit,
+  StatsGradientDirection,
+};
 
 export type StatsStyleDoc = {
   _id?: ObjectId;
   uploaderId: string;
+  wheelLayout: StatsWheelLayout;
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
@@ -74,6 +84,7 @@ export type StatsStyleDoc = {
 export type StatsStyleInput = Partial<
   Pick<
     StatsStyleDoc,
+    | "wheelLayout"
     | "background"
     | "containerBackground"
     | "elementBackground"

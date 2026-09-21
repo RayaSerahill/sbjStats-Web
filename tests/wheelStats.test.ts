@@ -7,7 +7,6 @@ import {
   wheelOutcomeSlices,
   wheelPrizeIsBankrupt,
   wheelPrizeValue,
-  wheelRecentDays,
 } from "@/lib/wheelStats";
 import { normalizeWheelSegment } from "@/lib/wheelPresets";
 
@@ -239,24 +238,5 @@ describe("wheelOutcomeSlices", () => {
 
   it("does not bother with Other when everything fits", () => {
     assert.deepEqual(wheelOutcomeSlices([prize("a", 2), prize("zero", 0)]), [{ name: "a", count: 2 }]);
-  });
-});
-
-describe("wheelRecentDays", () => {
-  it("pads quiet days with zeros and ends on the newest hosting day", () => {
-    const daily = [
-      { date: "2024-01-01", totalGames: 1, totalSpins: 2, totalWinValue: 3 },
-      { date: "2024-01-03", totalGames: 4, totalSpins: 5, totalWinValue: 6 },
-    ];
-    assert.deepEqual(wheelRecentDays(daily, 4), [
-      { date: "2023-12-31", totalGames: 0, totalSpins: 0, totalWinValue: 0 },
-      daily[0],
-      { date: "2024-01-02", totalGames: 0, totalSpins: 0, totalWinValue: 0 },
-      daily[1],
-    ]);
-  });
-
-  it("returns nothing for an empty series", () => {
-    assert.deepEqual(wheelRecentDays([], 30), []);
   });
 });

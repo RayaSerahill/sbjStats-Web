@@ -55,7 +55,12 @@ export type WheelStatsPlayer = {
   name: string;
   totalGames: number;
   totalSpins: number;
+  /** Gil actually walked away with, after bankrupts wiped the pot. */
   totalWinValue: number;
+  /** Times the wheel landed on a bankrupt segment. */
+  bankrupts: number;
+  /** Gil that was in the pot when a bankrupt wiped it. */
+  lostToBankrupt: number;
   prizes: WheelStatsPrize[];
 };
 
@@ -68,6 +73,8 @@ export type WheelStatsSummary = {
 export type WheelStatsDaily = WheelStatsSummary & { date: string };
 
 export type WheelStats = WheelStatsSummary & {
+  bankrupts: number;
+  lostToBankrupt: number;
   new: WheelStatsSummary;
   dailyProfits: WheelStatsDaily[];
   players: WheelStatsPlayer[];
@@ -130,6 +137,18 @@ export function wheelPrizeValue(
   return parseFormattedGilPrizeValue(name) ?? 0;
 }
 
+/**
+ * Whether one landed prize is a bankrupt. The linked preset version
+ * knows for sure; games with no preset fall back to the label saying so.
+ */
+export function wheelPrizeIsBankrupt(label: string, segments: NormalizedWheelSegment[] | undefined): boolean {
+  const wanted = label.trim().toLowerCase();
+  if (!wanted) return false;
+  const seg = segments?.find((s) => s.label.trim().toLowerCase() === wanted);
+  if (seg) return seg.bankrupt;
+  return /bankrupt/.test(wanted);
+}
+
 function sortPrizes(a: WheelStatsPrize, b: WheelStatsPrize) {
   if (b.value !== a.value) return b.value - a.value;
   if (b.totalWinValue !== a.totalWinValue) return b.totalWinValue - a.totalWinValue;
@@ -170,11 +189,21 @@ export function calculateWheelStats(input: WheelStatsInput): WheelStats {
 
   const totals: WheelStatsSummary = { totalGames: 0, totalSpins: 0, totalWinValue: 0 };
   const latest: WheelStatsSummary = { totalGames: 0, totalSpins: 0, totalWinValue: 0 };
+  let totalBankrupts = 0;
+  let totalLostToBankrupt = 0;
   const dailyMap = new Map<string, WheelStatsDaily>();
   const prizeCounts = new Map<string, { count: number; totalWinValue: number }>();
   const playerMap = new Map<
     string,
-    { name: string; totalGames: number; totalSpins: number; totalWinValue: number; prizes: Map<string, { count: number; totalWinValue: number }> }
+    {
+      name: string;
+      totalGames: number;
+      totalSpins: number;
+      totalWinValue: number;
+      bankrupts: number;
+      lostToBankrupt: number;
+      prizes: Map<string, { count: number; totalWinValue: number }>;
+    }
   >();
 
   for (const game of input.games) {
@@ -190,15 +219,28 @@ export function calculateWheelStats(input: WheelStatsInput): WheelStats {
       totalGames: 0,
       totalSpins: 0,
       totalWinValue: 0,
+      bankrupts: 0,
+      lostToBankrupt: 0,
       prizes: new Map(),
     };
 
+    // Prizes are in spin order. A bankrupt empties whatever the pot held
+    // so far; spins after it start filling a fresh pot.
     let gameWinValue = 0;
+    let gameBankrupts = 0;
+    let gameLost = 0;
     for (const rawPrize of prizesWon) {
       const name = String(rawPrize ?? "").trim();
       if (!name) continue;
-      const value = wheelPrizeValue(name, segments, configuredPrizeValues);
-      gameWinValue += value;
+      const bankrupt = wheelPrizeIsBankrupt(name, segments);
+      const value = bankrupt ? 0 : wheelPrizeValue(name, segments, configuredPrizeValues);
+      if (bankrupt) {
+        gameBankrupts += 1;
+        gameLost += gameWinValue;
+        gameWinValue = 0;
+      } else {
+        gameWinValue += value;
+      }
 
       const total = prizeCounts.get(name) ?? { count: 0, totalWinValue: 0 };
       total.count += 1;
@@ -214,10 +256,14 @@ export function calculateWheelStats(input: WheelStatsInput): WheelStats {
     totals.totalGames += 1;
     totals.totalSpins += spins;
     totals.totalWinValue += gameWinValue;
+    totalBankrupts += gameBankrupts;
+    totalLostToBankrupt += gameLost;
 
     player.totalGames += 1;
     player.totalSpins += spins;
     player.totalWinValue += gameWinValue;
+    player.bankrupts += gameBankrupts;
+    player.lostToBankrupt += gameLost;
     playerMap.set(playerKey, player);
 
     if (archivedAt) {
@@ -252,6 +298,8 @@ export function calculateWheelStats(input: WheelStatsInput): WheelStats {
       totalGames: player.totalGames,
       totalSpins: player.totalSpins,
       totalWinValue: player.totalWinValue,
+      bankrupts: player.bankrupts,
+      lostToBankrupt: player.lostToBankrupt,
       prizes: toPrizeList(player.prizes),
     }))
     .sort((a, b) => {
@@ -263,6 +311,8 @@ export function calculateWheelStats(input: WheelStatsInput): WheelStats {
 
   return {
     ...totals,
+    bankrupts: totalBankrupts,
+    lostToBankrupt: totalLostToBankrupt,
     new: latest,
     dailyProfits: Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
     players,
@@ -280,6 +330,7 @@ export type WheelHallOfFame = {
   biggestWinner: WheelHallOfFameEntry | null;
   mostSpins: WheelHallOfFameEntry | null;
   mostGames: WheelHallOfFameEntry | null;
+  mostBankrupt: WheelHallOfFameEntry | null;
   luckiestSpinner: WheelHallOfFameEntry | null;
 };
 
@@ -309,6 +360,7 @@ export function wheelHallOfFame(players: WheelStatsPlayer[]): WheelHallOfFame {
     biggestWinner: bestBy(players, (player) => player.totalWinValue),
     mostSpins: bestBy(players, (player) => player.totalSpins),
     mostGames: bestBy(players, (player) => player.totalGames),
+    mostBankrupt: bestBy(players, (player) => player.bankrupts),
     luckiestSpinner: bestBy(seasoned, perSpin) ?? bestBy(players, perSpin),
   };
 }

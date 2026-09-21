@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Db, ObjectId } from "mongodb";
 import { getDb } from "./db";
+import type { FortuneTheme } from "./fortuneTheme";
 import {
   normalizeStatsStyle,
   DEFAULT_STATS_STYLE,
@@ -31,6 +32,7 @@ export type StatsStyleDoc = {
   _id?: ObjectId;
   uploaderId: string;
   wheelLayout: StatsWheelLayout;
+  fortune: FortuneTheme;
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
@@ -85,6 +87,7 @@ export type StatsStyleInput = Partial<
   Pick<
     StatsStyleDoc,
     | "wheelLayout"
+    | "fortune"
     | "background"
     | "containerBackground"
     | "elementBackground"

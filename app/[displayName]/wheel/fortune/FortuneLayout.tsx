@@ -81,6 +81,7 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
   const slices = wheelOutcomeSlices(stats.prizes);
   const recent = wheelRecentDays(stats.dailyProfits, RECENT_DAYS);
   const topPrize = stats.prizes[0] ?? null;
+  const mostBankruptLost = stats.players.find((player) => player.name === fame.mostBankrupt?.name)?.lostToBankrupt ?? 0;
 
   return (
     <div className="container-main fortune-scope">
@@ -169,10 +170,10 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
                 />
                 <StatCard
                   tone="pink"
-                  title="🎡 Most Spins"
-                  icon={fame.mostSpins ? avatarFor(fame.mostSpins.name) : "🎡"}
-                  value={fame.mostSpins?.name ?? "Nobody yet"}
-                  sub={fame.mostSpins ? `${fmtInt(fame.mostSpins.value)} spins` : undefined}
+                  title="💣 Most Bankrupt"
+                  icon={fame.mostBankrupt ? avatarFor(fame.mostBankrupt.name) : "💣"}
+                  value={fame.mostBankrupt?.name ?? "Nobody yet"}
+                  sub={fame.mostBankrupt ? `${fmtInt(fame.mostBankrupt.value)} times, ${fmtGil(mostBankruptLost)} lost` : undefined}
                   isName
                 />
                 <StatCard

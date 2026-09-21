@@ -1026,7 +1026,8 @@ export function StatsStyleEditor() {
         </SectionCard>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
+      {/* Sticks to the bottom of the viewport while the editor is on screen, so Save is always within reach. */}
+      <div className="sticky bottom-0 z-20 -mx-5 -mb-5 mt-5 flex flex-wrap items-center gap-3 rounded-b-3xl border-t border-zinc-200 bg-white/90 px-5 py-3 backdrop-blur">
         <button
           type="button"
           onClick={save}

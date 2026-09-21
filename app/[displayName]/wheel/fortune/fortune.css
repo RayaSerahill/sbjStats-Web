@@ -457,12 +457,14 @@
 
 .fortune-table th,
 .fortune-table td {
-  padding: 8px 10px;
+  padding: 8px 8px;
   text-align: left;
   white-space: nowrap;
 }
 
 .fortune-table th {
+  white-space: normal;
+  line-height: 1.2;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -519,5 +521,5 @@
   .fortune-page { padding-left: 24px; padding-right: 24px; }
   .fortune-stat-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .fortune-two-up { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
-  .fortune-board-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+  .fortune-board-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
 }

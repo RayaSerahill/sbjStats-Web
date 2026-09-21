@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { StatsPageNav } from "@/app/components/StatsPageNav";
+import { FortuneNav } from "./nav";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
 import type { NormalizedStatsStyle } from "@/lib/statsStyleShared";
 import type { PublicStatsGame } from "@/lib/publicStatsRoutes";
@@ -99,20 +99,12 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
       ))}
 
       <div className="fortune-page">
-        <StatsPageNav
+        <FortuneNav
           username={username}
           rootGame={rootGame}
           showBlackjack={style.publicNavShowBlackjack}
           showScratch={style.publicNavShowScratch}
           showWheel={style.publicNavShowWheel}
-          background={style.publicNavBackground}
-          borderRadius={style.publicNavBorderRadius}
-          fontColor={style.publicNavFontColor}
-          fontSize={style.publicNavFontSize}
-          fontStyle={style.publicNavFontStyle}
-          inactive={style.publicNavInactive}
-          hover={style.publicNavHover}
-          active={style.publicNavActive}
         />
 
         <header className="fortune-banner">

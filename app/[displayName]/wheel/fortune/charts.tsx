@@ -13,14 +13,14 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
+import { getBackgroundStyleCss } from "@/lib/statsStyleShared";
+import type { FortuneTheme } from "@/lib/fortuneTheme";
 import { fmtCompact, fmtInt } from "./format";
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
 type Daily = { date: string; totalGames: number; totalSpins: number; totalWinValue: number };
 
-const INK = "#3a3454";
-const MUTED = "#7b7497";
 const GRID = "rgba(123, 116, 151, 0.14)";
 
 function hexToRgba(hex: string, alpha: number) {
@@ -32,7 +32,7 @@ function hexToRgba(hex: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function sparkOptions(compact: boolean): ChartOptions<"line"> {
+function sparkOptions(compact: boolean, muted: string): ChartOptions<"line"> {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -49,13 +49,13 @@ function sparkOptions(compact: boolean): ChartOptions<"line"> {
     },
     scales: {
       x: {
-        ticks: { color: MUTED, font: { size: 10 }, maxTicksLimit: 7, maxRotation: 0 },
+        ticks: { color: muted, font: { size: 10 }, maxTicksLimit: 7, maxRotation: 0 },
         grid: { display: false },
       },
       y: {
         beginAtZero: true,
         ticks: {
-          color: MUTED,
+          color: muted,
           font: { size: 10 },
           maxTicksLimit: 5,
           callback(value) {
@@ -68,7 +68,21 @@ function sparkOptions(compact: boolean): ChartOptions<"line"> {
   };
 }
 
-function Spark({ label, color, labels, data, compact }: { label: string; color: string; labels: string[]; data: number[]; compact: boolean }) {
+function Spark({
+  label,
+  color,
+  labels,
+  data,
+  compact,
+  theme,
+}: {
+  label: string;
+  color: string;
+  labels: string[];
+  data: number[];
+  compact: boolean;
+  theme: FortuneTheme;
+}) {
   const chart: ChartData<"line", number[], string> = {
     labels,
     datasets: [
@@ -86,31 +100,39 @@ function Spark({ label, color, labels, data, compact }: { label: string; color: 
     ],
   };
   return (
-    <div className="fortune-card fortune-chart-card">
+    <div className="fortune-card fortune-chart-card" style={getBackgroundStyleCss(theme.surfaces.card)} data-edit="card">
       <div className="fortune-chart-label">
         <span className="fortune-chart-dot" style={{ background: color }} />
         {label}
       </div>
       <div className="fortune-chart-box">
-        <Line data={chart} options={sparkOptions(compact)} />
+        <Line data={chart} options={sparkOptions(compact, theme.colors.muted)} />
       </div>
     </div>
   );
 }
 
 /** Two little area charts: games per day and gil per day. */
-export function FortuneDailyCharts({ days, gamesColor, gilColor }: { days: Daily[]; gamesColor: string; gilColor: string }) {
+export function FortuneDailyCharts({ days, theme }: { days: Daily[]; theme: FortuneTheme }) {
   const labels = days.map((day) => day.date.slice(5));
   return (
     <div className="fortune-chart-grid">
-      <Spark label="Games" color={gamesColor} labels={labels} data={days.map((day) => day.totalGames)} compact={false} />
-      <Spark label="Gil" color={gilColor} labels={labels} data={days.map((day) => day.totalWinValue)} compact />
+      <Spark label="Games" color={theme.colors.chartGames} labels={labels} data={days.map((day) => day.totalGames)} compact={false} theme={theme} />
+      <Spark label="Gil" color={theme.colors.chartGil} labels={labels} data={days.map((day) => day.totalWinValue)} compact theme={theme} />
     </div>
   );
 }
 
 /** Donut of which prizes actually land, with a legend that carries the share. */
-export function FortuneOutcomeDonut({ slices, colors }: { slices: Array<{ name: string; count: number }>; colors: string[] }) {
+export function FortuneOutcomeDonut({
+  slices,
+  colors,
+  theme,
+}: {
+  slices: Array<{ name: string; count: number }>;
+  colors: string[];
+  theme: FortuneTheme;
+}) {
   const total = slices.reduce((sum, slice) => sum + slice.count, 0);
   const data: ChartData<"doughnut", number[], string> = {
     labels: slices.map((slice) => slice.name),
@@ -145,11 +167,11 @@ export function FortuneOutcomeDonut({ slices, colors }: { slices: Array<{ name: 
   };
 
   return (
-    <div className="fortune-card fortune-donut">
+    <div className="fortune-card fortune-donut" style={getBackgroundStyleCss(theme.surfaces.card)} data-edit="card">
       <div className="fortune-donut-box">
         <Doughnut data={data} options={options} />
       </div>
-      <ul className="fortune-legend" style={{ color: INK }}>
+      <ul className="fortune-legend" style={{ color: theme.colors.ink }}>
         {slices.map((slice, i) => (
           <li key={slice.name}>
             <span className="fortune-chart-dot" style={{ background: colors[i % colors.length] }} />

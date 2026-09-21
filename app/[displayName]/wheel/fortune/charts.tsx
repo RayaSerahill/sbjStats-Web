@@ -70,19 +70,20 @@ function sparkOptions(compact: boolean, muted: string): ChartOptions<"line"> {
 
 function Spark({
   label,
-  color,
+  colorKey,
   labels,
   data,
   compact,
   theme,
 }: {
   label: string;
-  color: string;
+  colorKey: "chartGames" | "chartGil";
   labels: string[];
   data: number[];
   compact: boolean;
   theme: FortuneTheme;
 }) {
+  const color = theme.colors[colorKey];
   const chart: ChartData<"line", number[], string> = {
     labels,
     datasets: [
@@ -105,7 +106,7 @@ function Spark({
         <span className="fortune-chart-dot" style={{ background: color }} />
         {label}
       </div>
-      <div className="fortune-chart-box">
+      <div className="fortune-chart-box" data-edit={colorKey}>
         <Line data={chart} options={sparkOptions(compact, theme.colors.muted)} />
       </div>
     </div>
@@ -117,22 +118,15 @@ export function FortuneDailyCharts({ days, theme }: { days: Daily[]; theme: Fort
   const labels = days.map((day) => day.date.slice(5));
   return (
     <div className="fortune-chart-grid">
-      <Spark label="Games" color={theme.colors.chartGames} labels={labels} data={days.map((day) => day.totalGames)} compact={false} theme={theme} />
-      <Spark label="Gil" color={theme.colors.chartGil} labels={labels} data={days.map((day) => day.totalWinValue)} compact theme={theme} />
+      <Spark label="Games" colorKey="chartGames" labels={labels} data={days.map((day) => day.totalGames)} compact={false} theme={theme} />
+      <Spark label="Gil" colorKey="chartGil" labels={labels} data={days.map((day) => day.totalWinValue)} compact theme={theme} />
     </div>
   );
 }
 
 /** Donut of which prizes actually land, with a legend that carries the share. */
-export function FortuneOutcomeDonut({
-  slices,
-  colors,
-  theme,
-}: {
-  slices: Array<{ name: string; count: number }>;
-  colors: string[];
-  theme: FortuneTheme;
-}) {
+export function FortuneOutcomeDonut({ slices, theme }: { slices: Array<{ name: string; count: number }>; theme: FortuneTheme }) {
+  const colors = theme.donut;
   const total = slices.reduce((sum, slice) => sum + slice.count, 0);
   const data: ChartData<"doughnut", number[], string> = {
     labels: slices.map((slice) => slice.name),
@@ -168,7 +162,7 @@ export function FortuneOutcomeDonut({
 
   return (
     <div className="fortune-card fortune-donut" style={getBackgroundStyleCss(theme.surfaces.card)} data-edit="card">
-      <div className="fortune-donut-box">
+      <div className="fortune-donut-box" data-edit="donut">
         <Doughnut data={data} options={options} />
       </div>
       <ul className="fortune-legend" style={{ color: theme.colors.ink }}>

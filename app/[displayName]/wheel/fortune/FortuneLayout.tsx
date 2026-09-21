@@ -12,7 +12,6 @@ import { avatarFor, fmtCompact, fmtDelta, fmtGil, fmtInt } from "./format";
 import "./fortune.css";
 
 const RECENT_DAYS = 30;
-const DONUT_COLORS = ["#c9b6ff", "#ffd166", "#7fdfc8", "#ffb3c6", "#a8d8ff", "#ffcfa3"];
 
 const SPARKLES: Array<{ top: string; left?: string; right?: string; color: string; size?: number }> = [
   { top: "6%", left: "4%", color: "#f2b93c" },
@@ -236,7 +235,7 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
               <section>
                 <SectionTitle icon="🎯">Outcome Distribution</SectionTitle>
                 {slices.length ? (
-                  <FortuneOutcomeDonut slices={slices} colors={DONUT_COLORS} theme={t} />
+                  <FortuneOutcomeDonut slices={slices} theme={t} />
                 ) : (
                   <div className="fortune-empty">No prizes landed yet.</div>
                 )}

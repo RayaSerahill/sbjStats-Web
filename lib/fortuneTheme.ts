@@ -21,6 +21,8 @@ export const FORTUNE_SURFACE_KEYS = [
   "tableHead",
   "tableSorted",
   "podium",
+  "pill",
+  "tabActive",
 ] as const;
 
 export type FortuneSurfaceKey = (typeof FORTUNE_SURFACE_KEYS)[number];
@@ -60,6 +62,8 @@ export const FORTUNE_SURFACE_LABELS: Record<FortuneSurfaceKey, { label: string; 
   tableHead: { label: "Table header", hint: "Column titles on the leaderboard table." },
   tableSorted: { label: "Sorted column", hint: "The highlighted column on the leaderboard table." },
   podium: { label: "First place row", hint: "Top row of both leaderboard lists." },
+  pill: { label: "Hosting days pill", hint: "The small pill next to Daily Fun." },
+  tabActive: { label: "Active leaderboard tab", hint: "The selected tab above the leaderboard." },
 };
 
 export const FORTUNE_EXTRA_EDIT_LABELS: Record<FortuneExtraEditKey, { label: string; hint: string }> = {
@@ -117,6 +121,8 @@ export const DEFAULT_FORTUNE_THEME: FortuneTheme = {
     tableHead: solid("#faf8ff"),
     tableSorted: solid("#ffd9e8"),
     podium: solid("#d4f4ea"),
+    pill: solid("#d8ebff"),
+    tabActive: solid("#d4f4ea"),
   },
   colors: {
     ink: "#3a3454",

@@ -1,4 +1,7 @@
-/** Number formatting shared by the Fortune layout pieces. */
+import type { CSSProperties } from "react";
+import { getBackgroundStyleCss, type StatsBackgroundStyle } from "@/lib/statsStyleShared";
+
+/** Number formatting and surface helpers shared by the Fortune layout pieces. */
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 });
 const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -31,4 +34,14 @@ export function avatarFor(name: string) {
   let hash = 2166136261;
   for (const ch of name.toLowerCase()) hash = Math.imul(hash ^ ch.charCodeAt(0), 16777619) >>> 0;
   return AVATARS[hash % AVATARS.length];
+}
+
+/**
+ * Inline CSS for one themed surface. Unlike the shared helper this also
+ * clears any background image in colour mode, so a solid colour can win
+ * over the gradients the stylesheet paints by default.
+ */
+export function surfaceCss(surface: StatsBackgroundStyle): CSSProperties {
+  const css = getBackgroundStyleCss(surface);
+  return surface.mode === "color" ? { ...css, backgroundImage: "none" } : css;
 }

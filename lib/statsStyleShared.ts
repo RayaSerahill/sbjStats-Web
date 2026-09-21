@@ -1,4 +1,12 @@
 import type { CSSProperties } from "react";
+import {
+  DEFAULT_FORTUNE_THEME,
+  FORTUNE_COLOR_KEYS,
+  FORTUNE_SURFACE_KEYS,
+  type FortuneColorKey,
+  type FortuneSurfaceKey,
+  type FortuneTheme,
+} from "./fortuneTheme";
 
 export type StatsFontStyle = "sans" | "serif" | "mono" | "old-london";
 /** classic: the scratch-styled wheel page. fortune: the pastel Wheel of Fortune board. */
@@ -34,6 +42,8 @@ export type StatsNavItemStyle = {
 
 export type NormalizedStatsStyle = {
   wheelLayout: StatsWheelLayout;
+  /** Colours and surfaces of the Fortune wheel layout. */
+  fortune: FortuneTheme;
   background: StatsBackgroundStyle;
   containerBackground: StatsBackgroundStyle;
   elementBackground: StatsBackgroundStyle;
@@ -101,6 +111,7 @@ const defaultNavItemStyle = (backgroundColor: string, fontColor: string, fontSty
 
 export const DEFAULT_STATS_STYLE: NormalizedStatsStyle = {
   wheelLayout: "classic",
+  fortune: DEFAULT_FORTUNE_THEME,
   background: defaultBackground("#000000"),
   containerBackground: defaultBackground("#ffffff"),
   elementBackground: defaultBackground("#ffffff"),
@@ -257,6 +268,24 @@ function normalizeNavItemStyle(input: unknown, fallback: StatsNavItemStyle): Sta
   };
 }
 
+export function normalizeFortuneTheme(input: unknown): FortuneTheme {
+  const raw = input && typeof input === "object" ? (input as Partial<FortuneTheme>) : {};
+  const rawSurfaces = raw.surfaces && typeof raw.surfaces === "object" ? raw.surfaces : {};
+  const rawColors = raw.colors && typeof raw.colors === "object" ? raw.colors : {};
+
+  const surfaces = {} as Record<FortuneSurfaceKey, StatsBackgroundStyle>;
+  for (const key of FORTUNE_SURFACE_KEYS) {
+    surfaces[key] = normalizeBackgroundStyle((rawSurfaces as Record<string, unknown>)[key], DEFAULT_FORTUNE_THEME.surfaces[key]);
+  }
+
+  const colors = {} as Record<FortuneColorKey, string>;
+  for (const key of FORTUNE_COLOR_KEYS) {
+    colors[key] = normalizeHex((rawColors as Record<string, unknown>)[key], DEFAULT_FORTUNE_THEME.colors[key]);
+  }
+
+  return { surfaces, colors };
+}
+
 export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null): NormalizedStatsStyle {
   const background = normalizeBackgroundStyle(input?.background, DEFAULT_STATS_STYLE.background);
   const containerBackground = normalizeBackgroundStyle(input?.containerBackground, DEFAULT_STATS_STYLE.containerBackground);
@@ -277,6 +306,7 @@ export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null
 
   return {
     wheelLayout: normalizeWheelLayout(input?.wheelLayout, DEFAULT_STATS_STYLE.wheelLayout),
+    fortune: normalizeFortuneTheme(input?.fortune),
     background,
     containerBackground,
     elementBackground,

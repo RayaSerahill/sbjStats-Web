@@ -382,21 +382,3 @@ export function wheelOutcomeSlices(prizes: WheelStatsPrize[], maxSlices = 5): Wh
   const rest = sorted.slice(maxSlices - 1).reduce((sum, prize) => sum + prize.value, 0);
   return [...head, { name: "Other", count: rest }];
 }
-
-/**
- * The last `days` calendar days ending on the newest hosting day, with
- * quiet days filled in as zero so a sparkline has a steady x axis.
- */
-export function wheelRecentDays(daily: WheelStatsDaily[], days: number): WheelStatsDaily[] {
-  if (!daily.length || days <= 0) return [];
-  const byDate = new Map(daily.map((day) => [day.date, day]));
-  const newest = daily.reduce((max, day) => (day.date > max ? day.date : max), daily[0].date);
-  const end = Date.UTC(Number(newest.slice(0, 4)), Number(newest.slice(5, 7)) - 1, Number(newest.slice(8, 10)));
-
-  const out: WheelStatsDaily[] = [];
-  for (let offset = days - 1; offset >= 0; offset -= 1) {
-    const date = toUtcDayKey((end - offset * 86_400_000) / 1000);
-    out.push(byDate.get(date) ?? { date, totalGames: 0, totalSpins: 0, totalWinValue: 0 });
-  }
-  return out;
-}

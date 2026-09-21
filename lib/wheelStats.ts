@@ -269,3 +269,64 @@ export function calculateWheelStats(input: WheelStatsInput): WheelStats {
     prizes: toPrizeList(prizeCounts),
   };
 }
+
+export type WheelHallOfFameEntry = {
+  name: string;
+  /** The number the title was earned with (gil, spins or gil per spin). */
+  value: number;
+};
+
+export type WheelHallOfFame = {
+  biggestWinner: WheelHallOfFameEntry | null;
+  mostSpins: WheelHallOfFameEntry | null;
+  mostGames: WheelHallOfFameEntry | null;
+  luckiestSpinner: WheelHallOfFameEntry | null;
+};
+
+/** Spins a player needs before their gil per spin is allowed to count as luck. */
+export const LUCKIEST_SPINNER_MIN_SPINS = 5;
+
+function bestBy(players: WheelStatsPlayer[], metric: (player: WheelStatsPlayer) => number): WheelHallOfFameEntry | null {
+  let best: WheelHallOfFameEntry | null = null;
+  for (const player of players) {
+    const value = metric(player);
+    if (!Number.isFinite(value) || value <= 0) continue;
+    if (!best || value > best.value) best = { name: player.name, value };
+  }
+  return best;
+}
+
+/**
+ * The podium for the Fortune layout. Luckiest spinner is gil per spin,
+ * limited to players with a few spins so a single lucky spin cannot
+ * take the crown; if nobody qualifies, everyone competes.
+ */
+export function wheelHallOfFame(players: WheelStatsPlayer[]): WheelHallOfFame {
+  const seasoned = players.filter((player) => player.totalSpins >= LUCKIEST_SPINNER_MIN_SPINS);
+  const perSpin = (player: WheelStatsPlayer) => (player.totalSpins > 0 ? player.totalWinValue / player.totalSpins : 0);
+
+  return {
+    biggestWinner: bestBy(players, (player) => player.totalWinValue),
+    mostSpins: bestBy(players, (player) => player.totalSpins),
+    mostGames: bestBy(players, (player) => player.totalGames),
+    luckiestSpinner: bestBy(seasoned, perSpin) ?? bestBy(players, perSpin),
+  };
+}
+
+export type WheelOutcomeSlice = { name: string; count: number };
+
+/**
+ * Prize distribution for a donut: the most landed prizes by count, with
+ * the long tail folded into "Other".
+ */
+export function wheelOutcomeSlices(prizes: WheelStatsPrize[], maxSlices = 5): WheelOutcomeSlice[] {
+  const sorted = prizes
+    .filter((prize) => prize.value > 0)
+    .slice()
+    .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+  if (sorted.length <= maxSlices) return sorted.map((prize) => ({ name: prize.name, count: prize.value }));
+
+  const head = sorted.slice(0, maxSlices - 1).map((prize) => ({ name: prize.name, count: prize.value }));
+  const rest = sorted.slice(maxSlices - 1).reduce((sum, prize) => sum + prize.value, 0);
+  return [...head, { name: "Other", count: rest }];
+}

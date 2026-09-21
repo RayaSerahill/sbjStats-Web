@@ -53,9 +53,13 @@ function boxOf(el: Element, stage: HTMLElement): Box {
   return { top: r.top - s.top, left: r.left - s.left, width: r.width, height: r.height };
 }
 
-/** Controls the browser can handle on their own inside the board (tabs, sort picker). */
+/**
+ * Controls the board handles on its own (inactive tabs, the sort picker).
+ * A control that is itself an edit target, like the active tab, is edited.
+ */
 function isInteractive(target: Element) {
-  return !!target.closest("button, select, input, textarea");
+  const control = target.closest("button, select, input, textarea");
+  return !!control && !control.hasAttribute("data-edit");
 }
 
 const DIRECTIONS: Array<{ value: StatsGradientDirection; label: string }> = [

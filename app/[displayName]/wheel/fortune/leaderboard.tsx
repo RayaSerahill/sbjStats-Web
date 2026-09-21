@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
-import { getBackgroundStyleCss } from "@/lib/statsStyleShared";
 import type { FortuneSurfaceKey, FortuneTheme } from "@/lib/fortuneTheme";
-import { avatarFor, fmtGil, fmtInt } from "./format";
+import { avatarFor, fmtGil, fmtInt, surfaceCss } from "./format";
 
 type Player = {
   name: string;
@@ -77,7 +76,7 @@ export function FortuneLeaderboard({ players, size, theme }: { players: Player[]
   const [sortBy, setSortBy] = useState<Detail>("bankrupts");
 
   const surface = (key: FortuneSurfaceKey): { style: CSSProperties; "data-edit": FortuneSurfaceKey } => ({
-    style: getBackgroundStyleCss(theme.surfaces[key]),
+    style: surfaceCss(theme.surfaces[key]),
     "data-edit": key,
   });
   const sortedCell = (key: Detail) => (sortBy === key ? surface("tableSorted") : {});

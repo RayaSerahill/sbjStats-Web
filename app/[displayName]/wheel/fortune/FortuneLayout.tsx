@@ -2,13 +2,13 @@ import type { CSSProperties, ReactNode } from "react";
 import { FortuneNav } from "./nav";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
 import type { StatsNavKey } from "@/app/components/StatsPageNav";
-import { getBackgroundStyleCss, type NormalizedStatsStyle } from "@/lib/statsStyleShared";
+import type { NormalizedStatsStyle } from "@/lib/statsStyleShared";
 import type { FortuneSurfaceKey, FortuneTheme } from "@/lib/fortuneTheme";
 import type { PublicStatsGame } from "@/lib/publicStatsRoutes";
 import { wheelHallOfFame, wheelOutcomeSlices, type WheelStats } from "@/lib/wheelStats";
 import { FortuneDailyCharts, FortuneOutcomeDonut } from "./charts";
 import { FortuneLeaderboard } from "./leaderboard";
-import { avatarFor, fmtCompact, fmtDelta, fmtGil, fmtInt } from "./format";
+import { avatarFor, fmtCompact, fmtDelta, fmtGil, fmtInt, surfaceCss } from "./format";
 import "./fortune.css";
 
 const RECENT_DAYS = 30;
@@ -50,7 +50,7 @@ type FortuneLayoutProps = {
 
 /** Inline background for one themed surface plus the hook the live editor looks for. */
 function surfaceProps(theme: FortuneTheme, key: FortuneSurfaceKey, extra?: CSSProperties) {
-  return { style: { ...getBackgroundStyleCss(theme.surfaces[key]), ...extra }, "data-edit": key };
+  return { style: { ...surfaceCss(theme.surfaces[key]), ...extra }, "data-edit": key };
 }
 
 function StatCard({
@@ -110,7 +110,7 @@ function scopeStyle(theme: FortuneTheme): CSSProperties {
     "--f-yellow": theme.surfaces.toneYellow.color,
     "--f-sky": theme.surfaces.toneSky.color,
   } as CSSProperties;
-  return { ...getBackgroundStyleCss(theme.surfaces.page), ...vars, color: theme.colors.ink };
+  return { ...surfaceCss(theme.surfaces.page), ...vars, color: theme.colors.ink };
 }
 
 /** The pastel Wheel of Fortune board. Keeps the host's nav links, brings its own themed palette. */

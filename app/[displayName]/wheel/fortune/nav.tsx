@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useStatsPageNavLinks, type StatsNavKey } from "@/app/components/StatsPageNav";
-import { getBackgroundStyleCss } from "@/lib/statsStyleShared";
+import { surfaceCss } from "./format";
 import type { FortuneTheme } from "@/lib/fortuneTheme";
 import type { PublicStatsGame } from "@/lib/publicStatsRoutes";
 
@@ -34,7 +34,7 @@ export function FortuneNav({
 
   return (
     <nav className="fortune-nav" aria-label="Stats navigation">
-      <div className="fortune-nav-pills" style={getBackgroundStyleCss(theme.surfaces.nav)} data-edit="nav">
+      <div className="fortune-nav-pills" style={surfaceCss(theme.surfaces.nav)} data-edit="nav">
         {links.map((link) => (
           <Link
             key={link.key}
@@ -42,7 +42,7 @@ export function FortuneNav({
             className={`fortune-nav-pill${link.isActive ? " is-active" : ""}`}
             aria-current={link.isActive ? "page" : undefined}
             onClick={inert ? (e) => e.preventDefault() : undefined}
-            {...(link.isActive ? { style: getBackgroundStyleCss(theme.surfaces.navActive), "data-edit": "navActive" } : {})}
+            {...(link.isActive ? { style: surfaceCss(theme.surfaces.navActive), "data-edit": "navActive" } : {})}
           >
             <span aria-hidden>{ICONS[link.key]}</span>
             {link.label}

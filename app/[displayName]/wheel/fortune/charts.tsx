@@ -13,9 +13,8 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
-import { getBackgroundStyleCss } from "@/lib/statsStyleShared";
 import type { FortuneTheme } from "@/lib/fortuneTheme";
-import { fmtCompact, fmtInt } from "./format";
+import { fmtCompact, fmtInt, surfaceCss } from "./format";
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
@@ -101,7 +100,7 @@ function Spark({
     ],
   };
   return (
-    <div className="fortune-card fortune-chart-card" style={getBackgroundStyleCss(theme.surfaces.card)} data-edit="card">
+    <div className="fortune-card fortune-chart-card" style={surfaceCss(theme.surfaces.card)} data-edit="card">
       <div className="fortune-chart-label">
         <span className="fortune-chart-dot" style={{ background: color }} />
         {label}
@@ -161,7 +160,7 @@ export function FortuneOutcomeDonut({ slices, theme }: { slices: Array<{ name: s
   };
 
   return (
-    <div className="fortune-card fortune-donut" style={getBackgroundStyleCss(theme.surfaces.card)} data-edit="card">
+    <div className="fortune-card fortune-donut" style={surfaceCss(theme.surfaces.card)} data-edit="card">
       <div className="fortune-donut-box" data-edit="donut">
         <Doughnut data={data} options={options} />
       </div>

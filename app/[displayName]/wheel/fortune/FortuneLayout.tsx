@@ -3,7 +3,7 @@ import { StatsPageNav } from "@/app/components/StatsPageNav";
 import { StatsFooterSection } from "@/app/components/StatsFooterSection";
 import type { NormalizedStatsStyle } from "@/lib/statsStyleShared";
 import type { PublicStatsGame } from "@/lib/publicStatsRoutes";
-import { wheelHallOfFame, wheelOutcomeSlices, wheelRecentDays, type WheelStats } from "@/lib/wheelStats";
+import { wheelHallOfFame, wheelOutcomeSlices, type WheelStats } from "@/lib/wheelStats";
 import { FortuneDailyCharts, FortuneOutcomeDonut } from "./charts";
 import { FortuneLeaderboard } from "./leaderboard";
 import { avatarFor, fmtCompact, fmtDelta, fmtGil, fmtInt } from "./format";
@@ -79,7 +79,8 @@ function SectionTitle({ icon, children, pill }: { icon: string; children: ReactN
 export function FortuneLayout({ displayName, username, rootGame, style, stats, hasGames }: FortuneLayoutProps) {
   const fame = wheelHallOfFame(stats.players);
   const slices = wheelOutcomeSlices(stats.prizes);
-  const recent = wheelRecentDays(stats.dailyProfits, RECENT_DAYS);
+  // Only days this dealer actually hosted; quiet days are left out.
+  const recent = stats.dailyProfits.slice(-RECENT_DAYS);
   const topPrize = stats.prizes[0] ?? null;
   const mostBankruptLost = stats.players.find((player) => player.name === fame.mostBankrupt?.name)?.lostToBankrupt ?? 0;
 
@@ -189,7 +190,7 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
 
             <div className="fortune-two-up fortune-section">
               <section>
-                <SectionTitle icon="📊" pill={`Last ${RECENT_DAYS} days`}>Daily Fun</SectionTitle>
+                <SectionTitle icon="📊" pill={`Last ${RECENT_DAYS} hosting days`}>Daily Fun</SectionTitle>
                 <FortuneDailyCharts days={recent} gamesColor={GAMES_COLOR} gilColor={GIL_COLOR} />
               </section>
               <section>

@@ -1,0 +1,523 @@
+/* Fortune layout for the public wheel page. Everything lives under
+   .fortune-scope so it cannot leak into the classic page or dashboard. */
+
+.fortune-scope {
+  --f-bg-top: #ece5ff;
+  --f-bg-mid: #f7ebfb;
+  --f-bg-bottom: #dbeeff;
+  --f-ink: #3a3454;
+  --f-muted: #7b7497;
+  --f-card: #ffffff;
+  --f-border: #e3dbf5;
+  --f-lavender: #e9ddff;
+  --f-mint: #d4f4ea;
+  --f-pink: #ffd9e8;
+  --f-peach: #ffe3cf;
+  --f-yellow: #fff1bf;
+  --f-sky: #d8ebff;
+  --f-teal: #33b7a4;
+  --f-teal-deep: #1f9a89;
+  --f-accent: #7c6bd6;
+  --f-gold: #f2b93c;
+  --f-shadow: 0 10px 30px rgba(96, 78, 168, 0.12);
+
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--f-ink);
+  font-family: "Quicksand", "Nunito", "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(180deg, var(--f-bg-top) 0%, var(--f-bg-mid) 55%, var(--f-bg-bottom) 100%);
+}
+
+/* soft cloud bank along the bottom edge */
+.fortune-clouds {
+  pointer-events: none;
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 42vh;
+  min-height: 260px;
+  opacity: 0.85;
+  background:
+    radial-gradient(circle at 8% 100%, #ffffff 0 110px, transparent 111px),
+    radial-gradient(circle at 24% 108%, #ffffff 0 150px, transparent 151px),
+    radial-gradient(circle at 42% 100%, #fbf7ff 0 120px, transparent 121px),
+    radial-gradient(circle at 60% 110%, #ffffff 0 160px, transparent 161px),
+    radial-gradient(circle at 78% 100%, #fbf7ff 0 120px, transparent 121px),
+    radial-gradient(circle at 95% 108%, #ffffff 0 140px, transparent 141px);
+}
+
+.fortune-sparkle {
+  pointer-events: none;
+  position: absolute;
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.8;
+  user-select: none;
+}
+
+.fortune-page {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1120px;
+  padding: 24px 16px 40px;
+}
+
+/* ---------- banner ---------- */
+
+.fortune-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 28px;
+  text-align: center;
+}
+
+.fortune-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 18px;
+  border: 2px solid var(--f-teal);
+  border-radius: 999px;
+  background: var(--f-mint);
+  color: var(--f-teal-deep);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fortune-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 26px;
+  border: 3px solid var(--f-teal);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: var(--f-shadow);
+  font-size: clamp(20px, 3.4vw, 32px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fortune-title-icon {
+  font-size: 1.2em;
+}
+
+/* ---------- sections ---------- */
+
+.fortune-section {
+  margin-top: 26px;
+}
+
+.fortune-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fortune-section-title span:first-child {
+  font-size: 18px;
+}
+
+.fortune-pill {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--f-sky);
+  color: var(--f-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* ---------- cards ---------- */
+
+.fortune-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--f-border);
+  border-radius: 16px;
+  background: var(--f-card);
+  box-shadow: var(--f-shadow);
+}
+
+.fortune-card-head {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.fortune-card-body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.fortune-card-icon {
+  flex: none;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.fortune-card-value {
+  min-width: 0;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.fortune-card-value.is-name {
+  font-size: 17px;
+}
+
+.fortune-card-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--f-muted);
+}
+
+.fortune-card-sub.is-up {
+  color: #2f9e6e;
+}
+
+.tone-lavender .fortune-card-head { background: var(--f-lavender); }
+.tone-mint .fortune-card-head { background: var(--f-mint); }
+.tone-pink .fortune-card-head { background: var(--f-pink); }
+.tone-peach .fortune-card-head { background: var(--f-peach); }
+.tone-yellow .fortune-card-head { background: var(--f-yellow); }
+.tone-sky .fortune-card-head { background: var(--f-sky); }
+
+.fortune-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fortune-fame-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fortune-fame-grid .fortune-card-icon {
+  font-size: 40px;
+}
+
+.fortune-two-up {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.fortune-chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.fortune-chart-card {
+  padding: 10px 12px 8px;
+}
+
+.fortune-chart-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fortune-chart-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.fortune-chart-box {
+  position: relative;
+  height: 130px;
+}
+
+.fortune-donut {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+}
+
+.fortune-donut-box {
+  position: relative;
+  height: 150px;
+}
+
+.fortune-legend {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fortune-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fortune-legend-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fortune-legend-share {
+  margin-left: auto;
+  color: var(--f-muted);
+}
+
+/* ---------- leaderboard ---------- */
+
+.fortune-board {
+  padding: 14px;
+}
+
+.fortune-board-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fortune-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fortune-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--f-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.fortune-tab:hover {
+  background: var(--f-lavender);
+}
+
+.fortune-tab.is-active {
+  border-color: var(--f-teal);
+  background: var(--f-mint);
+  color: var(--f-teal-deep);
+}
+
+.fortune-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--f-muted);
+}
+
+.fortune-sort select {
+  padding: 6px 10px;
+  border: 1px solid var(--f-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--f-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fortune-board-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.fortune-rank-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--f-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.fortune-rank-row {
+  display: grid;
+  grid-template-columns: 28px 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--f-border);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fortune-rank-row:first-child {
+  border-top: 0;
+}
+
+.fortune-rank-row.is-first {
+  background: var(--f-mint);
+}
+
+.fortune-rank-row.is-second {
+  background: #eef9f5;
+}
+
+.fortune-rank-row.is-third {
+  background: #f6fcfa;
+}
+
+.fortune-rank-num {
+  color: var(--f-muted);
+  font-size: 12px;
+}
+
+.fortune-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--f-lavender);
+  font-size: 16px;
+}
+
+.fortune-rank-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fortune-rank-metric {
+  font-variant-numeric: tabular-nums;
+  color: var(--f-muted);
+  font-size: 13px;
+}
+
+.fortune-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--f-border);
+  border-radius: 12px;
+}
+
+.fortune-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fortune-table th,
+.fortune-table td {
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fortune-table th {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--f-muted);
+  background: #faf8ff;
+}
+
+.fortune-table th.is-num,
+.fortune-table td.is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fortune-table th.is-sorted,
+.fortune-table td.is-sorted {
+  background: var(--f-pink);
+}
+
+.fortune-table tbody tr {
+  border-top: 1px solid var(--f-border);
+}
+
+.fortune-table tbody tr:first-child td:not(.is-sorted) {
+  background: var(--f-mint);
+}
+
+.fortune-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.fortune-empty {
+  padding: 24px;
+  border: 1px dashed var(--f-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  font-weight: 700;
+  color: var(--f-muted);
+}
+
+/* ---------- responsive ---------- */
+
+@media (min-width: 640px) {
+  .fortune-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fortune-fame-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fortune-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .fortune-page { padding-left: 24px; padding-right: 24px; }
+  .fortune-stat-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .fortune-two-up { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .fortune-board-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+}

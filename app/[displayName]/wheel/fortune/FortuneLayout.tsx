@@ -86,12 +86,16 @@ function StatCard({
   );
 }
 
-function SectionTitle({ icon, children, pill }: { icon: string; children: ReactNode; pill?: ReactNode }) {
+function SectionTitle({ icon, children, pill, theme }: { icon: string; children: ReactNode; pill?: ReactNode; theme?: FortuneTheme }) {
   return (
     <h2 className="fortune-section-title">
       <span aria-hidden>{icon}</span>
       <span>{children}</span>
-      {pill ? <span className="fortune-pill">{pill}</span> : null}
+      {pill && theme ? (
+        <span className="fortune-pill" {...surfaceProps(theme, "pill")}>
+          {pill}
+        </span>
+      ) : null}
     </h2>
   );
 }
@@ -229,7 +233,9 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
 
             <div className="fortune-two-up fortune-section">
               <section>
-                <SectionTitle icon="📊" pill={`Last ${RECENT_DAYS} hosting days`}>Daily Fun</SectionTitle>
+                <SectionTitle icon="📊" pill={`Last ${RECENT_DAYS} hosting days`} theme={t}>
+                  Daily Fun
+                </SectionTitle>
                 <FortuneDailyCharts days={recent} theme={t} />
               </section>
               <section>

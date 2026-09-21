@@ -32,7 +32,17 @@ export type FortuneColorKey = (typeof FORTUNE_COLOR_KEYS)[number];
 export type FortuneTheme = {
   surfaces: Record<FortuneSurfaceKey, StatsBackgroundStyle>;
   colors: Record<FortuneColorKey, string>;
+  /** Slice colours of the outcome donut, used in order. */
+  donut: string[];
 };
+
+/** Things that are clickable in the live editor but are not surfaces. */
+export const FORTUNE_EXTRA_EDIT_KEYS = ["chartGames", "chartGil", "donut"] as const;
+
+export type FortuneExtraEditKey = (typeof FORTUNE_EXTRA_EDIT_KEYS)[number];
+export type FortuneEditKey = FortuneSurfaceKey | FortuneExtraEditKey;
+
+export const FORTUNE_EDIT_KEYS: readonly FortuneEditKey[] = [...FORTUNE_SURFACE_KEYS, ...FORTUNE_EXTRA_EDIT_KEYS];
 
 export const FORTUNE_SURFACE_LABELS: Record<FortuneSurfaceKey, { label: string; hint: string }> = {
   page: { label: "Page background", hint: "The sky behind everything." },
@@ -50,6 +60,17 @@ export const FORTUNE_SURFACE_LABELS: Record<FortuneSurfaceKey, { label: string; 
   tableHead: { label: "Table header", hint: "Column titles on the leaderboard table." },
   tableSorted: { label: "Sorted column", hint: "The highlighted column on the leaderboard table." },
   podium: { label: "First place row", hint: "Top row of both leaderboard lists." },
+};
+
+export const FORTUNE_EXTRA_EDIT_LABELS: Record<FortuneExtraEditKey, { label: string; hint: string }> = {
+  chartGames: { label: "Games chart line", hint: "The line and fill of the games sparkline." },
+  chartGil: { label: "Gil chart line", hint: "The line and fill of the gil sparkline." },
+  donut: { label: "Outcome donut", hint: "Slice colours of the outcome distribution, used in order." },
+};
+
+export const FORTUNE_EDIT_LABELS: Record<FortuneEditKey, { label: string; hint: string }> = {
+  ...FORTUNE_SURFACE_LABELS,
+  ...FORTUNE_EXTRA_EDIT_LABELS,
 };
 
 export const FORTUNE_COLOR_LABELS: Record<FortuneColorKey, string> = {
@@ -105,4 +126,5 @@ export const DEFAULT_FORTUNE_THEME: FortuneTheme = {
     chartGames: "#a78bfa",
     chartGil: "#f2b93c",
   },
+  donut: ["#c9b6ff", "#ffd166", "#7fdfc8", "#ffb3c6", "#a8d8ff", "#ffcfa3"],
 };

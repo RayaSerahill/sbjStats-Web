@@ -283,7 +283,7 @@ export function normalizeFortuneTheme(input: unknown): FortuneTheme {
     colors[key] = normalizeHex((rawColors as Record<string, unknown>)[key], DEFAULT_FORTUNE_THEME.colors[key]);
   }
 
-  return { surfaces, colors };
+  return { surfaces, colors, donut: normalizePieChartColors(raw.donut, DEFAULT_FORTUNE_THEME.donut) };
 }
 
 export function normalizeStatsStyle(input?: Partial<NormalizedStatsStyle> | null): NormalizedStatsStyle {

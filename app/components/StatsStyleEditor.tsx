@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DashboardPageHeader } from "@/app/components/DashboardSection";
 
@@ -231,7 +232,7 @@ function buildPreviewStyle(surface: StatsBackgroundStyle) {
   return { backgroundColor: surface.color };
 }
 
-function AdvancedColorField({
+export function AdvancedColorField({
   label,
   value,
   onChange,
@@ -308,7 +309,7 @@ function AdvancedColorField({
   );
 }
 
-function BackgroundEditor({
+export function BackgroundEditor({
   label,
   value,
   onChange,
@@ -454,6 +455,9 @@ const wheelLayoutOptions: Array<{ value: StatsWheelLayout; title: string; blurb:
     blurb: "A pastel Wheel of Fortune board with stat tiles, a hall of fame, daily sparklines, a prize donut and a two-pane leaderboard. Brings its own colors; only the shared nav and leaderboard size carry over.",
   },
 ];
+
+/** Games whose new layout is styled on the page itself. */
+const liveEditors = [{ href: "/dashboard/live/wheel", label: "Edit the Wheel page live", icon: "🎡" }];
 
 function WheelLayoutPreview({ layout }: { layout: StatsWheelLayout }) {
   if (layout === "fortune") {
@@ -777,6 +781,26 @@ export function StatsStyleEditor() {
           description="Pick which look the public wheel page wears. Classic keeps the scratch-styled page; Fortune is the new pastel board."
         >
           <WheelLayoutPicker value={style.wheelLayout} onChange={(wheelLayout) => setStyle((s) => ({ ...s, wheelLayout }))} />
+          {style.wheelLayout === "fortune" ? (
+            <div className="rounded-2xl border border-[#FF9FC6]/30 bg-[#fff7fb] p-4">
+              <div className="text-sm font-medium text-zinc-900">Live editors</div>
+              <p className="mt-1 text-xs text-zinc-600">
+                The new layouts are styled on the page itself. Hover any element to highlight it, click it to change its color, image or gradient, and watch it update live.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {liveEditors.map((editor) => (
+                  <Link
+                    key={editor.href}
+                    href={editor.href}
+                    className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
+                  >
+                    <span aria-hidden>{editor.icon}</span>
+                    {editor.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </SectionCard>
         <SectionCard
           title="Shared nav"

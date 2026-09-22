@@ -160,7 +160,9 @@ export function FortuneLeaderboard({ players, size, theme }: { players: Player[]
                       className={`is-num${sortBy === column.key ? " is-sorted" : ""}`}
                       {...(sortBy === column.key ? sortedCell(column.key) : i === 0 ? surface("podium") : {})}
                     >
-                      {fmtDetail(detailOf(player, column.key), column.key)}
+                      {column.key === "lost" && player.bankrupts > 0 && player.lostToBankrupt === 0
+                        ? "not recorded"
+                        : fmtDetail(detailOf(player, column.key), column.key)}
                     </td>
                   ))}
                 </tr>

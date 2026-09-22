@@ -216,7 +216,11 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
                   title="💣 Most Bankrupt"
                   icon={fame.mostBankrupt ? avatarFor(fame.mostBankrupt.name) : "💣"}
                   value={fame.mostBankrupt?.name ?? "Nobody yet"}
-                  sub={fame.mostBankrupt ? `${fmtInt(fame.mostBankrupt.value)} times, ${fmtGil(mostBankruptLost)} lost` : undefined}
+                  sub={
+                    fame.mostBankrupt
+                      ? `${fmtInt(fame.mostBankrupt.value)} times${mostBankruptLost > 0 ? `, ${fmtGil(mostBankruptLost)} lost` : ""}`
+                      : undefined
+                  }
                   isName
                 />
                 <StatCard

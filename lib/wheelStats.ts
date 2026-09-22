@@ -106,10 +106,27 @@ export function toUtcDayKey(unixSeconds: number): string {
   return `${year}-${month}-${day}`;
 }
 
-/** Spins a game actually took: the live count when we have it, else one per prize landed. */
+/**
+ * Spins a game actually took: the live count when we have it, else the
+ * spins the game had (paid plus free), else one per prize landed. The
+ * prize list alone undercounts, because a bankrupt wipes it.
+ */
 export function wheelGameSpins(game: WheelStatsGameRow): number {
   if (typeof game.spinsUsed === "number" && Number.isFinite(game.spinsUsed)) return Math.max(0, game.spinsUsed);
-  return Array.isArray(game.prizesWon) ? game.prizesWon.length : 0;
+  const prizes = Array.isArray(game.prizesWon) ? game.prizesWon.length : 0;
+  const maxSpins = typeof game.maxSpins === "number" && Number.isFinite(game.maxSpins) ? Math.max(0, game.maxSpins) : 0;
+  return Math.max(maxSpins, prizes);
+}
+
+/**
+ * Whether SimpleWheel wiped this game's prize list. The plugin does not
+ * record a bankrupt as a prize; it clears prizes_won when one lands, so
+ * a finished game with fewer prizes than spins went bankrupt at least
+ * once. A game with no prizes at all is treated as abandoned instead.
+ */
+export function wheelGameWasWiped(game: WheelStatsGameRow): boolean {
+  const prizes = Array.isArray(game.prizesWon) ? game.prizesWon.length : 0;
+  return prizes > 0 && wheelGameSpins(game) > prizes;
 }
 
 /**
@@ -252,6 +269,11 @@ export function calculateWheelStats(input: WheelStatsInput): WheelStats {
       mine.totalWinValue += value;
       player.prizes.set(name, mine);
     }
+
+    // Archives from SimpleWheel lose the prizes a bankrupt wiped, so a
+    // short prize list is the only trace of one. Count it once; what it
+    // swallowed is not in the record.
+    if (gameBankrupts === 0 && wheelGameWasWiped(game)) gameBankrupts = 1;
 
     totals.totalGames += 1;
     totals.totalSpins += spins;

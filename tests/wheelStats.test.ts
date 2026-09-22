@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   calculateWheelStats,
   wheelGameSpins,
+  wheelGameWasWiped,
   wheelHallOfFame,
   wheelOutcomeSlices,
   wheelPrizeIsBankrupt,
@@ -23,10 +24,22 @@ const presetV1 = { _id: "p1", name: "Small", version: 1, segments: [gilSeg("1M g
 const presetV2 = { _id: "p2", name: "Small", version: 2, segments: [gilSeg("1M gil", 2)] };
 
 describe("wheelGameSpins", () => {
-  it("trusts spinsUsed when present and counts prizes otherwise", () => {
+  it("trusts spinsUsed, then maxSpins, then the prize count", () => {
     assert.equal(wheelGameSpins({ spinsUsed: 4, prizesWon: ["a"] }), 4);
+    assert.equal(wheelGameSpins({ maxSpins: 5, prizesWon: ["a"] }), 5);
+    assert.equal(wheelGameSpins({ maxSpins: 0, prizesWon: ["a", "b", "c"] }), 3);
     assert.equal(wheelGameSpins({ prizesWon: ["a", "b", "c"] }), 3);
     assert.equal(wheelGameSpins({}), 0);
+  });
+});
+
+describe("wheelGameWasWiped", () => {
+  it("spots a prize list shorter than the spins, but not an empty one", () => {
+    assert.equal(wheelGameWasWiped({ spinsUsed: 15, maxSpins: 15, prizesWon: ["1M gil", "2M gil"] }), true);
+    assert.equal(wheelGameWasWiped({ maxSpins: 3, prizesWon: ["1M gil"] }), true);
+    assert.equal(wheelGameWasWiped({ maxSpins: 3, prizesWon: ["a", "b", "c"] }), false);
+    assert.equal(wheelGameWasWiped({ maxSpins: 3, prizesWon: [] }), false);
+    assert.equal(wheelGameWasWiped({ maxSpins: 0, prizesWon: ["a", "b"] }), false);
   });
 });
 
@@ -96,6 +109,26 @@ describe("calculateWheelStats with bankrupts", () => {
     assert.equal(stats.bankrupts, 2);
     assert.equal(stats.lostToBankrupt, 0);
     assert.deepEqual(stats.prizes, [{ name: "BANKRUPT", value: 2, prizeValue: 0, totalWinValue: 0 }]);
+  });
+
+  it("counts a wiped prize list as one bankrupt with no known loss", () => {
+    const stats = calculateWheelStats({
+      games: [
+        { _id: 1, playerName: "Lini", archivedAt: T0, presetId: "b1", maxSpins: 15, prizesWon: ["1M gil", "2M gil"] },
+        { _id: 2, playerName: "Lini", archivedAt: T0, presetId: "b1", maxSpins: 3, prizesWon: [] },
+        { _id: 3, playerName: "Rini", archivedAt: T0, presetId: "b1", maxSpins: 3, prizesWon: ["1M gil", "1M gil", "1M gil"] },
+      ],
+      presets: [preset],
+      prizes: [],
+      aliases: [],
+    });
+    assert.equal(stats.totalSpins, 15 + 3 + 3);
+    assert.equal(stats.bankrupts, 1);
+    assert.equal(stats.lostToBankrupt, 0);
+    const lini = stats.players.find((p) => p.name === "Lini");
+    assert.equal(lini?.bankrupts, 1);
+    assert.equal(lini?.totalWinValue, 3_000_000);
+    assert.equal(stats.players.find((p) => p.name === "Rini")?.bankrupts, 0);
   });
 
   it("spots a bankrupt by label when the game has no preset", () => {

@@ -13,9 +13,13 @@ type LeaderboardPlayer = {
   won: number;
 };
 
-type Tab = "won" | "racesWon" | "tournamentsWon" | "games";
+export type MarblesLeaderboardTab = "won" | "racesWon" | "tournamentsWon" | "games";
+type Tab = MarblesLeaderboardTab;
 
 type LeaderboardProps = {
+  title: string;
+  /** Which boards this card offers, in order. A single one is shown without a tab bar. */
+  tabs: Tab[];
   fontColor: string;
   elementBackground: StatsBackgroundStyle;
   tableBackground: StatsBackgroundStyle;
@@ -32,15 +36,17 @@ type LeaderboardProps = {
   leaderboardSize: number;
 };
 
-const TABS: Array<{ key: Tab; label: string }> = [
-  { key: "won", label: "Gil won" },
-  { key: "racesWon", label: "Races won" },
-  { key: "tournamentsWon", label: "Tournaments" },
-  { key: "games", label: "Games" },
-];
+const TAB_LABELS: Record<Tab, string> = {
+  won: "Gil won",
+  racesWon: "Races won",
+  tournamentsWon: "Tournaments",
+  games: "Games",
+};
 
 /** Player leaderboard for the marbles page, in the scratch leaderboard's clothes. */
 export function MarblesLeaderboard({
+  title,
+  tabs,
   fontColor,
   elementBackground,
   tableBackground,
@@ -56,7 +62,8 @@ export function MarblesLeaderboard({
   players,
   leaderboardSize,
 }: LeaderboardProps) {
-  const [tab, setTab] = useState<Tab>("won");
+  const [selected, setTab] = useState<Tab>(tabs[0] ?? "won");
+  const tab = tabs.includes(selected) ? selected : (tabs[0] ?? "won");
   const [hoveredTab, setHoveredTab] = useState<Tab | null>(null);
   const elementBackgroundStyle = useMemo(() => getBackgroundStyleCss(elementBackground), [elementBackground]);
   const tableBackgroundStyle = useMemo(() => getBackgroundStyleCss(tableBackground), [tableBackground]);
@@ -89,22 +96,24 @@ export function MarblesLeaderboard({
   return (
     <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
       <div className="mb-4 grid gap-4">
-        <div className="text-lg font-semibold" style={{ color: fontColor }}>Leaderboards</div>
-        <div className="flex w-fit flex-wrap rounded-lg border border-black/10 p-1" style={tabContainerBackgroundStyle}>
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              className="rounded-md px-3 py-2 text-sm transition"
-              style={getButtonStyle(t.key)}
-              aria-pressed={tab === t.key}
-              onClick={() => setTab(t.key)}
-              onMouseEnter={() => setHoveredTab(t.key)}
-              onMouseLeave={() => setHoveredTab((current) => (current === t.key ? null : current))}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <div className="text-lg font-semibold" style={{ color: fontColor }}>{title}</div>
+        {tabs.length > 1 ? (
+          <div className="flex w-fit flex-wrap rounded-lg border border-black/10 p-1" style={tabContainerBackgroundStyle}>
+            {tabs.map((key) => (
+              <button
+                key={key}
+                className="rounded-md px-3 py-2 text-sm transition"
+                style={getButtonStyle(key)}
+                aria-pressed={tab === key}
+                onClick={() => setTab(key)}
+                onMouseEnter={() => setHoveredTab(key)}
+                onMouseLeave={() => setHoveredTab((current) => (current === key ? null : current))}
+              >
+                {TAB_LABELS[key]}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {leaders.length ? (
@@ -116,7 +125,7 @@ export function MarblesLeaderboard({
                 <th className="px-3 py-2 text-xs font-semibold" style={headerCell}>Player</th>
                 <th className="px-3 py-2 text-right text-xs font-semibold" style={headerCell}>Races</th>
                 <th className="px-3 py-2 text-right text-xs font-semibold" style={headerCell}>
-                  {TABS.find((t) => t.key === tab)?.label}
+                  {TAB_LABELS[tab]}
                 </th>
               </tr>
             </thead>

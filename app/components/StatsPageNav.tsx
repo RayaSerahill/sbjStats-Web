@@ -11,6 +11,7 @@ import {
   type StatsNavItemStyle,
 } from "@/lib/statsStyleShared";
 import {
+  isPublicStatsGame,
   normalizePublicStatsRootGame,
   publicStatsGamePath,
   type PublicStatsGame,
@@ -22,6 +23,7 @@ type StatsPageNavProps = {
   showBlackjack: boolean;
   showScratch: boolean;
   showWheel?: boolean;
+  showMarbles?: boolean;
   background: StatsBackgroundStyle;
   borderRadius: number;
   fontColor: string;
@@ -32,7 +34,7 @@ type StatsPageNavProps = {
   active: StatsNavItemStyle;
 };
 
-export type StatsNavKey = "blackjack" | "scratch" | "wheel";
+export type StatsNavKey = PublicStatsGame;
 export type StatsNavLink = {
   key: StatsNavKey;
   href: string;
@@ -51,6 +53,7 @@ export function useStatsPageNavLinks({
   showBlackjack,
   showScratch,
   showWheel = false,
+  showMarbles = false,
   activeOverride,
 }: {
   username: string;
@@ -58,6 +61,7 @@ export function useStatsPageNavLinks({
   showBlackjack: boolean;
   showScratch: boolean;
   showWheel?: boolean;
+  showMarbles?: boolean;
   /** Force the current link, for pages that are not under the public stats path. */
   activeOverride?: StatsNavKey;
 }): StatsNavLink[] {
@@ -67,14 +71,14 @@ export function useStatsPageNavLinks({
   const lastPathSegment = pathSegments.at(-1);
   const activeKey: StatsNavKey =
     activeOverride ??
-    (pathSegments.length >= 2 && (lastPathSegment === "blackjack" || lastPathSegment === "scratch" || lastPathSegment === "wheel")
-      ? lastPathSegment
+    (pathSegments.length >= 2 && isPublicStatsGame(lastPathSegment) ? lastPathSegment
       : normalizedRootGame);
 
   const games: Array<{ key: StatsNavKey; label: string; show: boolean }> = [
     { key: "blackjack", label: "Blackjack", show: showBlackjack },
     { key: "scratch", label: "Scratch", show: showScratch },
     { key: "wheel", label: "Wheel", show: showWheel },
+    { key: "marbles", label: "Marbles", show: showMarbles },
   ];
 
   return games
@@ -93,6 +97,7 @@ export function StatsPageNav({
   showBlackjack,
   showScratch,
   showWheel = false,
+  showMarbles = false,
   background,
   borderRadius,
   fontColor,
@@ -103,7 +108,7 @@ export function StatsPageNav({
   active,
 }: StatsPageNavProps) {
   const [hovered, setHovered] = useState<NavKey | null>(null);
-  const links = useStatsPageNavLinks({ username, rootGame, showBlackjack, showScratch, showWheel });
+  const links = useStatsPageNavLinks({ username, rootGame, showBlackjack, showScratch, showWheel, showMarbles });
 
   const containerStyle = useMemo(
     () => ({

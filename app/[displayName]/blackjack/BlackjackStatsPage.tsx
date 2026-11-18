@@ -465,6 +465,7 @@ export async function BlackjackStatsPage({
           { game: "blackjack", enabled: style.publicNavShowBlackjack },
           { game: "scratch", enabled: style.publicNavShowScratch },
           { game: "wheel", enabled: style.publicNavShowWheel },
+          { game: "marbles", enabled: style.publicNavShowMarbles },
         ]}
       />
       <div className="mx-auto w-full max-w-5xl">
@@ -474,6 +475,7 @@ export async function BlackjackStatsPage({
           showBlackjack={style.publicNavShowBlackjack}
           showScratch={style.publicNavShowScratch}
           showWheel={style.publicNavShowWheel}
+          showMarbles={style.publicNavShowMarbles}
           background={style.publicNavBackground}
           borderRadius={style.publicNavBorderRadius}
           fontColor={style.publicNavFontColor}

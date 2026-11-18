@@ -148,6 +148,7 @@ export function FortuneLayout({ displayName, username, rootGame, style, stats, h
           showBlackjack={style.publicNavShowBlackjack}
           showScratch={style.publicNavShowScratch}
           showWheel={style.publicNavShowWheel}
+          showMarbles={style.publicNavShowMarbles}
           theme={t}
           activeOverride={navActive}
           inert={editing}

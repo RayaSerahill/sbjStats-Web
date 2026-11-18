@@ -92,6 +92,7 @@ export async function ScratchStatsPage({
           { game: "blackjack", enabled: style.publicNavShowBlackjack },
           { game: "scratch", enabled: style.publicNavShowScratch },
           { game: "wheel", enabled: style.publicNavShowWheel },
+          { game: "marbles", enabled: style.publicNavShowMarbles },
         ]}
       />
       <div className="mx-auto w-full max-w-5xl">
@@ -101,6 +102,7 @@ export async function ScratchStatsPage({
           showBlackjack={style.publicNavShowBlackjack}
           showScratch={style.publicNavShowScratch}
           showWheel={style.publicNavShowWheel}
+          showMarbles={style.publicNavShowMarbles}
           background={style.publicNavBackground}
           borderRadius={style.publicNavBorderRadius}
           fontColor={style.publicNavFontColor}

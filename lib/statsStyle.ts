@@ -71,6 +71,7 @@ export type StatsStyleDoc = {
   publicNavShowBlackjack: boolean;
   publicNavShowScratch: boolean;
   publicNavShowWheel: boolean;
+  publicNavShowMarbles: boolean;
   publicNavBackground: StatsBackgroundStyle;
   publicNavBorderRadius: number;
   publicNavFontColor: string;
@@ -126,6 +127,7 @@ export type StatsStyleInput = Partial<
     | "publicNavShowBlackjack"
     | "publicNavShowScratch"
     | "publicNavShowWheel"
+    | "publicNavShowMarbles"
     | "publicNavBackground"
     | "publicNavBorderRadius"
     | "publicNavFontColor"

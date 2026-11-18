@@ -144,6 +144,8 @@ export async function ensureGameCollections() {
       await ensureCollection(db, "wheel_prizes");
       await ensureCollection(db, "wheel_presets");
       await ensureCollection(db, "wheel_settings");
+      await ensureCollection(db, "marbles_games");
+      await ensureCollection(db, "marbles_players");
 
       const players = db.collection("players");
       await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -310,6 +312,37 @@ export async function ensureGameCollections() {
 
       const wheelSettings = db.collection("wheel_settings");
       await wheelSettings.createIndex({ uploaderId: 1 }, { unique: true });
+
+      const marblesGames = db.collection("marbles_games");
+      // SimpleMarbles' game id is stable, so every archive snapshot of the
+      // same game collapses into one doc per uploader.
+      await marblesGames.createIndex(
+        { uploaderId: 1, gameId: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            gameId: { $exists: true },
+          },
+        }
+      );
+      await marblesGames.createIndex({ uploaderId: 1, startedAt: -1 });
+      await marblesGames.createIndex({ uploaderId: 1, mine: 1, startedAt: -1 });
+
+      const marblesPlayers = db.collection("marbles_players");
+      // One row per player per game, re-derived from the game's detail on every upload.
+      await marblesPlayers.createIndex(
+        { uploaderId: 1, gameId: 1, playerKey: 1 },
+        {
+          unique: true,
+          partialFilterExpression: {
+            uploaderId: { $exists: true },
+            gameId: { $exists: true },
+            playerKey: { $exists: true },
+          },
+        }
+      );
+      await marblesPlayers.createIndex({ uploaderId: 1, playerKey: 1, startedAt: -1 });
     })();
   }
 

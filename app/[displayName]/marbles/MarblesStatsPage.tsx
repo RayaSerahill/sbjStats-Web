@@ -70,18 +70,39 @@ export async function MarblesStatsPage({ params }: { params: Promise<{ displayNa
   const pageBackgroundStyle = getBackgroundStyleCss(style.scratchBackground);
   const containerBackgroundStyle = getBackgroundStyleCss(style.scratchContainerBackground);
   const elementBackgroundStyle = getBackgroundStyleCss(style.scratchElementBackground);
-  const tableBackgroundStyle = getBackgroundStyleCss(style.scratchLeaderboardTableBackground);
-  const tableHeaderBackgroundStyle = getBackgroundStyleCss(style.scratchLeaderboardTableHeaderBackground);
-  const headerCell = { color: style.scratchLeaderboardTableHeaderTextColor, opacity: 0.7 };
-
   const tiles: Array<{ label: string; value: number; note?: string }> = [
     { label: "Marble games hosted", value: totals.games, note: `${fmtInt(totals.tournaments)} of them tournaments` },
     { label: "Races run", value: totals.races },
-    { label: "Players", value: totals.uniquePlayers || totals.players },
-    { label: "Gil taken", value: totals.taken },
     { label: "Gil won by players", value: totals.won },
-    { label: "Boost added to prize pools", value: totals.boost },
+    { label: "Total players", value: totals.uniquePlayers || totals.players },
   ];
+
+  const leaderboardPlayers = players.map((player) => ({
+    key: player.playerKey,
+    name: player.playerName,
+    games: player.games,
+    races: player.races,
+    racesWon: player.racesWon,
+    tournamentsWon: player.tournamentsWon,
+    won: player.won,
+  }));
+
+  const leaderboardStyle = {
+    fontColor,
+    elementBackground: style.scratchElementBackground,
+    tableBackground: style.scratchLeaderboardTableBackground,
+    tableHeaderBackground: style.scratchLeaderboardTableHeaderBackground,
+    tableHeaderTextColor: style.scratchLeaderboardTableHeaderTextColor,
+    tabContainerBackground: style.scratchLeaderboardTabContainerBackground,
+    tabActiveBackground: style.scratchLeaderboardTabActiveBackground,
+    tabInactiveBackground: style.scratchLeaderboardTabInactiveBackground,
+    tabHoverBackground: style.scratchLeaderboardTabHoverBackground,
+    tabActiveTextColor: style.scratchLeaderboardTabActiveTextColor,
+    tabInactiveTextColor: style.scratchLeaderboardTabInactiveTextColor,
+    tabHoverTextColor: style.scratchLeaderboardTabHoverTextColor,
+    leaderboardSize: style.scratchLeaderboardSize,
+    players: leaderboardPlayers,
+  };
 
   return (
     <div className="container-main min-h-screen w-full px-4 py-10" style={{ ...pageBackgroundStyle, color: fontColor, fontFamily }}>
@@ -128,7 +149,7 @@ export async function MarblesStatsPage({ params }: { params: Promise<{ displayNa
           </div>
         ) : (
           <>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {tiles.map((tile) => (
                 <div key={tile.label} className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
                   <div className="text-xs font-medium opacity-70" style={{ color: fontColor }}>{tile.label}</div>
@@ -138,63 +159,9 @@ export async function MarblesStatsPage({ params }: { params: Promise<{ displayNa
               ))}
             </div>
 
-            <div className="mt-10 grid gap-4 lg:grid-cols-2">
-              <MarblesLeaderboard
-                fontColor={fontColor}
-                elementBackground={style.scratchElementBackground}
-                tableBackground={style.scratchLeaderboardTableBackground}
-                tableHeaderBackground={style.scratchLeaderboardTableHeaderBackground}
-                tableHeaderTextColor={style.scratchLeaderboardTableHeaderTextColor}
-                tabContainerBackground={style.scratchLeaderboardTabContainerBackground}
-                tabActiveBackground={style.scratchLeaderboardTabActiveBackground}
-                tabInactiveBackground={style.scratchLeaderboardTabInactiveBackground}
-                tabHoverBackground={style.scratchLeaderboardTabHoverBackground}
-                tabActiveTextColor={style.scratchLeaderboardTabActiveTextColor}
-                tabInactiveTextColor={style.scratchLeaderboardTabInactiveTextColor}
-                tabHoverTextColor={style.scratchLeaderboardTabHoverTextColor}
-                leaderboardSize={style.scratchLeaderboardSize}
-                players={players.map((player) => ({
-                  key: player.playerKey,
-                  name: player.playerName,
-                  games: player.games,
-                  races: player.races,
-                  racesWon: player.racesWon,
-                  tournamentsWon: player.tournamentsWon,
-                  won: player.won,
-                }))}
-              />
-
-              <div className="rounded-2xl border border-black/10 p-4 shadow-sm" style={elementBackgroundStyle}>
-                <div className="mb-4 text-lg font-semibold" style={{ color: fontColor }}>Recent games</div>
-                <div className="overflow-x-auto rounded-xl border border-black/10" style={tableBackgroundStyle}>
-                  <table className="w-full text-sm" style={{ color: fontColor }}>
-                    <thead>
-                      <tr className="border-b border-black/10 text-left" style={tableHeaderBackgroundStyle}>
-                        <th className="px-3 py-2 text-xs font-semibold" style={headerCell}>Date</th>
-                        <th className="px-3 py-2 text-xs font-semibold" style={headerCell}>Format</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold" style={headerCell}>Races</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold" style={headerCell}>Players</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold" style={headerCell}>Taken</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {games.slice(0, RECENT_GAMES).map((game) => (
-                        <tr key={game.gameId} className="border-b border-black/10 last:border-b-0">
-                          <td className="px-3 py-2 tabular-nums">{fmtDay(game.startedAt)}</td>
-                          <td className="px-3 py-2">
-                            {game.tournament
-                              ? `Tournament${game.tournamentFormat ? ` (${game.tournamentFormat})` : ""}`
-                              : "Race"}
-                          </td>
-                          <td className="px-3 py-2 text-right tabular-nums">{fmtInt(game.totalRaces)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{fmtInt(game.totalPlayers)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{fmtInt(game.totalTaken)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <div className="mt-10 grid items-start gap-4 lg:grid-cols-2">
+              <MarblesLeaderboard title="Leaderboards" tabs={["racesWon", "tournamentsWon", "games"]} {...leaderboardStyle} />
+              <MarblesLeaderboard title="Gil won" tabs={["won"]} {...leaderboardStyle} />
             </div>
           </>
         )}
@@ -204,12 +171,6 @@ export async function MarblesStatsPage({ params }: { params: Promise<{ displayNa
   );
 }
 
-const RECENT_GAMES = 10;
-
 function fmtInt(n: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
-}
-
-function fmtDay(unixSeconds: number) {
-  return new Date(unixSeconds * 1000).toISOString().slice(0, 10);
 }

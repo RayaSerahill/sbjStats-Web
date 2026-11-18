@@ -55,6 +55,7 @@ export async function WheelStatsPage({ params }: { params: Promise<{ displayName
         { game: "blackjack", enabled: style.publicNavShowBlackjack },
         { game: "scratch", enabled: style.publicNavShowScratch },
         { game: "wheel", enabled: style.publicNavShowWheel },
+        { game: "marbles", enabled: style.publicNavShowMarbles },
       ]}
     />
   );
@@ -91,6 +92,7 @@ export async function WheelStatsPage({ params }: { params: Promise<{ displayName
           showBlackjack={style.publicNavShowBlackjack}
           showScratch={style.publicNavShowScratch}
           showWheel={style.publicNavShowWheel}
+          showMarbles={style.publicNavShowMarbles}
           background={style.publicNavBackground}
           borderRadius={style.publicNavBorderRadius}
           fontColor={style.publicNavFontColor}

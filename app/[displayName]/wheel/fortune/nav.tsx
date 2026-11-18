@@ -10,6 +10,7 @@ const ICONS: Record<StatsNavKey, string> = {
   blackjack: "🃏",
   scratch: "🎟️",
   wheel: "🎡",
+  marbles: "🔮",
 };
 
 /** The shared nav in Fortune clothes: same links, themed pills, no host nav colours. */
@@ -24,6 +25,7 @@ export function FortuneNav({
   showBlackjack: boolean;
   showScratch: boolean;
   showWheel?: boolean;
+  showMarbles?: boolean;
   theme: FortuneTheme;
   activeOverride?: StatsNavKey;
   /** In the live editor the links must not navigate away. */

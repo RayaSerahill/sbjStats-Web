@@ -75,6 +75,7 @@ type StatsStyle = {
   publicNavShowBlackjack: boolean;
   publicNavShowScratch: boolean;
   publicNavShowWheel: boolean;
+  publicNavShowMarbles: boolean;
   publicNavBackground: StatsBackgroundStyle;
   publicNavBorderRadius: number;
   publicNavFontColor: string;
@@ -142,6 +143,7 @@ const defaults: StatsStyle = {
   publicNavShowBlackjack: true,
   publicNavShowScratch: true,
   publicNavShowWheel: false,
+  publicNavShowMarbles: false,
   publicNavBackground: makeBackground("#ffffff"),
   publicNavBorderRadius: 18,
   publicNavFontColor: "#000000",
@@ -770,7 +772,7 @@ export function StatsStyleEditor() {
     <div className="stats-style-editor rounded-3xl cute-border admin-item-container">
       <DashboardPageHeader
         title="Stats style"
-        description="Customize the public stats pages: choose the wheel page layout, then style the shared nav, the main dealer page and the scratch page."
+        description="Customize the public stats pages: choose the wheel page layout, then style the shared nav, the main dealer page and the scratch page. The marbles page wears the scratch page's style."
       />
 
       {loading ? <div className="mt-4 text-sm text-zinc-700">Loading…</div> : null}
@@ -804,7 +806,7 @@ export function StatsStyleEditor() {
         </SectionCard>
         <SectionCard
           title="Shared nav"
-          description="These settings style the shared top navigation shown on both public stats pages."
+          description="These settings style the shared top navigation shown on every public stats page."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <CheckboxField
@@ -821,6 +823,11 @@ export function StatsStyleEditor() {
               label="Show Wheel link"
               checked={style.publicNavShowWheel}
               onChange={(publicNavShowWheel) => setStyle((s) => ({ ...s, publicNavShowWheel }))}
+            />
+            <CheckboxField
+              label="Show Marbles link"
+              checked={style.publicNavShowMarbles}
+              onChange={(publicNavShowMarbles) => setStyle((s) => ({ ...s, publicNavShowMarbles }))}
             />
           </div>
 

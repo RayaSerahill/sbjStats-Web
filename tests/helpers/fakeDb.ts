@@ -8,6 +8,7 @@
  *     driver serializes `undefined` as `null`, and a present null IS indexed)
  *   - players: { playerTag: 1 } unique
  *   - wheel_games: { uploaderId: 1, gameUuid: 1 } unique (partial)
+ *   - marbles_games: { uploaderId: 1, gameId: 1 } unique (partial)
  *
  * Duplicate-key failures are surfaced with the same shape the mongodb v7
  * driver uses (error.code / error.writeErrors[].{code,index} /
@@ -69,6 +70,20 @@ export class FakeCollection {
     }
     if (name === "players") {
       this.uniqueKeyFns.push((doc) => (doc.playerTag != null ? `playerTag:${String(doc.playerTag)}` : undefined));
+    }
+    if (name === "marbles_games") {
+      this.uniqueKeyFns.push((doc) =>
+        doc.uploaderId != null && doc.gameId != null
+          ? `marbles:${String(doc.uploaderId)}:${String(doc.gameId)}`
+          : undefined
+      );
+    }
+    if (name === "marbles_players") {
+      this.uniqueKeyFns.push((doc) =>
+        doc.uploaderId != null && doc.gameId != null && doc.playerKey != null
+          ? `marblesPlayer:${String(doc.uploaderId)}:${String(doc.gameId)}:${String(doc.playerKey)}`
+          : undefined
+      );
     }
     if (name === "wheel_games") {
       this.uniqueKeyFns.push((doc) =>

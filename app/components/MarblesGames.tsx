@@ -176,7 +176,8 @@ export function MarblesGames() {
   };
 
   const hasAnyFilter = Boolean(fromInput || toInput || mineOnlyInput || applied.from || applied.to || applied.mineOnly);
-  const gridCols = "grid-cols-[1.3fr_1.2fr_1.1fr_.5fr_.6fr_.8fr_.8fr_auto]";
+  // The last column is as wide as the delete button, so the header lines up with the rows below it.
+  const gridCols = "grid-cols-[1.3fr_1.2fr_1.1fr_.5fr_.6fr_.8fr_.8fr_2.25rem]";
 
   return (
     <div className="rounded-3xl cute-border admin-item-container">

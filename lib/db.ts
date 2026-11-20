@@ -146,6 +146,7 @@ export async function ensureGameCollections() {
       await ensureCollection(db, "wheel_settings");
       await ensureCollection(db, "marbles_games");
       await ensureCollection(db, "marbles_players");
+      await ensureCollection(db, "marbles_settings");
 
       const players = db.collection("players");
       await players.createIndex({ playerTag: 1 }, { unique: true });
@@ -343,6 +344,9 @@ export async function ensureGameCollections() {
         }
       );
       await marblesPlayers.createIndex({ uploaderId: 1, playerKey: 1, startedAt: -1 });
+
+      const marblesSettings = db.collection("marbles_settings");
+      await marblesSettings.createIndex({ uploaderId: 1 }, { unique: true });
     })();
   }
 

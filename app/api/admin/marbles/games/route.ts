@@ -6,7 +6,10 @@ import type { MarblesGameDoc } from "@/lib/marblesIngest";
 const toIso = (unixSeconds: unknown) =>
   typeof unixSeconds === "number" ? new Date(unixSeconds * 1000).toISOString() : null;
 
-/** The signed-in dealer's uploaded marbles games, newest first. `?mine=1` hides other dealers' games. */
+/**
+ * The signed-in dealer's uploaded marbles games, newest first. `?mine=1` hides
+ * other dealers' games; `?from=` and `?to=` bound the game's start time.
+ */
 export async function GET(req: Request) {
   await ensureGameCollections();
   const gate = await requireAdminRequest(req);
@@ -16,6 +19,23 @@ export async function GET(req: Request) {
   const pageRaw = Number(url.searchParams.get("page") || 1);
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
   const mineOnly = ["1", "true"].includes((url.searchParams.get("mine") ?? "").toLowerCase());
+  const fromRaw = url.searchParams.get("from");
+  const toRaw = url.searchParams.get("to");
+
+  const fromDate = fromRaw ? new Date(fromRaw) : null;
+  const toDate = toRaw ? new Date(toRaw) : null;
+
+  if (fromRaw && (!fromDate || Number.isNaN(fromDate.getTime()))) {
+    return NextResponse.json({ error: "Invalid from date" }, { status: 400 });
+  }
+
+  if (toRaw && (!toDate || Number.isNaN(toDate.getTime()))) {
+    return NextResponse.json({ error: "Invalid to date" }, { status: 400 });
+  }
+
+  if (fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
+    return NextResponse.json({ error: "From date must be before to date" }, { status: 400 });
+  }
 
   const pageSize = 20;
   const skip = (page - 1) * pageSize;
@@ -25,6 +45,12 @@ export async function GET(req: Request) {
 
   const filter: Record<string, unknown> = { uploaderId: gate.auth.id };
   if (mineOnly) filter.mine = true;
+  if (fromDate || toDate) {
+    filter.startedAt = {
+      ...(fromDate ? { $gte: Math.floor(fromDate.getTime() / 1000) } : {}),
+      ...(toDate ? { $lte: Math.floor(toDate.getTime() / 1000) } : {}),
+    };
+  }
 
   const rows = await marblesGames
     .find(filter, { projection: { detail: 0 } })

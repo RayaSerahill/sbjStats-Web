@@ -68,6 +68,15 @@ function formatLabel(game: MarblesGameRow) {
   return game.tournamentFormat ? `Tournament (${game.tournamentFormat})` : "Tournament";
 }
 
+/**
+ * An own, finished game that had players but whose race results never came
+ * with it: it counts in the totals, yet none of its players reach the
+ * leaderboards until the plugin uploads the archive again.
+ */
+function missingResults(game: MarblesGameRow) {
+  return game.mine && !game.hasDetail && game.status !== "active" && game.totalPlayers > 0;
+}
+
 /** The table's second line under the format: tournament format and track theme, whichever exist. */
 function formatDetail(game: MarblesGameRow) {
   const parts = [game.tournament ? game.tournamentFormat : null, game.trackThemeName ?? game.theme].filter(Boolean);
@@ -275,7 +284,6 @@ export function MarblesGames() {
                       <div className="truncate font-medium text-zinc-900">{fmtDate(game.startedAt)}</div>
                       <div className="truncate text-xs text-zinc-500">
                         #{game.gameId} · {statusLabel(game.status)}
-                        {game.hasDetail ? "" : " · summary only"}
                       </div>
                     </div>
                     <div className="min-w-0">
@@ -292,7 +300,17 @@ export function MarblesGames() {
                       </div>
                     </div>
                     <div className="text-right tabular-nums">{fmtInt(game.totalRaces)}</div>
-                    <div className="text-right tabular-nums">{fmtInt(game.totalPlayers)}</div>
+                    <div className="min-w-0 text-right tabular-nums">
+                      <div>{fmtInt(game.totalPlayers)}</div>
+                      {missingResults(game) ? (
+                        <div
+                          className="truncate text-xs text-zinc-500"
+                          title="No race results were uploaded for this game, so its players are missing from your leaderboards. Upload the archive again from the plugin to fetch them."
+                        >
+                          no results
+                        </div>
+                      ) : null}
+                    </div>
                     <div className="text-right tabular-nums">{fmtInt(game.totalTaken)}</div>
                     <div className="text-right tabular-nums">{fmtInt(game.totalPayouts)}</div>
                     <div className="flex justify-end">

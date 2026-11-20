@@ -68,6 +68,12 @@ function formatLabel(game: MarblesGameRow) {
   return game.tournamentFormat ? `Tournament (${game.tournamentFormat})` : "Tournament";
 }
 
+/** The table's second line under the format: tournament format and track theme, whichever exist. */
+function formatDetail(game: MarblesGameRow) {
+  const parts = [game.tournament ? game.tournamentFormat : null, game.trackThemeName ?? game.theme].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "no track theme";
+}
+
 function TrashIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -280,8 +286,10 @@ export function MarblesGames() {
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate">{formatLabel(game)}</div>
-                      <div className="truncate text-xs text-zinc-500">{game.trackThemeName ?? game.theme ?? "no track theme"}</div>
+                      <div className="truncate">{game.tournament ? "Tournament" : "Races"}</div>
+                      <div className="truncate text-xs text-zinc-500" title={formatDetail(game)}>
+                        {formatDetail(game)}
+                      </div>
                     </div>
                     <div className="text-right tabular-nums">{fmtInt(game.totalRaces)}</div>
                     <div className="text-right tabular-nums">{fmtInt(game.totalPlayers)}</div>

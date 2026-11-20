@@ -6,6 +6,12 @@ import {
   type MarblesPlayerStats,
   type MarblesPlayerStatsRow,
 } from "@/lib/marblesPlayers";
+import {
+  marblesHostName,
+  normalizeHiddenMarblesHosts,
+  withoutHiddenMarblesHosts,
+  type MarblesSettingsDoc,
+} from "@/lib/marblesSettings";
 
 export type MarblesStatsGameRow = Pick<
   MarblesGameDoc,
@@ -23,6 +29,8 @@ export type MarblesStatsGameRow = Pick<
   | "tournamentFormat"
   | "trackThemeName"
   | "theme"
+  | "creatorName"
+  | "creatorWorld"
   | "mine"
 >;
 
@@ -65,13 +73,17 @@ export function countsTowardMarblesStats(game: Pick<MarblesGameDoc, "mine" | "st
 /**
  * Host totals from game summaries, and per-player figures from the player
  * rows of those same games. Player rows of games that do not count (or that
- * are not in `rows` at all) are ignored.
+ * are not in `rows` at all) are ignored. Games of a host named in
+ * `hiddenHosts` are left out entirely, their players included.
  */
 export function calculateMarblesStats(
   rows: MarblesStatsGameRow[],
-  playerRows: MarblesPlayerStatsRow[] = []
+  playerRows: MarblesPlayerStatsRow[] = [],
+  hiddenHosts: string[] = []
 ): MarblesStats {
-  const games = rows.filter(countsTowardMarblesStats).sort((a, b) => b.startedAt - a.startedAt);
+  const games = withoutHiddenMarblesHosts(rows.filter(countsTowardMarblesStats), hiddenHosts).sort(
+    (a, b) => b.startedAt - a.startedAt
+  );
   const countedIds = new Set(games.map((game) => game.gameId));
   const players = calculateMarblesPlayerStats(playerRows.filter((row) => countedIds.has(row.gameId)));
 
@@ -104,6 +116,40 @@ export function calculateMarblesStats(
   return { totals, games, players };
 }
 
+export type MarblesHostSummary = {
+  /** "Name@World", the same string the settings store. */
+  name: string;
+  /** The host's games that count towards stats. */
+  games: number;
+  /** False once the dealer has taken this host off the public page. */
+  enabled: boolean;
+};
+
+/**
+ * The dealer's own host characters for the settings page, alphabetical. A
+ * host is listed as soon as she owns any game, so she can be hidden before
+ * her first one finishes; `games` only counts the ones the public page would.
+ */
+export function summarizeMarblesHosts(
+  rows: Array<Pick<MarblesGameDoc, "mine" | "status" | "totalPlayers" | "creatorName" | "creatorWorld">>,
+  hiddenHosts: string[] = []
+): MarblesHostSummary[] {
+  const hidden = new Set(hiddenHosts);
+  const counts = new Map<string, number>();
+
+  for (const row of rows) {
+    if (row.mine !== true) continue;
+    const name = marblesHostName(row.creatorName, row.creatorWorld);
+    if (!name) continue;
+    counts.set(name, (counts.get(name) ?? 0) + (countsTowardMarblesStats(row) ? 1 : 0));
+  }
+
+  return Array.from(counts, ([name, games]) => ({ name, games, enabled: !hidden.has(name) })).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+}
+
+/** Public stats for one dealer: their own finished games, minus the hosts they have hidden in the marbles settings. */
 export async function loadMarblesStatsForUploader(db: Db, uploaderId: string): Promise<MarblesStats> {
   const playersQuery = db
     .collection<MarblesPlayerGameDoc>("marbles_players")
@@ -131,13 +177,23 @@ export async function loadMarblesStatsForUploader(db: Db, uploaderId: string): P
           tournamentFormat: 1,
           trackThemeName: 1,
           theme: 1,
+          creatorName: 1,
+          creatorWorld: 1,
           mine: 1,
         },
       }
     )
     .toArray();
 
-  const [rows, playerRows] = await Promise.all([gamesQuery, playersQuery]);
+  const settingsQuery = db
+    .collection<MarblesSettingsDoc>("marbles_settings")
+    .findOne({ uploaderId }, { projection: { _id: 0, hiddenHosts: 1 } });
 
-  return calculateMarblesStats(rows as MarblesStatsGameRow[], playerRows as MarblesPlayerStatsRow[]);
+  const [rows, playerRows, settings] = await Promise.all([gamesQuery, playersQuery, settingsQuery]);
+
+  return calculateMarblesStats(
+    rows as MarblesStatsGameRow[],
+    playerRows as MarblesPlayerStatsRow[],
+    normalizeHiddenMarblesHosts(settings?.hiddenHosts)
+  );
 }

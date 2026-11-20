@@ -7,6 +7,7 @@ import {
   ChartLine,
   Check,
   ChevronDown,
+  CircleDot,
   Disc,
   EyeOff,
   Gamepad2,
@@ -36,7 +37,7 @@ import {
 import type { DashboardTheme } from "@/lib/db";
 import { LogoutButton } from "./LogoutButton";
 
-type NavGroupId = "general" | "blackjack" | "scratch" | "wheel" | "admin";
+type NavGroupId = "general" | "blackjack" | "scratch" | "wheel" | "marbles" | "admin";
 
 type NavItem = {
   id: string;
@@ -66,6 +67,8 @@ const legacyHashToPath: Record<string, string> = {
   "wheel-prizes": "/dashboard/wheel/prizes",
   "wheel-presets": "/dashboard/wheel/presets",
   "wheel-settings": "/dashboard/wheel/settings",
+  "marbles-games": "/dashboard/marbles/games",
+  "marbles-settings": "/dashboard/marbles/settings",
   aliases: "/dashboard/aliases",
   "hidden-players": "/dashboard/hidden-players",
   "api-keys": "/dashboard/api-keys",
@@ -142,6 +145,14 @@ function buildNavGroups(canManageUsers: boolean, teamInviteCount: number): NavGr
         { id: "wheel-prizes", href: "/dashboard/wheel/prizes", label: "Prizes", icon: Gift },
         { id: "wheel-presets", href: "/dashboard/wheel/presets", label: "Presets", icon: Layers },
         { id: "wheel-settings", href: "/dashboard/wheel/settings", label: "Settings", icon: Settings },
+      ],
+    },
+    {
+      id: "marbles",
+      label: "Marbles",
+      items: [
+        { id: "marbles-games", href: "/dashboard/marbles/games", label: "Games", icon: CircleDot },
+        { id: "marbles-settings", href: "/dashboard/marbles/settings", label: "Settings", icon: Settings },
       ],
     },
   ];
@@ -330,6 +341,7 @@ export function DashboardShell({
     blackjack: true,
     scratch: true,
     wheel: true,
+    marbles: true,
     admin: true,
   });
 
